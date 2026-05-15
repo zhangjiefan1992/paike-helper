@@ -1,0 +1,6 @@
+{
+  "navigationBarTitleText": "课程编辑",
+  "usingComponents": {
+    "tag": "/components/tag/tag"
+  }
+}

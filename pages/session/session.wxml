@@ -1,0 +1,164 @@
+<view class="page">
+  <!-- Date & Time -->
+  <view class="section">
+    <view class="section__title">日期与时间</view>
+    <view class="row">
+      <picker mode="date" value="{{form.date}}" bindchange="onDateChange">
+        <view class="picker-btn">{{form.date || '选择日期'}}</view>
+      </picker>
+      <picker mode="time" value="{{form.startTime}}" bindchange="onTimeChange">
+        <view class="picker-btn">{{form.startTime || '选择时间'}}</view>
+      </picker>
+    </view>
+  </view>
+
+  <!-- Duration -->
+  <view class="section">
+    <view class="section__title">时长</view>
+    <view class="row">
+      <view class="duration-btn {{form.duration === 45 ? 'duration-btn--active' : ''}}" data-val="45" bindtap="onDurationTap">45分钟</view>
+      <view class="duration-btn {{form.duration === 60 ? 'duration-btn--active' : ''}}" data-val="60" bindtap="onDurationTap">60分钟</view>
+      <view class="duration-btn {{form.duration === 90 ? 'duration-btn--active' : ''}}" data-val="90" bindtap="onDurationTap">90分钟</view>
+    </view>
+  </view>
+
+  <!-- Class Mode -->
+  <view class="section">
+    <view class="section__title">授课模式</view>
+    <view class="row">
+      <view class="mode-btn {{form.classMode === 'private' ? 'mode-btn--active' : ''}}" data-mode="private" bindtap="onClassModeChange">私教</view>
+      <view class="mode-btn {{form.classMode === 'group' ? 'mode-btn--active' : ''}}" data-mode="group" bindtap="onClassModeChange">团课</view>
+    </view>
+  </view>
+
+  <!-- Member Selection -->
+  <view class="section">
+    <view class="section__title">{{form.classMode === 'private' ? '选择会员' : '参与会员'}}</view>
+    <block wx:if="{{form.classMode === 'private'}}">
+      <picker range="{{members}}" range-key="name" bindchange="onMemberSelect">
+        <view class="picker-btn">{{selectedMemberName || '请选择会员'}}</view>
+      </picker>
+    </block>
+    <block wx:else>
+      <view class="member-grid">
+        <view
+          class="member-chip {{memberIdMap[item.id] ? 'member-chip--active' : ''}}"
+          wx:for="{{members}}"
+          wx:key="id"
+          data-id="{{item.id}}"
+          bindtap="onGroupMemberTap"
+        >{{item.name}}</view>
+      </view>
+    </block>
+  </view>
+
+  <!-- Course Type -->
+  <view class="section">
+    <view class="section__title">课程类型</view>
+    <view class="tags-wrap">
+      <tag
+        wx:for="{{config.courseTypes}}"
+        wx:key="*this"
+        text="{{item}}"
+        selected="{{form.courseType === item}}"
+        bind:select="onCourseTypeTap"
+      />
+    </view>
+    <view class="row" style="margin-top: {{8}}rpx;">
+      <input class="input" placeholder="自定义类型" value="{{customCourseType}}" bindinput="onCustomCourseTypeInput" bindconfirm="onAddCustomCourseType" />
+      <view class="add-btn" bindtap="onAddCustomCourseType">添加</view>
+    </view>
+  </view>
+
+  <!-- Location -->
+  <view class="section">
+    <view class="section__title">上课地点</view>
+    <view class="tags-wrap" wx:if="{{config.locations.length > 0}}">
+      <tag
+        wx:for="{{config.locations}}"
+        wx:key="*this"
+        text="{{item}}"
+        selected="{{form.location === item}}"
+        bind:select="onLocationTap"
+      />
+    </view>
+    <view class="row">
+      <input class="input" placeholder="输入地点" value="{{customLocation || form.location}}" bindinput="onCustomLocationInput" bindconfirm="onAddCustomLocation" />
+    </view>
+  </view>
+
+  <!-- Status -->
+  <view class="section">
+    <view class="section__title">状态</view>
+    <picker range="{{statusOptions}}" range-key="label" value="{{statusIndex}}" bindchange="onStatusChange">
+      <view class="picker-btn">{{statusOptions[statusIndex].label}}</view>
+    </picker>
+  </view>
+
+  <!-- Focus Areas -->
+  <view class="section">
+    <view class="section__title">训练重点</view>
+    <view class="tags-wrap">
+      <tag
+        wx:for="{{config.focusAreaOptions}}"
+        wx:key="*this"
+        text="{{item}}"
+        selected="{{focusAreaMap[item]}}"
+        bind:select="onFocusAreaTap"
+      />
+    </view>
+  </view>
+
+  <!-- Before Photos -->
+  <view class="section">
+    <view class="section__title">课前照片（{{form.beforePhotos.length || 0}}/5）</view>
+    <scroll-view class="photos" scroll-x>
+      <view class="photo-item" wx:for="{{form.beforePhotos}}" wx:key="*this">
+        <image class="photo-img" src="{{item}}" mode="aspectFill"></image>
+        <view class="photo-remove" data-idx="{{index}}" data-type="before" bindtap="onRemovePhoto">×</view>
+      </view>
+      <view class="photo-add" bindtap="onChoosePhoto" data-type="before" wx:if="{{(form.beforePhotos.length || 0) < 5}}">
+        <text class="photo-add__icon">+</text>
+      </view>
+    </scroll-view>
+  </view>
+
+  <!-- After Photos -->
+  <view class="section">
+    <view class="section__title">课后照片（{{form.afterPhotos.length || 0}}/5）</view>
+    <scroll-view class="photos" scroll-x>
+      <view class="photo-item" wx:for="{{form.afterPhotos}}" wx:key="*this">
+        <image class="photo-img" src="{{item}}" mode="aspectFill"></image>
+        <view class="photo-remove" data-idx="{{index}}" data-type="after" bindtap="onRemovePhoto">×</view>
+      </view>
+      <view class="photo-add" bindtap="onChoosePhoto" data-type="after" wx:if="{{(form.afterPhotos.length || 0) < 5}}">
+        <text class="photo-add__icon">+</text>
+      </view>
+    </scroll-view>
+  </view>
+
+  <!-- Notes -->
+  <view class="section">
+    <view class="section__title">课后备注</view>
+    <textarea class="textarea" placeholder="添加备注..." value="{{form.notes}}" bindinput="onNotesInput" auto-height></textarea>
+  </view>
+
+  <!-- Summary CTA -->
+  <view class="section" wx:if="{{form.summaryText}}">
+    <view class="section__title">课后总结</view>
+    <view class="summary-cta card card--summary" bindtap="onGoSummary">
+      <text class="summary-cta__preview">{{form.summaryText.length > 60 ? form.summaryText.slice(0, 60) + '...' : form.summaryText}}</text>
+      <text class="summary-cta__action">{{form.summarySent ? '已发送 ✓' : '查看并发送 ›'}}</text>
+    </view>
+  </view>
+  <view class="section" wx:if="{{form.status === 'completed' && !form.summaryText}}">
+    <view class="section__title">课后总结</view>
+    <button class="btn-primary" bindtap="onGenerateSummary">✨ 生成课后总结</button>
+  </view>
+
+  <!-- Actions -->
+  <view class="actions">
+    <button class="btn btn--primary" bindtap="onSave">保存</button>
+    <button class="btn btn--danger" wx:if="{{isEdit}}" bindtap="onDelete">删除此课程</button>
+  </view>
+</view>

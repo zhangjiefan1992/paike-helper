@@ -1,0 +1,110 @@
+page {
+  /* Brand — Lululemon × Linear */
+  --color-primary: #4A7C59;
+  --color-primary-light: #E8F0EA;
+  --color-primary-dark: #3A6347;
+
+  /* Accent — post-class dot only */
+  --color-accent: #C2855C;
+
+  /* Status */
+  --color-scheduled: #E8C98E;
+  --color-completed: #7BAF8A;
+  --color-cancelled: #D4CEC8;
+  --color-noshow: #E0A89E;
+
+  /* Surfaces */
+  --bg-page: #FAF8F5;
+  --bg-card: #FFFFFF;
+  --bg-input: #F5F3EF;
+  --bg-hairline: #E8E4DF;
+
+  /* Ink */
+  --text-primary: #1C1C1C;
+  --text-secondary: #6B6560;
+  --text-muted: #9E9892;
+
+  /* Radius */
+  --radius-sm: 8rpx;
+  --radius-md: 16rpx;
+  --radius-lg: 24rpx;
+  --radius-pill: 48rpx;
+
+  /* Shadows — light, atmospheric */
+  --shadow-card: 0 2rpx 12rpx rgba(28, 28, 28, 0.04);
+  --shadow-card-hover: 0 4rpx 20rpx rgba(28, 28, 28, 0.06);
+  --shadow-float: 0 8rpx 32rpx rgba(28, 28, 28, 0.08);
+
+  /* Spacing */
+  --spacing-xs: 8rpx;
+  --spacing-sm: 16rpx;
+  --spacing-md: 24rpx;
+  --spacing-lg: 32rpx;
+  --spacing-xl: 48rpx;
+  --spacing-xxl: 64rpx;
+
+  /* Type */
+  --font-caption: 20rpx;
+  --font-body-sm: 24rpx;
+  --font-body: 28rpx;
+  --font-title-md: 30rpx;
+  --font-title-lg: 34rpx;
+  --font-title-xl: 40rpx;
+
+  background-color: var(--bg-page);
+  color: var(--text-primary);
+  font-size: var(--font-body);
+  line-height: 1.6;
+
+  /* Backward-compatible aliases for existing pages */
+  --font-xs: var(--font-caption);
+  --font-sm: var(--font-body-sm);
+  --font-md: var(--font-body);
+  --font-lg: var(--font-title-md);
+  --font-xl: var(--font-title-lg);
+  --font-title: var(--font-title-xl);
+  --text-light: var(--text-muted);
+  --radius-xl: var(--radius-pill);
+}
+
+.container {
+  padding: var(--spacing-lg);
+  box-sizing: border-box;
+}
+
+/* Button primitives */
+.btn-primary {
+  background: var(--color-primary);
+  color: #FFFFFF;
+  border-radius: var(--radius-pill);
+  padding: 18rpx 48rpx;
+  font-weight: 600;
+  font-size: var(--font-body);
+  min-height: 88rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.btn-primary:active {
+  background: var(--color-primary-dark);
+  transform: scale(0.97);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--color-primary);
+  border: 2rpx solid var(--color-primary);
+  border-radius: var(--radius-pill);
+  padding: 16rpx 48rpx;
+  font-size: var(--font-body);
+  min-height: 88rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Status badges */
+.badge--scheduled { background: #F5EDDC; color: #8B7340; }
+.badge--completed { background: #E4F0E7; color: #4A7C59; }
+.badge--cancelled { background: #F0EDE8; color: #9E9892; }
+.badge--noshow    { background: #F5E8E4; color: #A0685C; }

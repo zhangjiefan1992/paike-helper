@@ -1,0 +1,36 @@
+<view class="page">
+  <view class="section">
+    <view class="section__title">昵称 *</view>
+    <input class="input" placeholder="输入会员昵称" value="{{form.name}}" bindinput="onNameInput" />
+  </view>
+
+  <view class="section">
+    <view class="section__title">联系方式</view>
+    <input class="input" placeholder="手机号或微信号" value="{{form.phone}}" bindinput="onPhoneInput" />
+  </view>
+
+  <view class="section">
+    <view class="section__title">标签</view>
+    <view class="tags-wrap">
+      <tag
+        wx:for="{{form.tags}}"
+        wx:key="*this"
+        text="{{item}}"
+        closable="{{true}}"
+        bind:close="onTagClose"
+      />
+    </view>
+    <view class="row">
+      <input class="input" placeholder="输入标签后回车添加" value="{{tagInput}}" bindinput="onTagInput" bindconfirm="onTagConfirm" />
+    </view>
+  </view>
+
+  <view class="section">
+    <view class="section__title">备注</view>
+    <textarea class="textarea" placeholder="添加备注..." value="{{form.notes}}" bindinput="onNotesInput" auto-height></textarea>
+  </view>
+
+  <view class="actions">
+    <button class="btn btn--primary" bindtap="onSave">保存</button>
+  </view>
+</view>

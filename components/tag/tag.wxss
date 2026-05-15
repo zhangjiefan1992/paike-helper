@@ -1,0 +1,25 @@
+.tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 6rpx 20rpx;
+  border-radius: 100rpx;
+  background: var(--bg-input);
+  margin: 0 var(--spacing-xs) var(--spacing-xs) 0;
+  font-size: var(--font-sm);
+  color: var(--text-primary);
+}
+
+.tag--selected {
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.tag__text {
+  line-height: 1.4;
+}
+
+.tag__close {
+  margin-left: 8rpx;
+  font-size: var(--font-md);
+  line-height: 1;
+}

@@ -1,0 +1,171 @@
+<view class="page">
+  <!-- Header -->
+  <view class="header">
+    <view class="header__top">
+      <view class="header__nav">
+        <view class="header__arrow" bindtap="onPrevWeek">‹</view>
+        <view class="header__range" bindlongpress="onWeekLongPress">
+          {{currentWeek.days[0].monthDay}} - {{currentWeek.days[6].monthDay}}
+        </view>
+        <view class="header__arrow" bindtap="onNextWeek">›</view>
+      </view>
+      <view class="header__action" wx:if="{{!isEmpty}}" bindtap="onShareSchedule">
+        <image class="header__action-icon" src="/assets/images/icon-share.png" mode="aspectFit" />
+      </view>
+    </view>
+    <view class="stats" wx:if="{{!isEmpty}}">
+      <text class="stats__item">已排 {{stats.total}} 节</text>
+      <text class="stats__item stats__item--completed">完成 {{stats.completed}}</text>
+      <text class="stats__item stats__item--cancelled">取消 {{stats.cancelled}}</text>
+      <text class="stats__detail" bindtap="onGoStats">详情 ›</text>
+    </view>
+  </view>
+
+  <!-- Empty State -->
+  <empty-state
+    wx:if="{{isEmpty}}"
+    title="这周还没有排课哦～"
+    subtitle="点击下方 + 开始排课吧"
+  />
+
+  <!-- Grid Table -->
+  <view class="grid-table" wx:else>
+    <!-- Table Header -->
+    <view class="grid-header">
+      <view class="grid-corner"></view>
+      <view
+        class="grid-day-head {{item.isToday ? 'grid-day-head--today' : ''}}"
+        wx:for="{{currentWeek.days}}"
+        wx:key="date"
+        bindtap="onDayTap"
+        bindlongpress="onDayLongPress"
+        data-date="{{item.date}}"
+      >
+        <text class="grid-day-head__weekday">{{item.weekday}}</text>
+        <text class="grid-day-head__date">{{item.dayNum}}</text>
+      </view>
+    </view>
+
+    <!-- Table Body -->
+    <view class="grid-row" wx:for="{{grid}}" wx:for-item="period" wx:key="name">
+      <view class="grid-period">
+        <text class="grid-period__name">{{period.name}}</text>
+      </view>
+      <view
+        class="grid-cell {{day.isToday ? 'grid-cell--today' : ''}}"
+        wx:for="{{currentWeek.days}}"
+        wx:for-item="day"
+        wx:for-index="dIdx"
+        wx:key="date"
+        bindtap="onCellTap"
+        data-date="{{day.date}}"
+      >
+        <view
+          class="grid-card"
+          wx:for="{{period.slots[day.date]}}"
+          wx:for-item="card"
+          wx:key="id"
+          style="background: {{card.cardColor}}"
+          catchtap="onCardTap"
+          data-id="{{card.id}}"
+        >
+          <text class="grid-card__time">{{card.startTime}}</text>
+          <text class="grid-card__course">{{card.courseType}}</text>
+          <text class="grid-card__name" wx:if="{{card.displayName}}">{{card.displayName}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 底部工具栏 -->
+  <view class="toolbar">
+    <view class="toolbar__btn toolbar__btn--outline" bindtap="onTextImport">
+      <image class="toolbar__btn-icon" src="/assets/images/icon-import.png" mode="aspectFit" />
+      <text class="toolbar__btn-text">文本导入</text>
+    </view>
+    <view class="toolbar__btn toolbar__btn--primary" bindtap="onAddSession">
+      <text class="toolbar__btn-plus">+</text>
+      <text class="toolbar__btn-text toolbar__btn-text--white">新建课程</text>
+    </view>
+  </view>
+
+  <!-- 文本导入弹窗（两步） -->
+  <view class="text-modal" wx:if="{{showImportModal}}" catchtouchmove="true">
+    <view class="text-modal__mask" bindtap="onImportClose"></view>
+    <view class="text-modal__body">
+      <!-- Step 1: 粘贴文本 -->
+      <block wx:if="{{importStep === 1}}">
+        <view class="text-modal__header">
+          <text class="text-modal__title">粘贴课程文本</text>
+          <view class="text-modal__close" bindtap="onImportClose">×</view>
+        </view>
+        <view class="text-modal__content">
+          <textarea
+            class="text-modal__textarea"
+            placeholder="每行一节课，格式如：&#10;3.23 私教 10:30 周一 周文娟 旺君馆&#10;&#10;支持粘连格式、✅前缀、括号地点"
+            value="{{importText}}"
+            bindinput="onImportInput"
+            maxlength="-1"
+          />
+        </view>
+        <view class="text-modal__actions">
+          <view class="text-modal__btn" bindtap="onImportClose">取消</view>
+          <view class="text-modal__btn text-modal__btn--primary" bindtap="onImportParse">解析预览</view>
+        </view>
+      </block>
+
+      <!-- Step 2: 确认导入 -->
+      <block wx:else>
+        <view class="text-modal__header">
+          <text class="text-modal__title">导入预览</text>
+          <view class="text-modal__close" bindtap="onImportClose">×</view>
+        </view>
+        <view class="text-modal__content">
+          <!-- 统计 -->
+          <view class="import-summary">
+            <text class="import-summary__text">解析成功 {{importTotalCount}} 节</text>
+            <text class="import-summary__skip" wx:if="{{importSkippedCount > 0}}">，跳过 {{importSkippedCount}} 行</text>
+            <text class="import-summary__err" wx:if="{{importErrorCount > 0}}">，失败 {{importErrorCount}} 行</text>
+          </view>
+
+          <!-- 清除开关 -->
+          <view class="import-switch" bindtap="onImportToggleClear">
+            <switch checked="{{importClearExisting}}" color="var(--color-primary, #F28B82)" />
+            <text class="import-switch__label">导入前清除对应日期旧数据</text>
+          </view>
+
+          <!-- 分组列表 -->
+          <scroll-view class="import-list" scroll-y="true">
+            <view class="import-group" wx:for="{{importParsedGroups}}" wx:key="date" wx:for-index="gIdx">
+              <view class="import-group__header">
+                <text class="import-group__title">{{item.dateLabel}} ({{item.count}}节)</text>
+              </view>
+              <view
+                class="import-item {{innerItem.checked ? '' : 'import-item--unchecked'}}"
+                wx:for="{{item.items}}"
+                wx:for-item="innerItem"
+                wx:for-index="iIdx"
+                wx:key="id"
+                bindtap="onImportToggleItem"
+                data-gidx="{{gIdx}}"
+                data-iidx="{{iIdx}}"
+              >
+                <view class="import-item__check">
+                  <view class="import-item__checkbox {{innerItem.checked ? 'import-item__checkbox--on' : ''}}">
+                    <text wx:if="{{innerItem.checked}}">✓</text>
+                  </view>
+                </view>
+                <text class="import-item__text {{innerItem.status === 'completed' ? 'import-item__text--completed' : ''}}">{{innerItem.displayText}}</text>
+                <text class="import-item__badge" wx:if="{{innerItem.status === 'completed'}}">已完成</text>
+              </view>
+            </view>
+          </scroll-view>
+        </view>
+        <view class="text-modal__actions">
+          <view class="text-modal__btn" bindtap="onImportBack">返回修改</view>
+          <view class="text-modal__btn text-modal__btn--primary" bindtap="onImportConfirm">确认导入 {{importCheckedCount}} 节</view>
+        </view>
+      </block>
+    </view>
+  </view>
+</view>

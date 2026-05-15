@@ -1,0 +1,9 @@
+{
+  "name": "generateSummary",
+  "version": "1.0.0",
+  "description": "AI课后总结生成云函数",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "latest"
+  }
+}

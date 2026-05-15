@@ -1,0 +1,94 @@
+<view class="page">
+  <!-- Loading -->
+  <view class="loading" wx:if="{{loading}}">
+    <view class="loading__spinner"></view>
+    <text class="loading__text">正在生成课后总结...</text>
+  </view>
+
+  <!-- Content -->
+  <block wx:else>
+    <!-- Course Info -->
+    <view class="info-card">
+      <view class="info-card__row">
+        <text class="info-card__label">学员</text>
+        <text class="info-card__value">{{member.name}}</text>
+      </view>
+      <view class="info-card__row">
+        <text class="info-card__label">课程</text>
+        <text class="info-card__value">{{session.courseType}} · {{session.duration}}分钟</text>
+      </view>
+      <view class="info-card__row">
+        <text class="info-card__label">日期</text>
+        <text class="info-card__value">{{session.date}} {{session.startTime}}</text>
+      </view>
+      <view class="info-card__row" wx:if="{{session.location}}">
+        <text class="info-card__label">地点</text>
+        <text class="info-card__value">{{session.location}}</text>
+      </view>
+    </view>
+
+    <!-- Photos Section -->
+    <view class="photos-section">
+      <view class="photos-group">
+        <view class="photos-group__title">课前</view>
+        <view class="photos-grid">
+          <image
+            wx:for="{{beforePhotos}}"
+            wx:key="*this"
+            class="photo"
+            src="{{item}}"
+            mode="aspectFill"
+            bindtap="onRemovePhoto"
+            data-type="before"
+            data-index="{{index}}"
+          />
+          <view class="photo-add" bindtap="onChoosePhoto" data-type="before" wx:if="{{beforePhotos.length < 5}}">
+            <text class="photo-add__icon">+</text>
+          </view>
+        </view>
+      </view>
+      <view class="photos-group">
+        <view class="photos-group__title">课后</view>
+        <view class="photos-grid">
+          <image
+            wx:for="{{afterPhotos}}"
+            wx:key="*this"
+            class="photo"
+            src="{{item}}"
+            mode="aspectFill"
+            bindtap="onRemovePhoto"
+            data-type="after"
+            data-index="{{index}}"
+          />
+          <view class="photo-add" bindtap="onChoosePhoto" data-type="after" wx:if="{{afterPhotos.length < 5}}">
+            <text class="photo-add__icon">+</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- AI Summary -->
+    <view class="summary-section">
+      <view class="summary-section__header">
+        <text class="summary-section__title">课后评估</text>
+        <text class="summary-section__edit" bindtap="onEditTap">{{isEditing ? '完成' : '编辑'}}</text>
+      </view>
+      <textarea
+        wx:if="{{isEditing}}"
+        class="summary-edit"
+        value="{{summaryText}}"
+        bindinput="onSummaryInput"
+        auto-height
+        maxlength="500"
+      />
+      <view wx:else class="summary-text">{{summaryText || '点击下方按钮生成课后评估'}}</view>
+    </view>
+
+    <!-- Bottom Action -->
+    <view class="bottom-bar">
+      <button class="btn-primary" bindtap="onShare" open-type="share">
+        {{sent ? '已发送 ✓' : '发送给学员'}}
+      </button>
+    </view>
+  </block>
+</view>

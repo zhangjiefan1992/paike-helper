@@ -1,0 +1,4 @@
+<view class="tag {{selected ? 'tag--selected' : ''}}" bindtap="onTap">
+  <text class="tag__text">{{text}}</text>
+  <text class="tag__close" wx:if="{{closable}}" catchtap="onClose">×</text>
+</view>

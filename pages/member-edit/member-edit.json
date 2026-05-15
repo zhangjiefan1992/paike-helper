@@ -1,0 +1,6 @@
+{
+  "navigationBarTitleText": "编辑会员",
+  "usingComponents": {
+    "tag": "/components/tag/tag"
+  }
+}

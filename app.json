@@ -1,0 +1,49 @@
+{
+  "pages": [
+    "pages/week/week",
+    "pages/day/day",
+    "pages/session/session",
+    "pages/members/members",
+    "pages/member-detail/member-detail",
+    "pages/member-edit/member-edit",
+    "pages/settings/settings",
+    "pages/stats/stats",
+    "pages/summary/summary"
+  ],
+  "window": {
+    "navigationBarTextStyle": "white",
+    "navigationBarTitleText": "排课助手",
+    "navigationBarBackgroundColor": "#4A7C59",
+    "backgroundColor": "#FAF8F5"
+  },
+  "tabBar": {
+    "color": "#9E9892",
+    "selectedColor": "#4A7C59",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "white",
+    "list": [
+      {
+        "pagePath": "pages/week/week",
+        "text": "排课",
+        "iconPath": "assets/images/tab-schedule.png",
+        "selectedIconPath": "assets/images/tab-schedule-active.png"
+      },
+      {
+        "pagePath": "pages/members/members",
+        "text": "会员",
+        "iconPath": "assets/images/tab-members.png",
+        "selectedIconPath": "assets/images/tab-members-active.png"
+      },
+      {
+        "pagePath": "pages/settings/settings",
+        "text": "我的",
+        "iconPath": "assets/images/tab-settings.png",
+        "selectedIconPath": "assets/images/tab-settings-active.png"
+      }
+    ]
+  },
+  "style": "v2",
+  "componentFramework": "glass-easel",
+  "sitemapLocation": "sitemap.json",
+  "lazyCodeLoading": "requiredComponents"
+}

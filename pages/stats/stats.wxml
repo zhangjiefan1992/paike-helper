@@ -1,0 +1,125 @@
+<view class="page" bindtouchstart="onTouchStart" bindtouchend="onTouchEnd">
+  <!-- 周切换导航 -->
+  <view class="week-nav">
+    <view class="week-nav__arrow" bindtap="onPrevWeek">‹</view>
+    <view class="week-nav__label">{{weekLabel}}</view>
+    <view class="week-nav__arrow" bindtap="onNextWeek">›</view>
+  </view>
+
+  <empty-state
+    wx:if="{{isEmpty}}"
+    title="本周暂无课程数据"
+    subtitle="切换到其他周查看，或去排课吧"
+  />
+
+  <block wx:else>
+    <!-- 本周课时汇总 -->
+    <view class="section">
+      <view class="section__header">
+        <text class="section__title">课时汇总</text>
+      </view>
+
+      <view class="summary-grid">
+        <view class="summary-card summary-card--primary">
+          <view class="summary-card__value">{{summary.total}}</view>
+          <view class="summary-card__label">总课时</view>
+          <view class="summary-card__diff {{summary.diff > 0 ? 'diff--up' : (summary.diff < 0 ? 'diff--down' : '')}}">
+            较上周 {{summary.diffText}}
+          </view>
+        </view>
+        <view class="summary-card">
+          <view class="summary-card__value summary-card__value--green">{{summary.completed}}</view>
+          <view class="summary-card__label">已完成</view>
+        </view>
+        <view class="summary-card">
+          <view class="summary-card__value summary-card__value--grey">{{summary.cancelled}}</view>
+          <view class="summary-card__label">已取消</view>
+        </view>
+        <view class="summary-card">
+          <view class="summary-card__value summary-card__value--orange">{{summary.noshow}}</view>
+          <view class="summary-card__label">爽约</view>
+        </view>
+      </view>
+
+      <view class="detail-row">
+        <view class="detail-item">
+          <text class="detail-item__label">教学时长</text>
+          <text class="detail-item__value">{{summary.totalHoursText}}</text>
+        </view>
+        <view class="detail-item">
+          <text class="detail-item__label">私教</text>
+          <text class="detail-item__value">{{summary.privateCnt}} 节</text>
+        </view>
+        <view class="detail-item">
+          <text class="detail-item__label">团课</text>
+          <text class="detail-item__value">{{summary.groupCnt}} 节</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 会员活跃度 -->
+    <view class="section">
+      <view class="section__header">
+        <text class="section__title">会员活跃度</text>
+      </view>
+
+      <view class="member-rank" wx:if="{{activeMembers.length > 0}}">
+        <view class="rank-item" wx:for="{{activeMembers}}" wx:key="id" data-id="{{item.id}}" bindtap="onMemberTap">
+          <view class="rank-num">{{index + 1}}</view>
+          <member-avatar src="{{item.avatar}}" size="small" />
+          <view class="rank-info">
+            <text class="rank-name">{{item.name}}</text>
+            <text class="rank-sub">本月 {{item.monthCount}} 节</text>
+          </view>
+          <view class="rank-count">{{item.weekCount}} <text class="rank-unit">节/周</text></view>
+        </view>
+      </view>
+      <view class="empty-hint" wx:else>
+        <text>本周暂无会员上课</text>
+      </view>
+
+      <view class="inactive-section" wx:if="{{inactiveMembers.length > 0}}">
+        <view class="inactive-title">超过7天未上课</view>
+        <view class="inactive-list">
+          <view class="inactive-item" wx:for="{{inactiveMembers}}" wx:key="id" data-id="{{item.id}}" bindtap="onMemberTap">
+            <member-avatar src="{{item.avatar}}" size="small" />
+            <text class="inactive-name">{{item.name}}</text>
+            <text class="inactive-days">{{item.daysSince}}天未上课</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 课程类型分布 -->
+    <view class="section" wx:if="{{courseTypeBars.length > 0}}">
+      <view class="section__header">
+        <text class="section__title">课程类型分布</text>
+      </view>
+      <view class="bar-list">
+        <view class="bar-item" wx:for="{{courseTypeBars}}" wx:key="name">
+          <view class="bar-label">{{item.name}}</view>
+          <view class="bar-track">
+            <view class="bar-fill" style="width: {{item.percent}}%"></view>
+          </view>
+          <view class="bar-count">{{item.count}}</view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 地点分布 -->
+    <view class="section" wx:if="{{locationBars.length > 0}}">
+      <view class="section__header">
+        <text class="section__title">上课地点分布</text>
+      </view>
+      <view class="bar-list">
+        <view class="bar-item" wx:for="{{locationBars}}" wx:key="name">
+          <view class="bar-label">{{item.name}}</view>
+          <view class="bar-track">
+            <view class="bar-fill bar-fill--alt" style="width: {{item.percent}}%"></view>
+          </view>
+          <view class="bar-count">{{item.count}}</view>
+        </view>
+      </view>
+    </view>
+  </block>
+</view>

@@ -1,0 +1,6 @@
+{
+  "navigationBarTitleText": "排课助手",
+  "usingComponents": {
+    "empty-state": "/components/empty-state/empty-state"
+  }
+}

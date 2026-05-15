@@ -1,0 +1,48 @@
+<view class="page" bindtouchstart="onTouchStart" bindtouchend="onTouchEnd">
+  <view class="header">
+    <text class="header__date">{{dateLabel}}</text>
+  </view>
+
+  <empty-state
+    wx:if="{{sessions.length === 0}}"
+    title="今天还没有课程"
+    subtitle="点击时间段或右下角 + 添加课程"
+  />
+
+  <scroll-view class="timeline" scroll-y wx:else>
+    <view class="timeline__body">
+      <!-- Time slots -->
+      <view class="time-slot" wx:for="{{timeSlots}}" wx:key="*this" data-time="{{item}}" bindtap="onSlotTap">
+        <text class="time-slot__label">{{item}}</text>
+        <view class="time-slot__line"></view>
+      </view>
+
+      <!-- Sessions positioned absolutely -->
+      <view
+        class="session-pos"
+        wx:for="{{sessions}}"
+        wx:key="id"
+        style="top: {{item._top}}rpx; height: {{item._height}}rpx;"
+      >
+        <session-card
+          session="{{item}}"
+          memberName="{{memberMap[item.memberId].name || (item.classMode === 'group' ? '团课' : '')}}"
+          compact="{{false}}"
+          bind:cardtap="onSessionTap"
+          bind:complete="onComplete"
+          bind:cancel="onCancel"
+        />
+      </view>
+
+      <!-- Current time line -->
+      <view class="current-time" wx:if="{{showTimeLine}}" style="top: {{currentTimeTop}}rpx;">
+        <view class="current-time__dot"></view>
+        <view class="current-time__line"></view>
+      </view>
+    </view>
+  </scroll-view>
+
+  <view class="fab" bindtap="onAddSession">
+    <text class="fab__icon">+</text>
+  </view>
+</view>

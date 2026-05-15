@@ -1,0 +1,44 @@
+<!-- Compact mode: lightweight, no swipe -->
+<block wx:if="{{compact}}">
+  <view class="card card--compact card--{{session.status}}" catchtap="onTap">
+    <view class="card__border"></view>
+    <view class="card__content">
+      <view class="card__time">{{session.startTime}}</view>
+      <view class="card__info">
+        <text class="card__name">{{memberName}}</text>
+        <text class="card__location-compact" wx:if="{{session.location}}">{{session.location}}</text>
+      </view>
+    </view>
+    <view class="card__dot card__dot--{{dotType}}" wx:if="{{showDot}}"></view>
+  </view>
+</block>
+
+<!-- Full mode: with swipe actions -->
+<block wx:else>
+  <view class="card-wrapper">
+    <movable-area class="movable-area">
+      <movable-view class="movable-view" direction="horizontal" x="{{slideX}}" damping="40" friction="6" out-of-bounds="{{false}}" bindchange="onSlideChange">
+        <view class="card card--{{session.status}}" bindtap="onTap">
+          <view class="card__border"></view>
+          <view class="card__content">
+            <view class="card__time">{{session.startTime}}</view>
+            <view class="card__info">
+              <text class="card__name">{{memberName}}</text>
+              <text class="card__type">{{session.courseType}}</text>
+            </view>
+            <view class="card__detail" wx:if="{{session.location}}">
+              <text class="card__location">{{session.location}}</text>
+            </view>
+            <view class="card__duration">{{session.duration}}分钟</view>
+            <view class="card__check" wx:if="{{session.status === 'completed'}}">✓</view>
+          </view>
+          <view class="card__dot card__dot--{{dotType}}" wx:if="{{showDot}}"></view>
+        </view>
+      </movable-view>
+    </movable-area>
+    <view class="card__actions">
+      <view class="action action--complete" bindtap="onComplete">已上完</view>
+      <view class="action action--cancel" bindtap="onCancel">取消</view>
+    </view>
+  </view>
+</block>

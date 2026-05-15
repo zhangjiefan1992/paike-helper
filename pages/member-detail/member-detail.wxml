@@ -1,0 +1,102 @@
+<view class="page" wx:if="{{member}}">
+  <!-- 顶部信息 -->
+  <view class="profile">
+    <view class="profile__header">
+      <member-avatar src="{{member.avatar}}" size="large" />
+      <view class="profile__info">
+        <view class="profile__name">{{member.name}}</view>
+        <view class="profile__phone" wx:if="{{member.phone}}">{{member.phone}}</view>
+      </view>
+      <view class="profile__edit" bindtap="onEdit">编辑</view>
+    </view>
+    <view class="profile__tags" wx:if="{{member.tags.length > 0}}">
+      <tag wx:for="{{member.tags}}" wx:key="*this" text="{{item}}" />
+    </view>
+    <view class="profile__notes" wx:if="{{member.notes}}">{{member.notes}}</view>
+  </view>
+
+  <!-- 统计卡片 -->
+  <view class="stats">
+    <view class="stat-card">
+      <view class="stat-card__value">{{stats.total}}</view>
+      <view class="stat-card__label">累计课程</view>
+    </view>
+    <view class="stat-card">
+      <view class="stat-card__value">{{stats.thisMonth}}</view>
+      <view class="stat-card__label">本月课程</view>
+    </view>
+    <view class="stat-card">
+      <view class="stat-card__value">{{stats.lastDate || '-'}}</view>
+      <view class="stat-card__label">最近上课</view>
+    </view>
+    <view class="stat-card">
+      <view class="stat-card__value">{{stats.topCourseType}}</view>
+      <view class="stat-card__label">最常课程</view>
+    </view>
+  </view>
+
+  <!-- 上课时间轴 -->
+  <view class="timeline-section">
+    <view class="section-title">上课记录</view>
+
+    <block wx:if="{{monthGroups.length === 0}}">
+      <empty-state title="还没有上课记录" subtitle="添加课程后将在这里显示" />
+    </block>
+
+    <block wx:for="{{monthGroups}}" wx:key="monthKey" wx:for-index="groupIndex">
+      <view class="month-group">
+        <view class="month-header" bindtap="onToggleMonth" data-index="{{groupIndex}}">
+          <text class="month-label">{{item.month}}</text>
+          <text class="month-count">{{item.records.length}}节</text>
+          <text class="month-arrow {{item.collapsed ? 'month-arrow--collapsed' : ''}}">▾</text>
+        </view>
+
+        <view class="month-records" wx:if="{{!item.collapsed}}">
+          <view class="timeline-item" wx:for="{{item.records}}" wx:key="id" wx:for-item="record">
+            <view class="timeline-dot timeline-dot--{{record.status}}"></view>
+            <view class="timeline-line" wx:if="{{index < item.records.length - 1}}"></view>
+            <view class="timeline-content" bindtap="onToggleRecord" data-id="{{record.id}}">
+              <view class="record-header">
+                <text class="record-date">{{record.date}} {{record.weekday}}</text>
+                <text class="record-status record-status--{{record.status}}">{{record.statusText}}</text>
+              </view>
+              <view class="record-body">
+                <text class="record-type">{{record.courseType}}</text>
+                <text class="record-time" wx:if="{{record.startTime}}">{{record.startTime}} · {{record.duration}}分钟</text>
+                <text class="record-location" wx:if="{{record.location}}">{{record.location}}</text>
+              </view>
+              <view class="record-tags" wx:if="{{record.focusAreas.length > 0}}">
+                <text class="record-tag" wx:for="{{record.focusAreas}}" wx:key="*this" wx:for-item="area">{{area}}</text>
+              </view>
+
+              <!-- 展开内容 -->
+              <block wx:if="{{expandedRecords[record.id]}}">
+                <view class="record-notes" wx:if="{{record.notes}}">
+                  <text class="record-notes__label">备注</text>
+                  <text class="record-notes__text">{{record.notes}}</text>
+                </view>
+                <view class="record-photos" wx:if="{{record.photos.length > 0}}">
+                  <image
+                    wx:for="{{record.photos}}"
+                    wx:key="*this"
+                    wx:for-item="photo"
+                    src="{{photo}}"
+                    class="record-photo"
+                    mode="aspectFill"
+                    bindtap="onPreviewPhoto"
+                    data-urls="{{record.photos}}"
+                    data-current="{{photo}}"
+                  />
+                </view>
+              </block>
+
+              <view class="record-expand-hint" wx:if="{{record.notes || record.photos.length > 0}}">
+                <text>{{expandedRecords[record.id] ? '收起' : '展开详情'}}</text>
+              </view>
+            </view>
+          </view>
+        </view>
+      </view>
+    </block>
+  </view>
+</view>
