@@ -1,0 +1,67 @@
+:root {
+  /* Brand */
+  --color-primary: #4A7C59;
+  --color-primary-dark: #3A6347;
+  --color-primary-light: rgba(74, 124, 89, 0.08);
+
+  /* Status */
+  --color-scheduled: #F28B82;
+  --color-completed: #81C995;
+  --color-cancelled: #CCCCCC;
+  --color-noshow: #FFB74D;
+
+  /* Backgrounds */
+  --bg-page: #FAF8F5;
+  --bg-card: #FFFFFF;
+  --bg-input: #F5F3EF;
+  --bg-hairline: #E8E4DF;
+  --overlay: rgba(0, 0, 0, 0.45);
+
+  /* Text */
+  --text-primary: #2C2C2C;
+  --text-secondary: #6B6560;
+  --text-muted: #9E9892;
+  --text-light: #C4BEB8;
+
+  /* Spacing */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 20px;
+  --spacing-xl: 32px;
+
+  /* Radius */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-pill: 999px;
+
+  /* Font */
+  --font-xs: 11px;
+  --font-sm: 13px;
+  --font-md: 15px;
+  --font-lg: 17px;
+  --font-xl: 22px;
+
+  /* Shadow */
+  --shadow-card: 0 1px 8px rgba(28, 28, 28, 0.06);
+  --shadow-float: 0 4px 20px rgba(28, 28, 28, 0.12);
+
+  /* Card colors */
+  --card-colors: #4A7C59, #7E9F7A, #A8B8A0, #C2A882, #B8A898, #9EABA2, #80CBC4, #F48FB1, #AED581, #FFB74D;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', sans-serif;
+  background: var(--bg-page);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  max-width: 480px;
+  margin: 0 auto;
+  min-height: 100vh;
+  position: relative;
+}
+
+a { text-decoration: none; color: inherit; }
