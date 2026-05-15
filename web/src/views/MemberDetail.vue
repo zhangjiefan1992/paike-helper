@@ -10,6 +10,9 @@
       <div class="avatar" :style="{ background: avatarColor }">{{ member.name?.charAt(0) }}</div>
       <h3 class="profile__name">{{ member.name }}</h3>
       <p class="profile__phone" v-if="member.phone">{{ member.phone }}</p>
+      <div class="profile__tags" v-if="member.tags?.length">
+        <span v-for="tag in member.tags" :key="tag" class="profile-tag">{{ tag }}</span>
+      </div>
       <p class="profile__note" v-if="member.notes">{{ member.notes }}</p>
     </div>
 
@@ -89,6 +92,11 @@ function statusLabel(status) {
 }
 .profile__name { font-size: 20px; font-weight: 600; }
 .profile__phone { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
+.profile__tags { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin-top: 8px; }
+.profile-tag {
+  font-size: 12px; padding: 2px 10px; border-radius: var(--radius-pill);
+  background: var(--color-primary-light); color: var(--color-primary); font-weight: 500;
+}
 .profile__note { font-size: 13px; color: var(--text-secondary); margin-top: 8px; }
 
 .stat-row { display: flex; gap: 12px; padding: 0 16px; margin-bottom: 16px; }

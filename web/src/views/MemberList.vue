@@ -15,6 +15,9 @@
         </div>
         <div class="member-item__body">
           <div class="member-item__name">{{ m.name }}</div>
+          <div class="member-item__tags" v-if="m.tags?.length">
+            <span v-for="tag in m.tags" :key="tag" class="mini-tag">{{ tag }}</span>
+          </div>
           <div class="member-item__meta" v-if="m.phone">{{ m.phone }}</div>
         </div>
         <span class="member-item__sessions">{{ sessionCount(m.id) }} 节</span>
@@ -98,6 +101,11 @@ export default {
 
 .member-item__body { flex: 1; }
 .member-item__name { font-size: 15px; font-weight: 500; }
+.member-item__tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 3px; }
+.mini-tag {
+  font-size: 10px; padding: 1px 6px; border-radius: var(--radius-pill);
+  background: var(--color-primary-light); color: var(--color-primary);
+}
 .member-item__meta { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
 .member-item__sessions { font-size: 12px; color: var(--text-muted); }
 

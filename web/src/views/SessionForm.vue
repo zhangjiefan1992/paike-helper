@@ -37,7 +37,14 @@
         </van-field>
         <van-field label="地点">
           <template #input>
-            <input v-model="form.location" class="inline-input" placeholder="上课地点" />
+            <div class="location-select">
+              <div class="tag-list" v-if="config.locations?.length">
+                <span v-for="l in config.locations" :key="l"
+                  class="chip" :class="{ 'chip--active': form.location === l }"
+                  @click="form.location = form.location === l ? '' : l">{{ l }}</span>
+              </div>
+              <input v-model="form.location" class="inline-input" placeholder="选择或输入地点" />
+            </div>
           </template>
         </van-field>
       </van-cell-group>
@@ -261,6 +268,8 @@ function onDelete() {
   background: var(--color-primary-light); color: var(--color-primary);
   border-color: var(--color-primary); font-weight: 500;
 }
+
+.location-select { display: flex; flex-direction: column; gap: 8px; width: 100%; }
 
 .inline-input {
   border: none; background: none; font-size: 14px; color: var(--text-primary);
