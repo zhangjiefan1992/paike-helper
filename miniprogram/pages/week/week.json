@@ -1,5 +1,6 @@
 {
   "navigationBarTitleText": "排课助手",
+  "enablePullDownRefresh": true,
   "usingComponents": {
     "empty-state": "/components/empty-state/empty-state"
   }

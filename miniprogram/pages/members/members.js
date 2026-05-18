@@ -12,6 +12,11 @@ Page({
     this.loadMembers()
   },
 
+  onPullDownRefresh() {
+    this.loadMembers()
+    wx.stopPullDownRefresh()
+  },
+
   loadMembers() {
     const members = storage.getMembers()
     const sessions = storage.getSessions()

@@ -1,15 +1,21 @@
 <view class="page" bindtouchstart="onTouchStart" bindtouchend="onTouchEnd">
-  <!-- 周切换导航 -->
+  <!-- 维度切换 -->
+  <view class="view-toggle">
+    <view class="view-toggle__btn {{viewMode === 'week' ? 'view-toggle__btn--active' : ''}}" bindtap="onToggleViewMode" wx:if="{{viewMode === 'month'}}">按周</view>
+    <view class="view-toggle__btn {{viewMode === 'month' ? 'view-toggle__btn--active' : ''}}" bindtap="onToggleViewMode" wx:if="{{viewMode === 'week'}}">按月</view>
+  </view>
+
+  <!-- 时段导航 -->
   <view class="week-nav">
-    <view class="week-nav__arrow" bindtap="onPrevWeek">‹</view>
-    <view class="week-nav__label">{{weekLabel}}</view>
-    <view class="week-nav__arrow" bindtap="onNextWeek">›</view>
+    <view class="week-nav__arrow" bindtap="onPrev">‹</view>
+    <view class="week-nav__label">{{periodLabel}}</view>
+    <view class="week-nav__arrow" bindtap="onNext">›</view>
   </view>
 
   <empty-state
     wx:if="{{isEmpty}}"
-    title="本周暂无课程数据"
-    subtitle="切换到其他周查看，或去排课吧"
+    title="{{viewMode === 'week' ? '本周暂无课程数据' : '本月暂无课程数据'}}"
+    subtitle="{{viewMode === 'week' ? '切换到其他周查看，或去排课吧' : '切换到其他月查看，或去排课吧'}}"
   />
 
   <block wx:else>
@@ -24,7 +30,7 @@
           <view class="summary-card__value">{{summary.total}}</view>
           <view class="summary-card__label">总课时</view>
           <view class="summary-card__diff {{summary.diff > 0 ? 'diff--up' : (summary.diff < 0 ? 'diff--down' : '')}}">
-            较上周 {{summary.diffText}}
+            较上{{viewMode === 'week' ? '周' : '月'}} {{summary.diffText}}
           </view>
         </view>
         <view class="summary-card">
@@ -71,7 +77,7 @@
             <text class="rank-name">{{item.name}}</text>
             <text class="rank-sub">本月 {{item.monthCount}} 节</text>
           </view>
-          <view class="rank-count">{{item.weekCount}} <text class="rank-unit">节/周</text></view>
+          <view class="rank-count">{{item.weekCount}} <text class="rank-unit">节</text></view>
         </view>
       </view>
       <view class="empty-hint" wx:else>

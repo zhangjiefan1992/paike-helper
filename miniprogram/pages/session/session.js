@@ -34,6 +34,7 @@ Page({
     statusIndex: 0,
     customCourseType: '',
     customLocation: '',
+    customFocusArea: '',
     showMemberPicker: false,
     selectedMemberName: '',
     memberIdMap: {},
@@ -57,6 +58,11 @@ Page({
         if (session.focusAreas) {
           session.focusAreas.forEach(a => { focusAreaMap[a] = true })
         }
+        let updatedAtLabel = ''
+        if (session.updatedAt) {
+          const d = new Date(session.updatedAt)
+          updatedAtLabel = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+        }
         this.setData({
           isEdit: true,
           form: session,
@@ -65,7 +71,8 @@ Page({
           statusIndex: statusIndex >= 0 ? statusIndex : 0,
           selectedMemberName: member ? member.name : '',
           memberIdMap,
-          focusAreaMap
+          focusAreaMap,
+          updatedAtLabel
         })
         wx.setNavigationBarTitle({ title: '编辑课程' })
         return
@@ -154,6 +161,27 @@ Page({
     this.setData({ 'form.focusAreas': areas, focusAreaMap })
   },
 
+  onCustomFocusAreaInput(e) {
+    this.setData({ customFocusArea: e.detail.value })
+  },
+
+  onAddCustomFocusArea() {
+    const val = this.data.customFocusArea.trim()
+    if (!val) return
+    const config = this.data.config
+    if (!config.focusAreaOptions.includes(val)) {
+      config.focusAreaOptions.push(val)
+      storage.saveConfig(config)
+    }
+    const areas = this.data.form.focusAreas.slice()
+    const focusAreaMap = Object.assign({}, this.data.focusAreaMap)
+    if (!areas.includes(val)) {
+      areas.push(val)
+      focusAreaMap[val] = true
+    }
+    this.setData({ config, 'form.focusAreas': areas, focusAreaMap, customFocusArea: '' })
+  },
+
   onStatusChange(e) {
     const idx = Number(e.detail.value)
     this.setData({
@@ -208,10 +236,27 @@ Page({
       sizeType: ['compressed'],
       sourceType: ['album', 'camera'],
       success: (res) => {
-        const photos = current.concat(res.tempFiles.map(f => f.tempFilePath))
-        this.setData({ ['form.' + key]: photos })
+        const paths = res.tempFiles.map(f => f.tempFilePath)
+        this.compressPhotos(paths).then(compressed => {
+          const photos = current.concat(compressed)
+          this.setData({ ['form.' + key]: photos })
+        })
       }
     })
+  },
+
+  compressPhotos(paths) {
+    const tasks = paths.map(src =>
+      new Promise(resolve => {
+        wx.compressImage({
+          src,
+          quality: 60,
+          success: (res) => resolve(res.tempFilePath),
+          fail: () => resolve(src)
+        })
+      })
+    )
+    return Promise.all(tasks)
   },
 
   onRemovePhoto(e) {
@@ -232,13 +277,32 @@ Page({
       wx.showToast({ title: '私教课程请选择会员', icon: 'none' }); return
     }
 
-    this.checkConflict(form)
+    const conflict = this.findConflict(form)
+    if (conflict) {
+      const startMin = this.timeToMin(conflict.startTime)
+      const endH = String(Math.floor((startMin + conflict.duration) / 60)).padStart(2, '0')
+      const endM = String((startMin + conflict.duration) % 60).padStart(2, '0')
+      const hint = `${conflict.startTime}-${endH}:${endM} ${conflict.courseType || '课程'}`
+      wx.showModal({
+        title: '时段冲突',
+        content: `该时段已有课程：\n${hint}\n\n是否仍要保存？`,
+        confirmText: '仍然保存',
+        confirmColor: '#F28B82',
+        success: (res) => {
+          if (res.confirm) this.doSave(form)
+        }
+      })
+      return
+    }
+    this.doSave(form)
+  },
 
+  doSave(form) {
     if (!form.id) {
       form.id = generateSessionId()
       form.createdAt = Date.now()
-      form.updatedAt = Date.now()
     }
+    form.updatedAt = Date.now()
 
     storage.saveSession(form)
     wx.showToast({ title: '保存成功', icon: 'success' })
@@ -266,24 +330,55 @@ Page({
     })
   },
 
-  checkConflict(form) {
+  findConflict(form) {
     const daySessions = storage.getSessionsByDate(form.date)
     const startMin = this.timeToMin(form.startTime)
     const endMin = startMin + form.duration
-    const conflict = daySessions.find(s => {
+    return daySessions.find(s => {
       if (s.id === form.id) return false
       const sStart = this.timeToMin(s.startTime)
       const sEnd = sStart + s.duration
       return startMin < sEnd && endMin > sStart
-    })
-    if (conflict) {
-      wx.showToast({ title: '该时段已有课程安排', icon: 'none', duration: 2000 })
-    }
+    }) || null
   },
 
   timeToMin(time) {
     const [h, m] = time.split(':').map(Number)
     return h * 60 + m
+  },
+
+  onVoiceResult(e) {
+    const data = e.detail
+    const updates = {}
+
+    if (data.date) updates['form.date'] = data.date
+    if (data.startTime) updates['form.startTime'] = data.startTime
+    if (data.duration) updates['form.duration'] = data.duration
+    if (data.courseType) updates['form.courseType'] = data.courseType
+    if (data.classMode) updates['form.classMode'] = data.classMode
+    if (data.location) updates['form.location'] = data.location
+    if (data.focusAreas && data.focusAreas.length) {
+      updates['form.focusAreas'] = data.focusAreas
+      const focusAreaMap = {}
+      data.focusAreas.forEach(a => { focusAreaMap[a] = true })
+      updates.focusAreaMap = focusAreaMap
+    }
+    if (data.notes) updates['form.notes'] = data.notes
+
+    if (data.memberName) {
+      const member = this.data.members.find(m =>
+        m.name === data.memberName || m.name.includes(data.memberName)
+      )
+      if (member) {
+        updates['form.memberId'] = member.id
+        updates.selectedMemberName = member.name
+      }
+    }
+
+    this.setData(updates)
+    const count = Object.keys(updates).filter(k => k.startsWith('form.')).length
+    wx.vibrateShort({ type: 'medium' })
+    wx.showToast({ title: '已识别 ' + count + ' 个字段', icon: 'success' })
   },
 
   onDelete() {

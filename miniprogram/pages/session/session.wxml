@@ -1,4 +1,12 @@
 <view class="page">
+  <!-- 快速录课（仅新建时显示） -->
+  <text-input
+    wx:if="{{!isEdit}}"
+    members="{{members}}"
+    config="{{config}}"
+    bind:result="onVoiceResult"
+  />
+
   <!-- Date & Time -->
   <view class="section">
     <view class="section__title">日期与时间</view>
@@ -107,6 +115,10 @@
         bind:select="onFocusAreaTap"
       />
     </view>
+    <view class="row" style="margin-top: 8rpx;">
+      <input class="input" placeholder="自定义重点" value="{{customFocusArea}}" bindinput="onCustomFocusAreaInput" bindconfirm="onAddCustomFocusArea" />
+      <view class="add-btn" bindtap="onAddCustomFocusArea">添加</view>
+    </view>
   </view>
 
   <!-- Before Photos -->
@@ -154,6 +166,11 @@
   <view class="section" wx:if="{{form.status === 'completed' && !form.summaryText}}">
     <view class="section__title">课后总结</view>
     <button class="btn-primary" bindtap="onGenerateSummary">✨ 生成课后总结</button>
+  </view>
+
+  <!-- Updated At -->
+  <view class="section" wx:if="{{isEdit && form.updatedAt}}">
+    <text class="updated-at">最后修改：{{updatedAtLabel}}</text>
   </view>
 
   <!-- Actions -->

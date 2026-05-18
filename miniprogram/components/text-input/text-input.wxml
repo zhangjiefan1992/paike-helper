@@ -1,0 +1,38 @@
+<view class="text-entry" bindtap="onExpand" wx:if="{{!expanded}}">
+  <text class="text-entry__icon">⚡</text>
+  <text class="text-entry__text">快速录课</text>
+  <text class="text-entry__hint">输入或语音，AI 自动填表</text>
+</view>
+
+<view class="text-panel" wx:if="{{expanded}}">
+  <view class="text-panel__header">
+    <text class="text-panel__title">快速录课</text>
+    <view class="text-panel__close" bindtap="onClose">×</view>
+  </view>
+
+  <view class="text-panel__body">
+    <textarea
+      class="text-panel__textarea"
+      value="{{inputText}}"
+      bindinput="onInput"
+      placeholder="输入或用键盘🎤语音说：\n明天下午3点给张三上普拉提，旺君馆"
+      placeholder-class="text-panel__placeholder"
+      auto-height
+      maxlength="200"
+      focus="{{expanded}}"
+      bindconfirm="onSubmit"
+    />
+    <view class="text-panel__actions">
+      <text class="text-panel__tip">支持自然语言，AI 自动解析</text>
+      <view class="text-panel__submit {{!inputText || loading ? 'text-panel__submit--disabled' : ''}}" bindtap="onSubmit">
+        <text wx:if="{{loading}}">解析中...</text>
+        <text wx:else>解析</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="text-panel__error" wx:if="{{errorMsg}}">
+    <text class="text-panel__error-text">{{errorMsg}}</text>
+    <view class="text-panel__error-close" bindtap="onClearError">关闭</view>
+  </view>
+</view>

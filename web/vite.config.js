@@ -8,5 +8,14 @@ export default defineConfig({
     vue(),
     Components({ resolvers: [VantResolver()] })
   ],
-  server: { port: 3000, host: true }
+  server: {
+    port: 5173,
+    host: true,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3000',
+        changeOrigin: true
+      }
+    }
+  }
 })

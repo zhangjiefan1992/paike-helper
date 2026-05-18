@@ -11,6 +11,8 @@ const routes = [
   { path: '/member-edit', name: 'member-new', component: () => import('../views/MemberEdit.vue') },
   { path: '/member-edit/:id', name: 'member-edit', component: () => import('../views/MemberEdit.vue') },
   { path: '/settings', name: 'settings', component: () => import('../views/SettingsView.vue') },
+  { path: '/stats', name: 'stats', component: () => import('../views/StatsView.vue') },
+  { path: '/summary/:id', name: 'summary', component: () => import('../views/SummaryView.vue') },
 ]
 
 export default createRouter({

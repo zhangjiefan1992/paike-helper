@@ -127,6 +127,47 @@
   color: var(--text-secondary);
 }
 
+/* 主题选择 */
+.theme-picker {
+  display: flex;
+  gap: var(--spacing-md);
+  padding: var(--spacing-sm) 0;
+}
+
+.theme-option {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12rpx;
+  padding: var(--spacing-sm);
+  border-radius: var(--radius-lg);
+  border: 2rpx solid transparent;
+}
+
+.theme-option--active {
+  border-color: var(--color-primary);
+  background: rgba(242, 139, 130, 0.06);
+}
+
+.theme-option__preview {
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: var(--radius-md);
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.08);
+}
+
+.theme-option__name {
+  font-size: var(--font-xs);
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.theme-option--active .theme-option__name {
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
 /* 数据管理 */
 .action-row {
   display: flex;

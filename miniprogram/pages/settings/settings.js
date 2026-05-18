@@ -12,11 +12,18 @@ Page({
     showTextModal: false,
     textModalMode: 'export',
     textExportContent: '',
-    textImportContent: ''
+    textImportContent: '',
+    themeOptions: [
+      { name: '柔彩', value: 'soft-color', preview: '#E8EDFF' },
+      { name: '渐变', value: 'candy-gradient', preview: 'linear-gradient(135deg, #667EEA, #764BA2)' },
+      { name: '轻盈', value: 'airy-tint', preview: '#F0F4FF' }
+    ],
+    currentTheme: 'airy-tint'
   },
 
   onShow() {
-    this.setData({ config: storage.getConfig() })
+    const config = storage.getConfig()
+    this.setData({ config, currentTheme: config.weekTheme || 'airy-tint' })
   },
 
   // === 预设管理 ===
@@ -121,6 +128,22 @@ Page({
     config.workingHours.end = e.detail.value
     storage.saveConfig(config)
     this.setData({ config })
+  },
+
+  // === 外观 ===
+
+  onThemeSelect(e) {
+    const value = e.currentTarget.dataset.value
+    const config = this.data.config
+    config.weekTheme = value
+    storage.saveConfig(config)
+    this.setData({ config, currentTheme: value })
+    wx.vibrateShort({ type: 'light' })
+    wx.showToast({ title: '主题已切换', icon: 'success' })
+  },
+
+  onGoStats() {
+    wx.navigateTo({ url: '/pages/stats/stats' })
   },
 
   // === 数据管理 ===

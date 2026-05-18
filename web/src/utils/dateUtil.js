@@ -55,6 +55,27 @@ export function getMonthLabel(dateStr) {
   return `${y}年${parseInt(m)}月`
 }
 
+export function getMonthRange(date) {
+  const d = new Date(date)
+  const y = d.getFullYear()
+  const m = d.getMonth()
+  const start = toDateStr(new Date(y, m, 1))
+  const end = toDateStr(new Date(y, m + 1, 0))
+  return { start, end }
+}
+
+export function getLastMonthRange(date) {
+  const d = new Date(date)
+  d.setMonth(d.getMonth() - 1)
+  return getMonthRange(d)
+}
+
+export function getLastWeekRange(date) {
+  const d = new Date(date)
+  d.setDate(d.getDate() - 7)
+  return getWeekRange(d)
+}
+
 export function formatDate(date, format) {
   const d = typeof date === 'string' ? parseDate(date) : date
   const map = {

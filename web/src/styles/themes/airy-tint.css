@@ -1,0 +1,38 @@
+.theme-airy-tint {
+  --wv-bg: #FAFBFD;
+  --wv-surface: #FFFFFF;
+  --wv-ink: #1E293B;
+  --wv-ink-secondary: #475569;
+  --wv-ink-muted: #94A3B8;
+  --wv-hairline: #F1F5F9;
+  --wv-today-accent: #6366F1;
+  --wv-today-bg: #EEF2FF;
+  --wv-today-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+
+  --wv-radius-card: 14px;
+  --wv-shadow-card: 0 1px 3px rgba(0,0,0,0.02), 0 4px 12px rgba(0,0,0,0.03);
+
+  --wv-card-mode: bordered;
+  --wv-card-border: 1px solid;
+  --wv-done-opacity: 0.6;
+
+  --wv-pilates-bg: #F0F4FF;
+  --wv-pilates-border: #C7D2FE;
+  --wv-pilates-dot: #6366F1;
+  --wv-pilates-type-color: #1E293B;
+
+  --wv-yoga-bg: #FFF7ED;
+  --wv-yoga-border: #FED7AA;
+  --wv-yoga-dot: #F59E0B;
+  --wv-yoga-type-color: #1E293B;
+
+  --wv-fitness-bg: #ECFDF5;
+  --wv-fitness-border: #A7F3D0;
+  --wv-fitness-dot: #10B981;
+  --wv-fitness-type-color: #1E293B;
+
+  --wv-group-bg: #FAF5FF;
+  --wv-group-border: #E9D5FF;
+  --wv-group-dot: #A855F7;
+  --wv-group-type-color: #1E293B;
+}

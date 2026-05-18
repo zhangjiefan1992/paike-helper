@@ -162,6 +162,13 @@
   color: #fff !important;
 }
 
+.updated-at {
+  font-size: var(--font-xs);
+  color: var(--text-light);
+  text-align: center;
+  display: block;
+}
+
 .btn--danger {
   background: transparent !important;
   color: var(--color-primary-dark) !important;

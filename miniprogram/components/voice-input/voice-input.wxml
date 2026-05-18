@@ -1,0 +1,48 @@
+<view class="voice-entry" bindtap="onOpenPanel">
+  <text class="voice-entry__icon">🎙</text>
+  <text class="voice-entry__text">语音录课</text>
+</view>
+
+<!-- 录音面板 -->
+<view class="voice-panel" wx:if="{{showPanel}}" catchtouchmove="noop">
+  <view class="voice-panel__mask" bindtap="onClose"></view>
+  <view class="voice-panel__body">
+    <view class="voice-panel__header">
+      <text class="voice-panel__title">{{panelTitle}}</text>
+      <view class="voice-panel__close" bindtap="onClose">×</view>
+    </view>
+
+    <!-- 识别文本展示 -->
+    <view class="voice-panel__text-area">
+      <text class="voice-panel__transcript" wx:if="{{transcript}}">{{transcript}}</text>
+      <text class="voice-panel__placeholder" wx:elif="{{!recording}}">按住下方按钮开始说话</text>
+      <text class="voice-panel__listening" wx:else>正在聆听...</text>
+    </view>
+
+    <!-- 录音按钮 -->
+    <view class="voice-panel__record-wrap" wx:if="{{state === 'idle' || state === 'recording'}}">
+      <view
+        class="voice-panel__record-btn {{recording ? 'voice-panel__record-btn--active' : ''}}"
+        bindtouchstart="onRecordStart"
+        bindtouchend="onRecordStop"
+        bindtouchcancel="onRecordStop"
+      >
+        <view class="voice-panel__ripple" wx:if="{{recording}}"></view>
+        <text class="voice-panel__record-icon">{{recording ? '⏹' : '🎤'}}</text>
+      </view>
+      <text class="voice-panel__hint">{{recording ? '松手结束' : '按住说话'}}</text>
+    </view>
+
+    <!-- 解析中 -->
+    <view class="voice-panel__loading" wx:if="{{state === 'parsing'}}">
+      <view class="voice-panel__spinner"></view>
+      <text class="voice-panel__loading-text">正在解析...</text>
+    </view>
+
+    <!-- 错误提示 -->
+    <view class="voice-panel__error" wx:if="{{state === 'error'}}">
+      <text class="voice-panel__error-text">{{errorMsg}}</text>
+      <view class="voice-panel__retry" bindtap="onRetry">重试</view>
+    </view>
+  </view>
+</view>

@@ -88,6 +88,18 @@ export function updateSessionStatus(id, status) {
   if (s) { s.status = status; s.updatedAt = Date.now(); write(KEYS.SESSIONS, sessions) }
 }
 
+export function updateSessionSummary(id, text) {
+  const sessions = getSessions()
+  const s = sessions.find(s => s.id === id)
+  if (s) { s.summaryText = text; s.summaryGeneratedAt = Date.now(); s.updatedAt = Date.now(); write(KEYS.SESSIONS, sessions) }
+}
+
+export function markSummarySent(id) {
+  const sessions = getSessions()
+  const s = sessions.find(s => s.id === id)
+  if (s) { s.summarySent = true; s.updatedAt = Date.now(); write(KEYS.SESSIONS, sessions) }
+}
+
 export function getConfig() {
   return read(KEYS.CONFIG, null) || { ...defaultConfig }
 }

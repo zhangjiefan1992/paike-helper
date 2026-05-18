@@ -1,0 +1,19 @@
+name = "paike-api"
+main = "src/worker.js"
+compatibility_date = "2024-12-01"
+compatibility_flags = ["nodejs_compat"]
+
+routes = [
+  { pattern = "api.keleya.org", custom_domain = true },
+  { pattern = "keleya.org/api/*", zone_name = "keleya.org" }
+]
+
+[vars]
+ASR_MODEL = "paraformer-v2"
+LLM_BASE_URL = "https://api.deepseek.com/v1"
+LLM_MODEL = "deepseek-chat"
+LLM_MAX_TOKENS = "800"
+
+# Secrets (set via `wrangler secret put`):
+# - DASHSCOPE_API_KEY
+# - LLM_API_KEY

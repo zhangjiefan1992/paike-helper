@@ -3,7 +3,8 @@ const dateUtil = require('../../utils/dateUtil')
 
 Page({
   data: {
-    weekLabel: '',
+    viewMode: 'week',
+    periodLabel: '',
     summary: {
       total: 0,
       completed: 0,
@@ -12,7 +13,7 @@ Page({
       privateCnt: 0,
       groupCnt: 0,
       totalMinutes: 0,
-      lastWeekTotal: 0,
+      lastPeriodTotal: 0,
       diff: 0
     },
     activeMembers: [],
@@ -27,48 +28,73 @@ Page({
     this.loadStats(this._currentDate)
   },
 
-  loadStats(date) {
-    const currentWeek = dateUtil.getWeekRange(date)
-    const lastWeek = dateUtil.getLastWeekRange(date)
+  onToggleViewMode() {
+    const mode = this.data.viewMode === 'week' ? 'month' : 'week'
+    this.setData({ viewMode: mode })
+    this.loadStats(this._currentDate)
+    wx.vibrateShort({ type: 'light' })
+  },
 
-    const thisWeekSessions = storage.getSessionsByDateRange(currentWeek.start, currentWeek.end)
-    const lastWeekSessions = storage.getSessionsByDateRange(lastWeek.start, lastWeek.end)
+  loadStats(date) {
+    const isMonth = this.data.viewMode === 'month'
+    let currentRange, lastRange, periodLabel
+
+    if (isMonth) {
+      currentRange = dateUtil.getMonthRange(date)
+      lastRange = dateUtil.getLastMonthRange(date)
+      const y = date.getFullYear()
+      const m = date.getMonth() + 1
+      periodLabel = y + '年' + m + '月'
+    } else {
+      const weekRange = dateUtil.getWeekRange(date)
+      currentRange = { start: weekRange.start, end: weekRange.end }
+      lastRange = dateUtil.getLastWeekRange(date)
+      lastRange = { start: lastRange.start, end: lastRange.end }
+      periodLabel = currentRange.start.substring(5).replace('-', '/') + ' - ' + currentRange.end.substring(5).replace('-', '/')
+    }
+
+    const currentSessions = storage.getSessionsByDateRange(currentRange.start, currentRange.end)
+    const lastSessions = storage.getSessionsByDateRange(lastRange.start, lastRange.end)
     const members = storage.getMembers()
     const allSessions = storage.getSessions()
 
-    const startDay = currentWeek.days[0]
-    const endDay = currentWeek.days[6]
-    const weekLabel = startDay.date.substring(5).replace('-', '/') + ' - ' + endDay.date.substring(5).replace('-', '/')
-
-    const summary = this.calcSummary(thisWeekSessions, lastWeekSessions)
+    const summary = this.calcSummary(currentSessions, lastSessions)
     summary.totalHoursText = this.formatHours(summary.totalMinutes)
     summary.diffText = summary.diff > 0 ? '+' + summary.diff : String(summary.diff)
-    const { activeMembers, inactiveMembers } = this.calcMemberActivity(thisWeekSessions, members, allSessions)
-    const courseTypeBars = this.calcDistribution(thisWeekSessions, 'courseType')
-    const locationBars = this.calcDistribution(thisWeekSessions, 'location')
+    const { activeMembers, inactiveMembers } = this.calcMemberActivity(currentSessions, members, allSessions)
+    const courseTypeBars = this.calcDistribution(currentSessions, 'courseType')
+    const locationBars = this.calcDistribution(currentSessions, 'location')
 
     this._currentDate = date
 
     this.setData({
-      weekLabel,
+      periodLabel,
       summary,
       activeMembers,
       inactiveMembers,
       courseTypeBars,
       locationBars,
-      isEmpty: thisWeekSessions.length === 0
+      isEmpty: currentSessions.length === 0
     })
   },
 
-  onPrevWeek() {
+  onPrev() {
     const d = new Date(this._currentDate)
-    d.setDate(d.getDate() - 7)
+    if (this.data.viewMode === 'month') {
+      d.setMonth(d.getMonth() - 1)
+    } else {
+      d.setDate(d.getDate() - 7)
+    }
     this.loadStats(d)
   },
 
-  onNextWeek() {
+  onNext() {
     const d = new Date(this._currentDate)
-    d.setDate(d.getDate() + 7)
+    if (this.data.viewMode === 'month') {
+      d.setMonth(d.getMonth() + 1)
+    } else {
+      d.setDate(d.getDate() + 7)
+    }
     this.loadStats(d)
   },
 
@@ -80,7 +106,11 @@ Page({
     const deltaX = e.changedTouches[0].clientX - this._touchStartX
     if (Math.abs(deltaX) < 50) return
     const d = new Date(this._currentDate)
-    d.setDate(d.getDate() + (deltaX < 0 ? 7 : -7))
+    if (this.data.viewMode === 'month') {
+      d.setMonth(d.getMonth() + (deltaX < 0 ? 1 : -1))
+    } else {
+      d.setDate(d.getDate() + (deltaX < 0 ? 7 : -7))
+    }
     this.loadStats(d)
   },
 
@@ -98,10 +128,10 @@ Page({
       totalMinutes += (s.duration || 60)
     })
 
-    const lastWeekTotal = lastWeekSessions.length
-    const diff = total - lastWeekTotal
+    const lastPeriodTotal = lastWeekSessions.length
+    const diff = total - lastPeriodTotal
 
-    return { total, completed, cancelled, noshow, privateCnt, groupCnt, totalMinutes, lastWeekTotal, diff }
+    return { total, completed, cancelled, noshow, privateCnt, groupCnt, totalMinutes, lastPeriodTotal, diff }
   },
 
   calcMemberActivity(weekSessions, members, allSessions) {

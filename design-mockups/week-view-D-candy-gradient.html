@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>方案 D — Candy Gradient 糖果渐变风格</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #F8F6FF;
+    --surface: #FFFFFF;
+    --ink: #1A1A2E;
+    --ink-secondary: #4A4A68;
+    --ink-muted: #9898B0;
+    --hairline: #EEEDF5;
+    --today-accent: #6C63FF;
+
+    --pilates-from: #667EEA;
+    --pilates-to: #764BA2;
+    --yoga-from: #F093FB;
+    --yoga-to: #F5576C;
+    --fitness-from: #4FACFE;
+    --fitness-to: #00F2FE;
+    --group-from: #43E97B;
+    --group-to: #38F9D7;
+
+    --done-opacity: 0.55;
+    --radius-card: 16px;
+    --radius-sm: 10px;
+    --shadow-card: 0 2px 8px rgba(0,0,0,0.06);
+    --shadow-active: 0 6px 20px rgba(0,0,0,0.12);
+  }
+
+  body {
+    font-family: -apple-system, 'SF Pro Rounded', 'PingFang SC', sans-serif;
+    background: var(--bg);
+    max-width: 390px;
+    margin: 0 auto;
+    min-height: 100vh;
+    position: relative;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* === Header === */
+  .header {
+    padding: 16px 20px 14px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--hairline);
+  }
+
+  .header__row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .header__left {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+  }
+
+  .header__date {
+    font-size: 24px;
+    font-weight: 800;
+    color: var(--ink);
+    letter-spacing: -0.5px;
+  }
+
+  .header__day {
+    font-size: 13px;
+    color: var(--ink-muted);
+    font-weight: 500;
+  }
+
+  .header__today-btn {
+    font-size: 13px;
+    font-weight: 700;
+    color: #fff;
+    background: linear-gradient(135deg, var(--today-accent), #A855F7);
+    padding: 6px 16px;
+    border-radius: 20px;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(108, 99, 255, 0.3);
+  }
+
+  .header__nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 10px;
+  }
+
+  .header__arrows {
+    display: flex;
+    gap: 6px;
+  }
+
+  .header__arrow {
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+    border: none;
+    background: var(--bg);
+    font-size: 15px;
+    color: var(--ink-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-weight: 600;
+  }
+
+  .header__range {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ink-secondary);
+  }
+
+  /* === Summary === */
+  .summary {
+    display: flex;
+    gap: 8px;
+    padding: 12px 20px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--hairline);
+  }
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+    white-space: nowrap;
+    flex-shrink: 0;
+    background: var(--bg);
+    color: var(--ink-secondary);
+  }
+
+  .chip__num {
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--ink);
+  }
+
+  /* === Week Grid === */
+  .week-grid {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    padding: 0 8px;
+    gap: 4px;
+    margin-top: 8px;
+  }
+
+  .day-col {
+    flex: 0 0 calc((100% - 24px) / 3.5);
+    scroll-snap-align: start;
+    min-width: 100px;
+  }
+
+  .day-col--today {
+    flex: 0 0 calc((100% - 24px) / 3);
+  }
+
+  /* === Day Header === */
+  .day-head {
+    text-align: center;
+    padding: 8px 0 6px;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+  }
+
+  .day-head__name {
+    font-size: 11px;
+    color: var(--ink-muted);
+    font-weight: 600;
+    letter-spacing: 0.5px;
+  }
+
+  .day-head__num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--ink);
+    margin-top: 3px;
+  }
+
+  .day-col--today .day-head__num {
+    background: linear-gradient(135deg, var(--today-accent), #A855F7);
+    color: #fff;
+    box-shadow: 0 3px 10px rgba(108, 99, 255, 0.35);
+  }
+
+  .day-col--today .day-head__name {
+    color: var(--today-accent);
+    font-weight: 700;
+  }
+
+  /* === Cards === */
+  .day-body {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 0 3px 16px;
+  }
+
+  .card {
+    border-radius: var(--radius-card);
+    padding: 10px 12px;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    box-shadow: var(--shadow-card);
+    position: relative;
+    overflow: hidden;
+    color: #fff;
+  }
+
+  .card::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 60%;
+    height: 100%;
+    background: rgba(255,255,255,0.1);
+    border-radius: 0 0 0 80px;
+  }
+
+  .card:active {
+    transform: scale(0.96);
+    box-shadow: var(--shadow-active);
+  }
+
+  .card--pilates {
+    background: linear-gradient(135deg, var(--pilates-from), var(--pilates-to));
+  }
+
+  .card--yoga {
+    background: linear-gradient(135deg, var(--yoga-from), var(--yoga-to));
+  }
+
+  .card--fitness {
+    background: linear-gradient(135deg, var(--fitness-from), var(--fitness-to));
+  }
+
+  .card--group {
+    background: linear-gradient(135deg, var(--group-from), var(--group-to));
+  }
+
+  .card--done {
+    opacity: var(--done-opacity);
+  }
+
+  .card__time {
+    font-size: 10px;
+    font-weight: 700;
+    opacity: 0.85;
+    letter-spacing: 0.3px;
+  }
+
+  .card__type {
+    font-size: 15px;
+    font-weight: 800;
+    margin-top: 3px;
+    line-height: 1.2;
+  }
+
+  .card__member {
+    font-size: 12px;
+    opacity: 0.9;
+    margin-top: 3px;
+    font-weight: 500;
+  }
+
+  .card__location {
+    font-size: 10px;
+    opacity: 0.7;
+    margin-top: 1px;
+  }
+
+  .card__status {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 10px;
+    font-weight: 700;
+    margin-top: 6px;
+    padding: 2px 8px;
+    border-radius: 8px;
+    background: rgba(255,255,255,0.25);
+    backdrop-filter: blur(4px);
+  }
+
+  /* === Empty Day === */
+  .day-empty {
+    text-align: center;
+    padding: 24px 6px;
+  }
+
+  .day-empty__circle {
+    width: 40px;
+    height: 40px;
+    border-radius: 14px;
+    border: 2px dashed var(--hairline);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 6px;
+    font-size: 20px;
+    color: var(--ink-muted);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .day-empty__circle:active {
+    border-color: var(--today-accent);
+    color: var(--today-accent);
+    background: rgba(108, 99, 255, 0.05);
+  }
+
+  .day-empty__text {
+    font-size: 11px;
+    color: var(--ink-muted);
+    font-weight: 600;
+  }
+
+  /* === FAB === */
+  .fab {
+    position: fixed;
+    bottom: 80px;
+    right: 20px;
+    width: 56px;
+    height: 56px;
+    border-radius: 18px;
+    background: linear-gradient(135deg, var(--today-accent), #A855F7);
+    color: #fff;
+    font-size: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 6px 20px rgba(108, 99, 255, 0.4);
+    cursor: pointer;
+  }
+
+  /* === Watermark === */
+  .watermark {
+    text-align: center;
+    padding: 10px 0 80px;
+    font-size: 9px;
+    color: var(--ink-muted);
+    letter-spacing: 2px;
+    opacity: 0.35;
+    font-weight: 600;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header__row">
+    <div class="header__left">
+      <span class="header__date">5月15日</span>
+      <span class="header__day">星期四</span>
+    </div>
+    <button class="header__today-btn">今天</button>
+  </div>
+  <div class="header__nav">
+    <div class="header__arrows">
+      <button class="header__arrow">‹</button>
+      <button class="header__arrow">›</button>
+    </div>
+    <span class="header__range">5月12日 – 18日</span>
+  </div>
+</div>
+
+<div class="summary">
+  <span class="chip"><span class="chip__num">14</span> 节课</span>
+  <span class="chip"><span class="chip__num">6</span> 已完成</span>
+  <span class="chip"><span class="chip__num">8</span> 位会员</span>
+</div>
+
+<div class="week-grid">
+  <!-- 周一 -->
+  <div class="day-col">
+    <div class="day-head">
+      <div class="day-head__name">周一</div>
+      <div class="day-head__num">12</div>
+    </div>
+    <div class="day-body">
+      <div class="card card--pilates card--done">
+        <div class="card__time">09:00 · 60min</div>
+        <div class="card__type">普拉提</div>
+        <div class="card__member">张小林</div>
+        <div class="card__location">悦瑜伽馆</div>
+        <span class="card__status">✓ 已完成</span>
+      </div>
+      <div class="card card--yoga card--done">
+        <div class="card__time">14:00 · 60min</div>
+        <div class="card__type">瑜伽</div>
+        <div class="card__member">王姐</div>
+        <div class="card__location">会员家中</div>
+        <span class="card__status">✓ 已完成</span>
+      </div>
+      <div class="card card--fitness card--done">
+        <div class="card__time">19:00 · 45min</div>
+        <div class="card__type">体能训练</div>
+        <div class="card__member">李明</div>
+        <span class="card__status">✓ 已完成</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 周二 -->
+  <div class="day-col">
+    <div class="day-head">
+      <div class="day-head__name">周二</div>
+      <div class="day-head__num">13</div>
+    </div>
+    <div class="day-body">
+      <div class="card card--pilates card--done">
+        <div class="card__time">10:00 · 60min</div>
+        <div class="card__type">普拉提</div>
+        <div class="card__member">彭彭</div>
+        <div class="card__location">悦瑜伽馆</div>
+        <span class="card__status">✓ 已完成</span>
+      </div>
+      <div class="card card--group card--done">
+        <div class="card__time">15:00 · 60min</div>
+        <div class="card__type">团课·普拉提</div>
+        <div class="card__member">6人</div>
+        <span class="card__status">✓ 已完成</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 周三 -->
+  <div class="day-col">
+    <div class="day-head">
+      <div class="day-head__name">周三</div>
+      <div class="day-head__num">14</div>
+    </div>
+    <div class="day-body">
+      <div class="card card--yoga card--done">
+        <div class="card__time">09:30 · 90min</div>
+        <div class="card__type">瑜伽</div>
+        <div class="card__member">陈美玲</div>
+        <div class="card__location">清风瑜伽</div>
+        <span class="card__status">✓ 已完成</span>
+      </div>
+      <div class="card card--pilates">
+        <div class="card__time">14:00 · 60min</div>
+        <div class="card__type">普拉提</div>
+        <div class="card__member">张小林</div>
+        <span class="card__status">待上课</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 周四 (Today) -->
+  <div class="day-col day-col--today">
+    <div class="day-head">
+      <div class="day-head__name">周四</div>
+      <div class="day-head__num">15</div>
+    </div>
+    <div class="day-body">
+      <div class="card card--pilates">
+        <div class="card__time">10:00 · 60min</div>
+        <div class="card__type">普拉提</div>
+        <div class="card__member">王姐</div>
+        <div class="card__location">悦瑜伽馆</div>
+        <span class="card__status">待上课</span>
+      </div>
+      <div class="card card--yoga">
+        <div class="card__time">15:00 · 60min</div>
+        <div class="card__type">瑜伽</div>
+        <div class="card__member">赵琳</div>
+        <span class="card__status">待上课</span>
+      </div>
+      <div class="card card--fitness">
+        <div class="card__time">19:30 · 45min</div>
+        <div class="card__type">体能训练</div>
+        <div class="card__member">李明</div>
+        <span class="card__status">待上课</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 周五 -->
+  <div class="day-col">
+    <div class="day-head">
+      <div class="day-head__name">周五</div>
+      <div class="day-head__num">16</div>
+    </div>
+    <div class="day-body">
+      <div class="card card--pilates">
+        <div class="card__time">09:00 · 60min</div>
+        <div class="card__type">普拉提</div>
+        <div class="card__member">张小林</div>
+        <span class="card__status">待上课</span>
+      </div>
+      <div class="card card--yoga">
+        <div class="card__time">14:00 · 60min</div>
+        <div class="card__type">瑜伽</div>
+        <div class="card__member">彭彭</div>
+        <span class="card__status">待上课</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 周六 -->
+  <div class="day-col">
+    <div class="day-head">
+      <div class="day-head__name">周六</div>
+      <div class="day-head__num">17</div>
+    </div>
+    <div class="day-body">
+      <div class="card card--group">
+        <div class="card__time">10:00 · 90min</div>
+        <div class="card__type">团课·瑜伽</div>
+        <div class="card__member">8人</div>
+        <div class="card__location">清风瑜伽</div>
+        <span class="card__status">待上课</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 周日 -->
+  <div class="day-col">
+    <div class="day-head">
+      <div class="day-head__name">周日</div>
+      <div class="day-head__num">18</div>
+    </div>
+    <div class="day-body">
+      <div class="day-empty">
+        <div class="day-empty__circle">+</div>
+        <div class="day-empty__text">休息日</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="watermark">PAIKE HELPER</div>
+
+<div class="fab">+</div>
+
+</body>
+</html>

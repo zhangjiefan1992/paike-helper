@@ -1,0 +1,9 @@
+{
+  "name": "parseVoiceSession",
+  "version": "1.0.0",
+  "description": "语音文本 → 结构化课程数据（DeepSeek LLM）",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "latest"
+  }
+}

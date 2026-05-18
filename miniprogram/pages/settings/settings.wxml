@@ -75,6 +75,26 @@
     </view>
   </view>
 
+  <!-- 外观 -->
+  <view class="section">
+    <view class="section__title">外观</view>
+    <view class="preset-group">
+      <view class="preset-label">周视图主题</view>
+      <view class="theme-picker">
+        <view
+          wx:for="{{themeOptions}}"
+          wx:key="value"
+          class="theme-option {{currentTheme === item.value ? 'theme-option--active' : ''}}"
+          bindtap="onThemeSelect"
+          data-value="{{item.value}}"
+        >
+          <view class="theme-option__preview" style="background: {{item.preview}}"></view>
+          <text class="theme-option__name">{{item.name}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
   <!-- 数据管理 -->
   <view class="section">
     <view class="section__title">数据管理</view>
@@ -142,11 +162,13 @@
     </view>
   </view>
 
-  <!-- 主题 -->
+  <!-- 统计 -->
   <view class="section">
-    <view class="section__title">主题</view>
-    <view class="action-row action-row--disabled">
-      <text class="action-text action-text--disabled">更多主题即将上线</text>
+    <view class="section__title">统计</view>
+    <view class="action-row" bindtap="onGoStats">
+      <text class="action-text">课程统计</text>
+      <text class="action-hint">按月/按类型/按会员</text>
+      <text class="action-arrow">▸</text>
     </view>
   </view>
 

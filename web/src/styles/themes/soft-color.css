@@ -1,0 +1,38 @@
+.theme-soft-color {
+  --wv-bg: #F5F7FA;
+  --wv-surface: #FFFFFF;
+  --wv-ink: #1F2937;
+  --wv-ink-secondary: #4B5563;
+  --wv-ink-muted: #9CA3AF;
+  --wv-hairline: #F3F4F6;
+  --wv-today-accent: #4F8CFF;
+  --wv-today-bg: rgba(79, 140, 255, 0.08);
+  --wv-today-shadow: 0 2px 8px rgba(79, 140, 255, 0.3);
+
+  --wv-radius-card: 14px;
+  --wv-shadow-card: 0 1px 4px rgba(0,0,0,0.04);
+
+  --wv-card-mode: flat;
+  --wv-card-border: none;
+  --wv-done-opacity: 0.65;
+
+  --wv-pilates-bg: #E8EDFF;
+  --wv-pilates-border: transparent;
+  --wv-pilates-dot: #3B52A5;
+  --wv-pilates-type-color: #3B52A5;
+
+  --wv-yoga-bg: #FFF0E6;
+  --wv-yoga-border: transparent;
+  --wv-yoga-dot: #B85C1F;
+  --wv-yoga-type-color: #B85C1F;
+
+  --wv-fitness-bg: #E6F9F0;
+  --wv-fitness-border: transparent;
+  --wv-fitness-dot: #1A7A4C;
+  --wv-fitness-type-color: #1A7A4C;
+
+  --wv-group-bg: #F3E8FF;
+  --wv-group-border: transparent;
+  --wv-group-dot: #7C3AED;
+  --wv-group-type-color: #7C3AED;
+}

@@ -98,6 +98,13 @@ Vue3 + Vite + Vant 4，移动端优先，localStorage 数据层共享相同 key 
 
 课程状态色：scheduled=`#F28B82`、completed=`#81C995`、cancelled=`#CCCCCC`、noshow=`#FFB74D`
 
+## Context Window Protection
+
+- 读取文件时使用 limit 参数，每次最多读 200 行，避免上下文溢出
+- 工具输出过大时（如 grep 结果、浏览器内容），先用 head_limit 限制返回量
+- `git diff` 输出必须控制在 200 行以内：使用 `git diff --stat` 先查看概览；如需查看具体变更，按单文件查看（`git diff -- <file>`）并配合 `| head -200` 截断；禁止一次性输出整个目录的 diff
+- 避免在单个 turn 中连续调用大量工具（超过 20 次应分步执行）
+
 ## Key Conventions
 
 - 缩进 2 空格

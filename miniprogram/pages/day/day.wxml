@@ -1,16 +1,17 @@
-<view class="page" bindtouchstart="onTouchStart" bindtouchend="onTouchEnd">
-  <view class="header">
-    <text class="header__date">{{dateLabel}}</text>
-  </view>
+<view class="page" bindtouchstart="onSwipeStart" bindtouchmove="onSwipeMove" bindtouchend="onSwipeEnd">
+  <view class="dv-swipe-wrap {{swipeAnimating ? 'dv-swipe-wrap--animating' : ''}}" style="{{swipeTransform}}">
+    <view class="header">
+      <text class="header__date">{{dateLabel}}</text>
+    </view>
 
-  <empty-state
-    wx:if="{{sessions.length === 0}}"
-    title="今天还没有课程"
-    subtitle="点击时间段或右下角 + 添加课程"
-  />
+    <empty-state
+      wx:if="{{sessions.length === 0}}"
+      title="今天还没有课程"
+      subtitle="点击时间段或右下角 + 添加课程"
+    />
 
-  <scroll-view class="timeline" scroll-y wx:else>
-    <view class="timeline__body">
+    <scroll-view class="timeline" scroll-y wx:else>
+      <view class="timeline__body">
       <!-- Time slots -->
       <view class="time-slot" wx:for="{{timeSlots}}" wx:key="*this" data-time="{{item}}" bindtap="onSlotTap">
         <text class="time-slot__label">{{item}}</text>
@@ -41,6 +42,7 @@
       </view>
     </view>
   </scroll-view>
+  </view>
 
   <view class="fab" bindtap="onAddSession">
     <text class="fab__icon">+</text>

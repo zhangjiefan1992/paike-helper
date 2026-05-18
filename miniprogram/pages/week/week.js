@@ -2,26 +2,69 @@ const storage = require('../../utils/storage')
 const dateUtil = require('../../utils/dateUtil')
 const textImportExport = require('../../utils/textImportExport')
 
-const TIME_PERIODS = [
-  { name: '上午', range: '7:00-12:00', startMin: 0, endMin: 720 },
-  { name: '中午', range: '12:00-14:00', startMin: 720, endMin: 840 },
-  { name: '下午', range: '14:00-18:00', startMin: 840, endMin: 1080 },
-  { name: '晚上', range: '18:00-22:00', startMin: 1080, endMin: 1440 }
-]
+const CATEGORY_MAP = {
+  '普拉提': 'pilates',
+  '瑜伽': 'yoga',
+  '体能训练': 'fitness',
+  '拉伸放松': 'fitness',
+}
 
-const CARD_COLORS = [
-  '#4A7C59', '#7E9F7A', '#A8B8A0', '#C2A882', '#B8A898', '#9EABA2',
-  '#80CBC4', '#F48FB1', '#AED581', '#FFB74D'
-]
+const THEME_CONFIGS = {
+  'soft-color': {
+    pilates: { bg: '#E8EDFF', border: 'transparent', dot: '#3B52A5', typeColor: '#3B52A5' },
+    yoga: { bg: '#FFF0E6', border: 'transparent', dot: '#B85C1F', typeColor: '#B85C1F' },
+    fitness: { bg: '#E6F9F0', border: 'transparent', dot: '#1A7A4C', typeColor: '#1A7A4C' },
+    group: { bg: '#F3E8FF', border: 'transparent', dot: '#7C3AED', typeColor: '#7C3AED' },
+    isGradient: false,
+  },
+  'candy-gradient': {
+    pilates: { bg: 'linear-gradient(135deg, #667EEA, #764BA2)', border: 'transparent', dot: 'rgba(255,255,255,0.8)', typeColor: '#fff' },
+    yoga: { bg: 'linear-gradient(135deg, #F093FB, #F5576C)', border: 'transparent', dot: 'rgba(255,255,255,0.8)', typeColor: '#fff' },
+    fitness: { bg: 'linear-gradient(135deg, #4FACFE, #00F2FE)', border: 'transparent', dot: 'rgba(255,255,255,0.8)', typeColor: '#fff' },
+    group: { bg: 'linear-gradient(135deg, #43E97B, #38F9D7)', border: 'transparent', dot: 'rgba(255,255,255,0.8)', typeColor: '#fff' },
+    isGradient: true,
+  },
+  'airy-tint': {
+    pilates: { bg: '#F0F4FF', border: '#C7D2FE', dot: '#6366F1', typeColor: '#1E293B' },
+    yoga: { bg: '#FFF7ED', border: '#FED7AA', dot: '#F59E0B', typeColor: '#1E293B' },
+    fitness: { bg: '#ECFDF5', border: '#A7F3D0', dot: '#10B981', typeColor: '#1E293B' },
+    group: { bg: '#FAF5FF', border: '#E9D5FF', dot: '#A855F7', typeColor: '#1E293B' },
+    isGradient: false,
+  },
+}
 
 const WEEKDAYS = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
 
+function getCategory(courseType) {
+  if (!courseType) return 'pilates'
+  if (courseType.includes('团课')) return 'group'
+  for (const [key, val] of Object.entries(CATEGORY_MAP)) {
+    if (courseType.includes(key)) return val
+  }
+  return 'pilates'
+}
+
+function buildCardStyle(themeConfig, category) {
+  const tc = themeConfig[category] || themeConfig.pilates
+  let style = 'background: ' + tc.bg + ';'
+  if (tc.border && tc.border !== 'transparent') {
+    style += ' border-color: ' + tc.border + ';'
+  }
+  return style
+}
+
 Page({
   data: {
-    currentWeek: null,
-    grid: [],
-    stats: { total: 0, completed: 0, cancelled: 0 },
+    currentTheme: 'airy-tint',
+    weekDays: [],
+    dayCards: {},
+    stats: { total: 0, completed: 0, memberCount: 0 },
     isEmpty: true,
+    todayLabel: '',
+    rangeLabel: '',
+    scrollTarget: '',
+    swipeTransform: '',
+    swipeAnimating: false,
     showImportModal: false,
     importText: '',
     importStep: 1,
@@ -34,85 +77,96 @@ Page({
   },
 
   onShow() {
+    this.loadTheme()
     this.loadWeek(this._currentDate || new Date())
   },
 
+  onPullDownRefresh() {
+    this.loadTheme()
+    this.loadWeek(this._currentDate || new Date())
+    wx.stopPullDownRefresh()
+  },
+
+  loadTheme() {
+    const config = storage.getConfig()
+    if (config.weekTheme && THEME_CONFIGS[config.weekTheme]) {
+      this.setData({ currentTheme: config.weekTheme })
+    }
+  },
+
   loadWeek(date) {
-    const currentWeek = dateUtil.getWeekRange(date)
-    const sessions = storage.getSessionsByDateRange(currentWeek.start, currentWeek.end)
+    const week = dateUtil.getWeekRange(date)
+    const sessions = storage.getSessionsByDateRange(week.start, week.end)
     const members = storage.getMembers()
     const memberMap = {}
     members.forEach(m => { memberMap[m.id] = m })
 
-    const courseTypes = []
-    sessions.forEach(s => {
-      if (s.courseType && courseTypes.indexOf(s.courseType) === -1) courseTypes.push(s.courseType)
-    })
-    const colorMap = {}
-    courseTypes.forEach((t, i) => { colorMap[t] = CARD_COLORS[i % CARD_COLORS.length] })
+    const themeConfig = THEME_CONFIGS[this.data.currentTheme] || THEME_CONFIGS['airy-tint']
+    const memberIds = new Set()
 
-    const days = currentWeek.days.map(d => ({
-      ...d,
-      monthDay: parseInt(d.date.substring(5, 7)) + '月' + parseInt(d.date.substring(8)) + '日'
-    }))
-
-    const grid = TIME_PERIODS.map(p => {
-      const slots = {}
-      days.forEach(d => { slots[d.date] = [] })
-      return { name: p.name, range: p.range, startMin: p.startMin, endMin: p.endMin, slots }
-    })
+    const dayCards = {}
+    week.days.forEach(d => { dayCards[d.date] = [] })
 
     sessions.forEach(s => {
       if (s.status === 'cancelled') return
-      const sMin = this.timeToMin(s.startTime)
-      const period = grid.find(g => sMin >= g.startMin && sMin < g.endMin)
-      if (period && period.slots[s.date]) {
-        const member = memberMap[s.memberId]
-        period.slots[s.date].push({
+      const member = memberMap[s.memberId]
+      const category = getCategory(s.courseType)
+      const tc = themeConfig[category] || themeConfig.pilates
+
+      if (s.memberId) memberIds.add(s.memberId)
+      if (s.memberIds) s.memberIds.forEach(id => memberIds.add(id))
+
+      if (dayCards[s.date]) {
+        dayCards[s.date].push({
           id: s.id,
           startTime: s.startTime,
-          endTime: this.calcEndTime(s.startTime, s.duration || 60),
-          courseType: s.courseType || '',
+          duration: s.duration || 60,
+          courseType: s.courseType || '课程',
+          displayName: member ? member.name : (s.classMode === 'group' ? (s.memberIds ? s.memberIds.length + '人' : '') : ''),
           location: s.location || '',
-          displayName: member ? member.name : (s.classMode === 'group' ? '团课' : ''),
-          cardColor: colorMap[s.courseType] || '#90A4AE',
-          status: s.status
+          status: s.status || 'scheduled',
+          category,
+          dotColor: tc.dot,
+          done: s.status === 'completed',
+          cardStyle: buildCardStyle(themeConfig, category),
         })
       }
     })
 
-    grid.forEach(g => {
-      Object.keys(g.slots).forEach(dt => {
-        g.slots[dt].sort((a, b) => a.startTime.localeCompare(b.startTime))
-      })
+    Object.values(dayCards).forEach(arr => {
+      arr.sort((a, b) => a.startTime.localeCompare(b.startTime))
     })
 
-    let total = 0, completed = 0, cancelled = 0
-    sessions.forEach(s => {
-      total++
-      if (s.status === 'completed') completed++
-      if (s.status === 'cancelled') cancelled++
+    let completed = 0
+    sessions.forEach(s => { if (s.status === 'completed') completed++ })
+
+    const now = new Date()
+    const todayLabel = (now.getMonth() + 1) + '月' + now.getDate() + '日'
+    const s = week.days[0], e = week.days[6]
+    const rangeLabel = parseInt(s.date.slice(5, 7)) + '月' + s.dayNum + '日 – ' + parseInt(e.date.slice(5, 7)) + '月' + e.dayNum + '日'
+
+    const todayStr = dateUtil.toDateStr(now)
+    let scrollTarget = ''
+    week.days.forEach(d => {
+      if (d.date === todayStr) scrollTarget = 'day-' + d.date
     })
 
     this._currentDate = date
+    this._weekDays = week.days
     this.setData({
-      currentWeek: { ...currentWeek, days },
-      grid,
-      stats: { total, completed, cancelled },
-      isEmpty: total === 0
+      weekDays: week.days,
+      dayCards,
+      stats: { total: sessions.length, completed, memberCount: memberIds.size },
+      isEmpty: sessions.length === 0,
+      todayLabel,
+      rangeLabel,
+      scrollTarget,
     })
   },
 
-  timeToMin(time) {
-    const [h, m] = time.split(':').map(Number)
-    return h * 60 + m
-  },
-
-  calcEndTime(startTime, duration) {
-    const totalMin = this.timeToMin(startTime) + duration
-    const h = Math.floor(totalMin / 60)
-    const m = totalMin % 60
-    return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0')
+  goToday() {
+    this._currentDate = new Date()
+    this.loadWeek(this._currentDate)
   },
 
   onPrevWeek() {
@@ -147,16 +201,132 @@ Page({
     }
   },
 
-  onGoStats() {
-    wx.navigateTo({ url: '/pages/stats/stats' })
+  onCardLongPress(e) {
+    const id = e.currentTarget.dataset.id
+    const session = storage.getSessionById(id)
+    if (!session) return
+    const items = []
+    if (session.status !== 'completed') items.push('标记已完成')
+    if (session.status !== 'cancelled') items.push('标记取消')
+    if (session.status !== 'scheduled') items.push('恢复待上课')
+    items.push('编辑课程')
+    wx.showActionSheet({
+      itemList: items,
+      success: (res) => {
+        const action = items[res.tapIndex]
+        if (action === '标记已完成') {
+          storage.updateSessionStatus(id, 'completed')
+          wx.showToast({ title: '已标记完成', icon: 'success' })
+          wx.vibrateShort({ type: 'medium' })
+        } else if (action === '标记取消') {
+          storage.updateSessionStatus(id, 'cancelled')
+          wx.showToast({ title: '已取消', icon: 'none' })
+          wx.vibrateShort({ type: 'light' })
+        } else if (action === '恢复待上课') {
+          storage.updateSessionStatus(id, 'scheduled')
+          wx.showToast({ title: '已恢复', icon: 'success' })
+          wx.vibrateShort({ type: 'light' })
+        } else if (action === '编辑课程') {
+          wx.navigateTo({ url: '/pages/session/session?id=' + id })
+          return
+        }
+        this.loadWeek(this._currentDate || new Date())
+      }
+    })
   },
 
-  onShareSchedule() {
-    wx.showModal({
-      title: '分享课表',
-      content: '请截屏保存当前课表，即可分享给好友或发朋友圈',
-      showCancel: false,
-      confirmText: '知道了'
+  onAddSession() {
+    wx.navigateTo({ url: '/pages/session/session' })
+  },
+
+  // === 滑动切换周 ===
+
+  onSwipeStart(e) {
+    if (this.data.showImportModal) return
+    this._touchStartX = e.touches[0].clientX
+    this._touchStartY = e.touches[0].clientY
+    this._touchStartTime = Date.now()
+    this._swiping = false
+  },
+
+  onSwipeMove(e) {
+    if (this.data.showImportModal || this._touchStartX === undefined) return
+    const dx = e.touches[0].clientX - this._touchStartX
+    const dy = e.touches[0].clientY - this._touchStartY
+    if (!this._swiping && Math.abs(dx) > 10 && Math.abs(dx) > Math.abs(dy) * 1.2) {
+      this._swiping = true
+    }
+    if (this._swiping) {
+      const offset = dx * 0.4
+      this.setData({ swipeTransform: 'transform: translateX(' + offset + 'px)' })
+    }
+  },
+
+  onSwipeEnd(e) {
+    if (this.data.showImportModal || this._touchStartX === undefined) return
+    const dx = e.changedTouches[0].clientX - this._touchStartX
+    const dy = e.changedTouches[0].clientY - this._touchStartY
+    const dt = Date.now() - this._touchStartTime
+    const absDx = Math.abs(dx)
+    const isHorizontal = absDx > Math.abs(dy) * 1.5
+    const triggered = isHorizontal && (absDx > 60 || (absDx > 30 && dt < 300))
+
+    if (triggered) {
+      const dir = dx > 0 ? -1 : 1
+      const sysInfo = wx.getWindowInfo()
+      const flyTo = dir > 0 ? -sysInfo.windowWidth : sysInfo.windowWidth
+      this.setData({
+        swipeAnimating: true,
+        swipeTransform: 'transform: translateX(' + (flyTo * 0.3) + 'px)'
+      })
+
+      setTimeout(() => {
+        if (dir > 0) { this.onNextWeek() } else { this.onPrevWeek() }
+        this.setData({
+          swipeAnimating: false,
+          swipeTransform: 'transform: translateX(' + (-flyTo * 0.3) + 'px)'
+        })
+        setTimeout(() => {
+          this.setData({ swipeAnimating: true, swipeTransform: '' })
+          setTimeout(() => {
+            this.setData({ swipeAnimating: false })
+          }, 250)
+        }, 20)
+      }, 150)
+    } else {
+      this.setData({ swipeAnimating: true, swipeTransform: '' })
+      setTimeout(() => {
+        this.setData({ swipeAnimating: false })
+      }, 250)
+    }
+
+    this._touchStartX = undefined
+    this._swiping = false
+  },
+
+  // === 数据清理 ===
+
+  onWeekLongPress() {
+    const days = this._weekDays
+    if (!days) return
+    wx.showActionSheet({
+      itemList: ['清除本周全部课程'],
+      success: (res) => {
+        if (res.tapIndex === 0) {
+          wx.showModal({
+            title: '确认清除',
+            content: '将删除本周全部课程，不可恢复',
+            success: (res) => {
+              if (res.confirm) {
+                days.forEach(d => { storage.deleteSessionsByDate(d.date) })
+                wx.vibrateShort({ type: 'medium' })
+                wx.showToast({ title: '已清除', icon: 'success' })
+                this.loadWeek(this._currentDate || new Date())
+              }
+            }
+          })
+        }
+      }
     })
   },
 
@@ -293,63 +463,4 @@ Page({
     wx.showToast({ title: '成功导入 ' + selected.length + ' 节', icon: 'success' })
     this.loadWeek(this._currentDate || new Date())
   },
-
-  // === 数据清理 ===
-
-  onDayLongPress(e) {
-    const date = e.currentTarget.dataset.date
-    const d = dateUtil.parseDate(date)
-    const label = (d.getMonth() + 1) + '月' + d.getDate() + '日'
-
-    wx.showActionSheet({
-      itemList: ['清除' + label + '全部课程'],
-      success: (res) => {
-        if (res.tapIndex === 0) {
-          wx.showModal({
-            title: '确认清除',
-            content: '将删除' + label + '的全部课程，不可恢复',
-            success: (res) => {
-              if (res.confirm) {
-                storage.deleteSessionsByDate(date)
-                wx.vibrateShort({ type: 'medium' })
-                wx.showToast({ title: '已清除', icon: 'success' })
-                this.loadWeek(this._currentDate || new Date())
-              }
-            }
-          })
-        }
-      }
-    })
-  },
-
-  onWeekLongPress() {
-    const week = this.data.currentWeek
-    if (!week) return
-
-    wx.showActionSheet({
-      itemList: ['清除本周全部课程'],
-      success: (res) => {
-        if (res.tapIndex === 0) {
-          wx.showModal({
-            title: '确认清除',
-            content: '将删除本周全部课程，不可恢复',
-            success: (res) => {
-              if (res.confirm) {
-                week.days.forEach(d => {
-                  storage.deleteSessionsByDate(d.date)
-                })
-                wx.vibrateShort({ type: 'medium' })
-                wx.showToast({ title: '已清除', icon: 'success' })
-                this.loadWeek(this._currentDate || new Date())
-              }
-            }
-          })
-        }
-      }
-    })
-  },
-
-  onAddSession() {
-    wx.navigateTo({ url: '/pages/session/session' })
-  }
 })

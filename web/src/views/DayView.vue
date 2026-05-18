@@ -1,5 +1,5 @@
 <template>
-  <div class="day-page">
+  <div class="day-page" @touchstart="onTouchStart" @touchend="onTouchEnd">
     <van-nav-bar :title="pageTitle" left-arrow @click-left="$router.back()" />
     <div class="day-sessions" v-if="sessions.length">
       <div v-for="s in sessions" :key="s.id" class="session-item">
@@ -37,29 +37,46 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
+import { ref, computed, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { showToast } from 'vant'
 import * as storage from '../services/storage'
-import { parseDate } from '../utils/dateUtil'
+import { parseDate, addDays } from '../utils/dateUtil'
 
 const route = useRoute()
-const date = route.params.date
+const router = useRouter()
+const date = ref(route.params.date)
 const sessions = ref([])
 const members = ref([])
 
 const WEEKDAYS = ['周日','周一','周二','周三','周四','周五','周六']
 
-const pageTitle = (() => {
-  const d = parseDate(date)
+const pageTitle = computed(() => {
+  const d = parseDate(date.value)
   return `${d.getMonth()+1}月${d.getDate()}日 ${WEEKDAYS[d.getDay()]}`
-})()
+})
 
 onMounted(() => { load() })
 
 function load() {
-  sessions.value = storage.getSessionsByDate(date)
+  sessions.value = storage.getSessionsByDate(date.value)
   members.value = storage.getMembers()
+}
+
+function changeDay(offset) {
+  date.value = addDays(date.value, offset)
+  router.replace('/day/' + date.value)
+  load()
+}
+
+let touchStartX = 0
+function onTouchStart(e) {
+  touchStartX = e.touches[0].clientX
+}
+function onTouchEnd(e) {
+  const dx = e.changedTouches[0].clientX - touchStartX
+  if (Math.abs(dx) < 50) return
+  changeDay(dx < 0 ? 1 : -1)
 }
 
 function memberName(s) {

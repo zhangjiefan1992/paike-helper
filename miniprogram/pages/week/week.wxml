@@ -1,23 +1,40 @@
-<view class="page">
+<view class="week-page theme-{{currentTheme}}"
+  bindtouchstart="onSwipeStart" bindtouchmove="onSwipeMove" bindtouchend="onSwipeEnd"
+>
   <!-- Header -->
-  <view class="header">
-    <view class="header__top">
-      <view class="header__nav">
-        <view class="header__arrow" bindtap="onPrevWeek">‹</view>
-        <view class="header__range" bindlongpress="onWeekLongPress">
-          {{currentWeek.days[0].monthDay}} - {{currentWeek.days[6].monthDay}}
-        </view>
-        <view class="header__arrow" bindtap="onNextWeek">›</view>
-      </view>
-      <view class="header__action" wx:if="{{!isEmpty}}" bindtap="onShareSchedule">
-        <image class="header__action-icon" src="/assets/images/icon-share.png" mode="aspectFit" />
+  <view class="wv-header">
+    <view class="wv-header__top">
+      <text class="wv-header__date">{{todayLabel}}</text>
+      <view class="wv-header__today-btn" bindtap="goToday">回到今天</view>
+    </view>
+    <view class="wv-header__nav">
+      <text class="wv-header__range" bindlongpress="onWeekLongPress">{{rangeLabel}}</text>
+      <view class="wv-header__arrows">
+        <view class="wv-header__arrow" bindtap="onPrevWeek">‹</view>
+        <view class="wv-header__arrow" bindtap="onNextWeek">›</view>
       </view>
     </view>
-    <view class="stats" wx:if="{{!isEmpty}}">
-      <text class="stats__item">已排 {{stats.total}} 节</text>
-      <text class="stats__item stats__item--completed">完成 {{stats.completed}}</text>
-      <text class="stats__item stats__item--cancelled">取消 {{stats.cancelled}}</text>
-      <text class="stats__detail" bindtap="onGoStats">详情 ›</text>
+  </view>
+
+  <!-- Swipeable content -->
+  <view class="wv-swipe-wrap {{swipeAnimating ? 'wv-swipe-wrap--animating' : ''}}"
+    style="{{swipeTransform}}">
+
+  <!-- Summary -->
+  <view class="wv-summary" wx:if="{{!isEmpty}}">
+    <view class="wv-summary__item">
+      <text class="wv-summary__num">{{stats.total}}</text>
+      <view class="wv-summary__label">节课<text>\n</text>本周</view>
+    </view>
+    <view class="wv-summary__divider"></view>
+    <view class="wv-summary__item">
+      <text class="wv-summary__num">{{stats.completed}}</text>
+      <text class="wv-summary__label">已完成</text>
+    </view>
+    <view class="wv-summary__divider"></view>
+    <view class="wv-summary__item">
+      <text class="wv-summary__num">{{stats.memberCount}}</text>
+      <text class="wv-summary__label">位会员</text>
     </view>
   </view>
 
@@ -28,54 +45,55 @@
     subtitle="点击下方 + 开始排课吧"
   />
 
-  <!-- Grid Table -->
-  <view class="grid-table" wx:else>
-    <!-- Table Header -->
-    <view class="grid-header">
-      <view class="grid-corner"></view>
+  <!-- Week Grid -->
+  <scroll-view
+    class="wv-grid"
+    scroll-x
+    enhanced
+    show-scrollbar="{{false}}"
+    wx:else
+    scroll-into-view="{{scrollTarget}}"
+  >
+    <view class="wv-grid__inner">
       <view
-        class="grid-day-head {{item.isToday ? 'grid-day-head--today' : ''}}"
-        wx:for="{{currentWeek.days}}"
-        wx:key="date"
-        bindtap="onDayTap"
-        bindlongpress="onDayLongPress"
-        data-date="{{item.date}}"
+        wx:for="{{weekDays}}" wx:key="date"
+        class="wv-day {{item.isToday ? 'wv-day--today' : ''}}"
+        id="day-{{item.date}}"
       >
-        <text class="grid-day-head__weekday">{{item.weekday}}</text>
-        <text class="grid-day-head__date">{{item.dayNum}}</text>
-      </view>
-    </view>
+        <view class="wv-day__head" bindtap="onDayTap" data-date="{{item.date}}">
+          <text class="wv-day__name">{{item.weekday}}</text>
+          <text class="wv-day__num">{{item.dayNum}}</text>
+        </view>
+        <view class="wv-day__body">
+          <view
+            wx:for="{{dayCards[item.date]}}" wx:for-item="card" wx:key="id"
+            class="wv-card wv-card--{{card.category}} {{card.done ? 'wv-card--done' : ''}}"
+            style="{{card.cardStyle}}"
+            catchtap="onCardTap" catchlongpress="onCardLongPress" data-id="{{card.id}}"
+          >
+            <view class="wv-card__header">
+              <view class="wv-card__dot" style="background: {{card.dotColor}}"></view>
+              <text class="wv-card__time">{{card.startTime}} · {{card.duration}}min</text>
+            </view>
+            <text class="wv-card__type">{{card.courseType}}</text>
+            <text class="wv-card__member" wx:if="{{card.displayName}}">{{card.displayName}}</text>
+            <text class="wv-card__location" wx:if="{{card.location}}">{{card.location}}</text>
+            <view class="wv-card__footer" wx:if="{{card.done}}">
+              <text class="wv-card__status wv-card__status--completed">✓ 已完成</text>
+            </view>
+          </view>
 
-    <!-- Table Body -->
-    <view class="grid-row" wx:for="{{grid}}" wx:for-item="period" wx:key="name">
-      <view class="grid-period">
-        <text class="grid-period__name">{{period.name}}</text>
-      </view>
-      <view
-        class="grid-cell {{day.isToday ? 'grid-cell--today' : ''}}"
-        wx:for="{{currentWeek.days}}"
-        wx:for-item="day"
-        wx:for-index="dIdx"
-        wx:key="date"
-        bindtap="onCellTap"
-        data-date="{{day.date}}"
-      >
-        <view
-          class="grid-card"
-          wx:for="{{period.slots[day.date]}}"
-          wx:for-item="card"
-          wx:key="id"
-          style="background: {{card.cardColor}}"
-          catchtap="onCardTap"
-          data-id="{{card.id}}"
-        >
-          <text class="grid-card__time">{{card.startTime}}</text>
-          <text class="grid-card__course">{{card.courseType}}</text>
-          <text class="grid-card__name" wx:if="{{card.displayName}}">{{card.displayName}}</text>
+          <!-- Empty day -->
+          <view wx:if="{{!dayCards[item.date].length}}" class="wv-day-empty"
+            bindtap="onCellTap" data-date="{{item.date}}">
+            <view class="wv-day-empty__circle">+</view>
+            <text class="wv-day-empty__text">休息日</text>
+          </view>
         </view>
       </view>
     </view>
-  </view>
+  </scroll-view>
+  </view><!-- end wv-swipe-wrap -->
 
   <!-- 底部工具栏 -->
   <view class="toolbar">
@@ -121,20 +139,15 @@
           <view class="text-modal__close" bindtap="onImportClose">×</view>
         </view>
         <view class="text-modal__content">
-          <!-- 统计 -->
           <view class="import-summary">
             <text class="import-summary__text">解析成功 {{importTotalCount}} 节</text>
             <text class="import-summary__skip" wx:if="{{importSkippedCount > 0}}">，跳过 {{importSkippedCount}} 行</text>
             <text class="import-summary__err" wx:if="{{importErrorCount > 0}}">，失败 {{importErrorCount}} 行</text>
           </view>
-
-          <!-- 清除开关 -->
           <view class="import-switch" bindtap="onImportToggleClear">
             <switch checked="{{importClearExisting}}" color="var(--color-primary, #F28B82)" />
             <text class="import-switch__label">导入前清除对应日期旧数据</text>
           </view>
-
-          <!-- 分组列表 -->
           <scroll-view class="import-list" scroll-y="true">
             <view class="import-group" wx:for="{{importParsedGroups}}" wx:key="date" wx:for-index="gIdx">
               <view class="import-group__header">
