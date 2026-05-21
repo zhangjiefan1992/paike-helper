@@ -33,11 +33,20 @@
         @click="$router.push('/session/' + s.id)">
         <div class="timeline-item__date">{{ formatSessionDate(s.date) }}</div>
         <div class="timeline-item__body">
-          <span class="timeline-item__time">{{ s.startTime }}</span>
-          <span class="timeline-item__type">{{ s.courseType }}</span>
-          <span class="timeline-item__status" :class="'timeline-item__status--' + s.status">
-            {{ statusLabel(s.status) }}
-          </span>
+          <div class="timeline-item__row">
+            <span class="timeline-item__time">{{ s.startTime }}</span>
+            <span class="timeline-item__type">{{ s.courseType }}</span>
+            <span class="timeline-item__status" :class="'timeline-item__status--' + s.status">
+              {{ statusLabel(s.status) }}
+            </span>
+          </div>
+          <div class="timeline-item__digest" v-if="s.aiDigest">
+            <span class="digest-tag">📋 档案</span>
+            {{ truncate(s.aiDigest, 90) }}
+          </div>
+          <div class="timeline-item__digest timeline-item__digest--notes" v-else-if="s.notes">
+            {{ truncate(s.notes, 60) }}
+          </div>
         </div>
       </div>
     </div>
@@ -78,6 +87,12 @@ function formatSessionDate(dateStr) {
 function statusLabel(status) {
   return { scheduled: '待上课', completed: '已完成', cancelled: '已取消', noshow: '未出勤' }[status] || status
 }
+
+function truncate(text, n) {
+  if (!text) return ''
+  const t = text.replace(/\s+/g, ' ').trim()
+  return t.length > n ? t.slice(0, n) + '…' : t
+}
 </script>
 
 <style scoped>
@@ -111,14 +126,27 @@ function statusLabel(status) {
 
 .timeline { padding: 0 16px; }
 .timeline-item {
-  display: flex; align-items: center; gap: 12px;
+  display: flex; align-items: flex-start; gap: 12px;
   padding: 12px 16px; background: var(--bg-card); border-radius: 10px;
-  margin-bottom: 6px; cursor: pointer;
+  margin-bottom: 8px; cursor: pointer;
 }
-.timeline-item__date { font-size: 13px; color: var(--text-muted); min-width: 36px; }
-.timeline-item__body { flex: 1; display: flex; align-items: center; gap: 8px; }
+.timeline-item__date { font-size: 13px; color: var(--text-muted); min-width: 36px; padding-top: 2px; }
+.timeline-item__body { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+.timeline-item__row { display: flex; align-items: center; gap: 8px; }
 .timeline-item__time { font-size: 14px; font-weight: 500; }
 .timeline-item__type { font-size: 13px; color: var(--text-secondary); }
+.timeline-item__digest {
+  font-size: 12px; color: var(--text-secondary, #555); line-height: 1.5;
+  padding: 6px 8px; background: rgba(74,124,89,0.05); border-radius: 6px;
+}
+.timeline-item__digest--notes {
+  background: rgba(0,0,0,0.03); color: var(--text-muted, #888);
+}
+.digest-tag {
+  display: inline-block; font-size: 10px; color: var(--color-primary, #4A7C59);
+  background: rgba(74,124,89,0.12); padding: 1px 6px; border-radius: 4px;
+  margin-right: 4px;
+}
 .timeline-item__status {
   font-size: 11px; padding: 1px 8px; border-radius: 999px; margin-left: auto;
 }

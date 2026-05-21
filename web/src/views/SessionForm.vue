@@ -106,6 +106,25 @@
           autosize placeholder="课程备注..." />
       </van-cell-group>
 
+      <!-- AI 课程档案 -->
+      <van-cell-group inset title="课程档案" v-if="form.aiDigest || form.voiceSegments?.length">
+        <van-field
+          v-if="form.aiDigest"
+          v-model="form.aiDigest"
+          type="textarea"
+          rows="5"
+          autosize
+          placeholder="AI 收敛的本次课程档案，可编辑"
+        />
+        <van-cell v-if="form.voiceSegments?.length" :title="`原始语音片段 (${form.voiceSegments.length})`" is-link @click="showSegments = !showSegments" />
+        <van-cell v-if="showSegments" v-for="(seg, idx) in form.voiceSegments" :key="idx">
+          <template #title>
+            <div class="seg-meta">片段 {{ idx + 1 }} · {{ seg.asrModel || 'asr' }}</div>
+            <div class="seg-text">{{ seg.rawText }}</div>
+          </template>
+        </van-cell>
+      </van-cell-group>
+
       <!-- 照片 -->
       <van-cell-group inset title="照片记录">
         <van-field label="课程照片">
@@ -160,16 +179,63 @@
     <van-popup v-model:show="showMemberPicker" position="bottom" round>
       <van-picker :columns="memberColumns" @confirm="onMemberConfirm" @cancel="showMemberPicker = false" />
     </van-popup>
+
+    <!-- 会员确认/纠正对话框（语音识别后） -->
+    <van-popup
+      v-model:show="memberConfirm.show"
+      round
+      position="center"
+      :close-on-click-overlay="false"
+      :style="{ width: '88vw', maxWidth: '420px', padding: '20px' }"
+    >
+      <div class="mc-dialog">
+        <div class="mc-dialog__title">{{ existingMatchedMember ? '匹配到已有会员' : '未找到会员' }}</div>
+        <div class="mc-dialog__desc">
+          语音识别可能有误，可手动修改或选择候选会员
+        </div>
+        <input
+          v-model="memberConfirm.name"
+          class="mc-dialog__input"
+          placeholder="会员姓名"
+          autocomplete="off"
+        />
+        <div class="mc-dialog__hint" v-if="existingMatchedMember">
+          ✓ 将使用已有会员『{{ existingMatchedMember.name }}』
+        </div>
+        <div class="mc-dialog__hint mc-dialog__hint--new" v-else-if="memberConfirm.name.trim()">
+          + 将新建会员『{{ memberConfirm.name.trim() }}』
+        </div>
+
+        <div class="mc-dialog__suggestions" v-if="memberSuggestions.length">
+          <div class="mc-dialog__label">候选（点击使用）</div>
+          <div class="mc-dialog__chips">
+            <span
+              v-for="m in memberSuggestions"
+              :key="m.id"
+              class="mc-chip"
+              @click="memberConfirm.name = m.name"
+            >{{ m.name }}</span>
+          </div>
+        </div>
+
+        <div class="mc-dialog__actions">
+          <van-button size="small" plain @click="memberConfirmReject">取消</van-button>
+          <van-button size="small" type="primary" @click="memberConfirmAccept" :disabled="!memberConfirm.name.trim()">
+            {{ existingMatchedMember ? '使用此会员' : '新建并使用' }}
+          </van-button>
+        </div>
+      </div>
+    </van-popup>
   </div>
 </template>
 
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { showToast, showConfirmDialog } from 'vant'
+import { showToast, showSuccessToast, showConfirmDialog } from 'vant'
 import * as storage from '../services/storage'
 import { toDateStr } from '../utils/dateUtil'
-import { generateSessionId } from '../utils/idGenerator'
+import { generateSessionId, generateMemberId } from '../utils/idGenerator'
 import VoiceInput from '../components/VoiceInput.vue'
 import TextInput from '../components/TextInput.vue'
 
@@ -186,7 +252,8 @@ const form = reactive({
   classMode: 'private', courseType: '', location: '',
   memberId: '', memberIds: [], status: 'scheduled',
   notes: '', focusAreas: [], photos: [], beforePhotos: [], afterPhotos: [],
-  summaryText: ''
+  summaryText: '',
+  voiceSegments: [], aiDigest: ''
 })
 
 const photoFiles = ref([])
@@ -203,6 +270,77 @@ const statusOptions = [
 const showDatePicker = ref(false)
 const showTimePicker = ref(false)
 const showMemberPicker = ref(false)
+const showSegments = ref(false)
+
+// 会员确认对话框
+const memberConfirm = reactive({ show: false, name: '' })
+let memberConfirmResolver = null
+
+const existingMatchedMember = computed(() => {
+  const q = memberConfirm.name.trim()
+  if (!q) return null
+  return members.value.find(m => m.name === q) || null
+})
+
+const memberSuggestions = computed(() => {
+  const q = memberConfirm.name.trim()
+  // 提供候选：与输入有交集的会员（去掉精确同名的，因为已通过 hint 显示）
+  return members.value
+    .filter(m => m.name !== q)
+    .map(m => ({ m, score: similarityScore(m.name, q) }))
+    .filter(x => x.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 6)
+    .map(x => x.m)
+})
+
+function similarityScore(a, b) {
+  if (!a || !b) return 0
+  if (a.includes(b) || b.includes(a)) return 100
+  // 字符交集数
+  const setA = new Set(a)
+  let common = 0
+  for (const c of b) if (setA.has(c)) common++
+  return common
+}
+
+function askMemberConfirm(initialName) {
+  return new Promise(resolve => {
+    memberConfirm.name = initialName
+    memberConfirm.show = true
+    memberConfirmResolver = resolve
+  })
+}
+
+function memberConfirmAccept() {
+  const name = memberConfirm.name.trim()
+  if (!name) return
+  memberConfirm.show = false
+  const existing = members.value.find(m => m.name === name)
+  if (existing) {
+    memberConfirmResolver?.({ memberId: existing.id, created: false, name })
+  } else {
+    const newMember = {
+      id: generateMemberId(),
+      name,
+      phone: '',
+      avatar: '',
+      tags: [],
+      notes: '',
+      createdAt: Date.now()
+    }
+    storage.saveMember(newMember)
+    members.value = storage.getMembers()
+    memberConfirmResolver?.({ memberId: newMember.id, created: true, name })
+  }
+  memberConfirmResolver = null
+}
+
+function memberConfirmReject() {
+  memberConfirm.show = false
+  memberConfirmResolver?.(null)
+  memberConfirmResolver = null
+}
 
 const selectedMemberName = computed(() => {
   const m = members.value.find(m => m.id === form.memberId)
@@ -351,7 +489,7 @@ function onDelete() {
     .catch(() => {})
 }
 
-function onVoiceResult(data) {
+async function onVoiceResult(data) {
   if (data.date) form.date = data.date
   if (data.startTime) form.startTime = data.startTime
   if (data.duration) form.duration = data.duration
@@ -360,12 +498,26 @@ function onVoiceResult(data) {
   if (data.location) form.location = data.location
   if (data.focusAreas && data.focusAreas.length) form.focusAreas = data.focusAreas
   if (data.notes) form.notes = data.notes
+  if (data.voiceSegments?.length) form.voiceSegments = data.voiceSegments
+  if (data.aiDigest) form.aiDigest = data.aiDigest
 
+  let memberCreated = false
+  let memberFinalName = ''
   if (data.memberName) {
-    const member = members.value.find(m =>
-      m.name === data.memberName || m.name.includes(data.memberName)
-    )
-    if (member) form.memberId = member.id
+    const name = data.memberName.trim()
+    const exact = members.value.find(m => m.name === name)
+    if (exact) {
+      form.memberId = exact.id
+      memberFinalName = exact.name
+    } else {
+      // 模糊匹配但不静默使用——交给对话框让用户确认
+      const result = await askMemberConfirm(name)
+      if (result) {
+        form.memberId = result.memberId
+        memberFinalName = result.name
+        memberCreated = result.created
+      }
+    }
   }
 
   let count = 0
@@ -375,7 +527,12 @@ function onVoiceResult(data) {
   if (data.focusAreas?.length) count++
   if (data.memberName) count++
 
-  showToast({ message: `已识别 ${count} 个字段`, type: 'success' })
+  const suffix = memberCreated ? `，已新建『${memberFinalName}』` : ''
+  showSuccessToast({
+    message: `已识别 ${count} 个字段${suffix}`,
+    duration: 2000,
+    forbidClick: true
+  })
 }
 </script>
 
@@ -406,4 +563,40 @@ function onVoiceResult(data) {
 }
 
 .form-actions { padding: 20px 16px; }
+
+.seg-meta { font-size: 11px; color: #999; margin-bottom: 4px; }
+.seg-text {
+  font-size: 13px; color: var(--text-primary, #333); line-height: 1.5;
+  white-space: pre-wrap; word-break: break-all;
+  font-weight: normal;
+}
+
+.mc-dialog { display: flex; flex-direction: column; gap: 12px; }
+.mc-dialog__title { font-size: 16px; font-weight: 600; color: var(--text-primary, #333); }
+.mc-dialog__desc { font-size: 12px; color: var(--text-muted, #888); line-height: 1.5; }
+.mc-dialog__input {
+  width: 100%; padding: 10px 12px; border-radius: 8px;
+  border: 1px solid #e0e0e0; font-size: 14px;
+  box-sizing: border-box; outline: none;
+  color: var(--text-primary, #333);
+}
+.mc-dialog__input:focus { border-color: var(--color-primary, #4A7C59); }
+.mc-dialog__hint {
+  font-size: 12px; padding: 6px 8px; border-radius: 6px;
+  background: rgba(74,124,89,0.08); color: var(--color-primary, #4A7C59);
+}
+.mc-dialog__hint--new { background: rgba(255,183,77,0.12); color: #c47b00; }
+.mc-dialog__label { font-size: 12px; color: var(--text-muted, #888); margin-bottom: 6px; }
+.mc-dialog__chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.mc-chip {
+  font-size: 12px; padding: 4px 10px; border-radius: 12px;
+  background: var(--bg-input, #f5f5f5); color: var(--text-secondary, #555);
+  cursor: pointer; user-select: none;
+  border: 1px solid #e0e0e0;
+}
+.mc-chip:active { background: rgba(74,124,89,0.12); }
+.mc-dialog__actions {
+  display: flex; gap: 8px; justify-content: flex-end;
+  padding-top: 4px;
+}
 </style>

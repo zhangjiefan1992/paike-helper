@@ -36,11 +36,44 @@ app.post('/api/v1/ai/parse-text', async (c) => {
     return c.json({ code: 40001, message: '请输入排课内容' }, 400)
   }
   try {
+    const startedAt = Date.now()
     const data = await parseVoiceText(c.env, text.trim(), context)
-    return c.json({ code: 0, data: { ...data, rawText: text.trim() } })
+    const elapsed = Date.now() - startedAt
+    return c.json({ code: 0, data: { ...data, rawText: text.trim(), llmElapsedMs: elapsed } })
   } catch (err) {
     const status = err.statusCode || 500
     return c.json({ code: status === 400 ? 40000 : 50203, message: err.message }, status)
+  }
+})
+
+// POST /api/v1/ai/parse-segments — 多段原文统一解析+生成档案
+app.post('/api/v1/ai/parse-segments', async (c) => {
+  const { segments = [], context = {} } = await c.req.json()
+  if (!Array.isArray(segments) || segments.length === 0) {
+    return c.json({ code: 40001, message: '至少需要一段录音' }, 400)
+  }
+  const validSegments = segments.filter(s => s && s.rawText && s.rawText.trim())
+  if (validSegments.length === 0) {
+    return c.json({ code: 40001, message: '所有原文均为空' }, 400)
+  }
+
+  try {
+    const startedAt = Date.now()
+    const result = await parseAndDigestSegments(c.env, validSegments, context)
+    const elapsed = Date.now() - startedAt
+    return c.json({
+      code: 0,
+      data: {
+        ...result.structured,
+        aiDigest: result.aiDigest,
+        rawText: validSegments.map(s => s.rawText.trim()).join('\n\n'),
+        segments: validSegments,
+        llmElapsedMs: elapsed
+      }
+    })
+  } catch (err) {
+    const status = err.statusCode || 500
+    return c.json({ code: status === 400 ? 40000 : 50204, message: err.message }, status)
   }
 })
 
@@ -52,6 +85,33 @@ const ALLOWED_MODELS = new Set([
   'sensevoice-v1',
   'fun-asr'
 ])
+
+// POST /api/v1/ai/recognize — 仅做 ASR，返回原文
+app.post('/api/v1/ai/recognize', async (c) => {
+  const formData = await c.req.formData()
+  const audioFile = formData.get('audio')
+  const modelInput = formData.get('model')
+
+  if (!audioFile || audioFile.size === 0) {
+    return c.json({ code: 40001, message: '未收到音频文件' }, 400)
+  }
+
+  const model = ALLOWED_MODELS.has(modelInput) ? modelInput : (c.env.ASR_MODEL || 'fun-asr')
+
+  try {
+    const audioBuffer = await audioFile.arrayBuffer()
+    const startedAt = Date.now()
+    const rawText = await recognizeSpeech(c.env, audioBuffer, 'wav', model)
+    const elapsed = Date.now() - startedAt
+    if (!rawText) {
+      return c.json({ code: 40002, message: '语音识别结果为空，请重试' }, 400)
+    }
+    return c.json({ code: 0, data: { rawText, asrModel: model, asrElapsedMs: elapsed } })
+  } catch (err) {
+    const status = err.statusCode || 500
+    return c.json({ code: status === 400 ? 40000 : 50202, message: err.message }, status)
+  }
+})
 
 // POST /api/v1/ai/voice-session
 app.post('/api/v1/ai/voice-session', async (c) => {
@@ -214,6 +274,81 @@ async function callLLM(env, prompt, options = {}) {
 }
 
 // --- Voice Parser ---
+
+async function parseAndDigestSegments(env, segments, context = {}) {
+  const numbered = segments
+    .map((s, i) => `【片段${i + 1}】${s.rawText.trim()}`)
+    .join('\n\n')
+
+  const prompt = buildSegmentsPrompt(numbered, context)
+  const content = await callLLM(env, prompt, {
+    systemPrompt: '你是排课助手 AI，既能提取结构化字段，也能写出专业的课程档案。严格按要求返回 JSON。',
+    temperature: 0.4,
+    maxTokens: 1200
+  })
+
+  let jsonStr = content
+  const match = content.match(/```(?:json)?\s*([\s\S]*?)```/)
+  if (match) jsonStr = match[1].trim()
+
+  let parsed
+  try {
+    parsed = JSON.parse(jsonStr)
+  } catch {
+    throw Object.assign(new Error('解析结果格式异常，请重试'), { statusCode: 502 })
+  }
+
+  const { aiDigest = '', ...structured } = parsed
+  return { structured, aiDigest }
+}
+
+function buildSegmentsPrompt(numberedText, { memberNames = [], courseTypes = [], locations = [], focusAreaOptions = [], today } = {}) {
+  const parts = [
+    '教练通过多段语音描述了一节课的完整信息（包含排课、训练重点、学员反馈、课后建议等）。',
+    '请你完成两件事：',
+    '1. 提取结构化字段（用于自动填表）',
+    '2. 生成一份专业的"课程档案"（aiDigest），归纳本次课的关键信息',
+    '',
+    '输出 JSON 格式：',
+    '{',
+    '  "date": "YYYY-MM-DD",',
+    '  "startTime": "HH:mm",',
+    '  "duration": 60,',
+    '  "classMode": "private | group",',
+    '  "memberName": "学员姓名",',
+    '  "courseType": "课程类型",',
+    '  "location": "上课地点",',
+    '  "focusAreas": ["训练重点"],',
+    '  "notes": "课后备注（精简版，1-2 句）",',
+    '  "aiDigest": "课程档案（结构化长文本，详细见下）"',
+    '}',
+    '',
+    'aiDigest 字段要求（150-300字，分段，不要 markdown 符号）：',
+    '- 第一段：课程概况（时间、内容、形式）',
+    '- 第二段：训练重点与执行情况',
+    '- 第三段：学员状态/反馈/注意事项（如有）',
+    '- 第四段：课后建议或下次课计划（如有）',
+    '把多段语音里的信息有机融合，不要照搬原文。',
+    ''
+  ]
+
+  parts.push(`今天日期：${today || new Date().toISOString().slice(0, 10)}`)
+  if (memberNames.length) parts.push(`已有会员：${memberNames.join('、')}`)
+  if (courseTypes.length) parts.push(`可选课程类型：${courseTypes.join('、')}`)
+  if (locations.length) parts.push(`可选地点：${locations.join('、')}`)
+  if (focusAreaOptions.length) parts.push(`可选训练重点：${focusAreaOptions.join('、')}`)
+
+  parts.push('')
+  parts.push('规则：')
+  parts.push('- 未提及的字段输出 null（aiDigest 除外，aiDigest 必填）')
+  parts.push('- 只输出 JSON 对象，不要 markdown 代码块包裹')
+  parts.push('- 会员名称尽量从已有会员中匹配')
+  parts.push('')
+  parts.push('教练的多段语音原文：')
+  parts.push(numberedText)
+
+  return parts.join('\n')
+}
 
 async function parseVoiceText(env, text, context = {}) {
   if (!text || !text.trim()) throw Object.assign(new Error('语音文本为空'), { statusCode: 400 })

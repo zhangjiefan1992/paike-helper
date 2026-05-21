@@ -9,8 +9,8 @@
       v-model:show="showPanel"
       position="bottom"
       round
-      :close-on-click-overlay="state !== 'recording' && state !== 'uploading'"
-      :style="{ minHeight: '420px', maxHeight: '90vh' }"
+      :close-on-click-overlay="state !== 'recording' && state !== 'asr' && state !== 'parsing'"
+      :style="{ minHeight: '460px', maxHeight: '92vh' }"
     >
       <div class="voice-panel">
         <div class="voice-panel__header">
@@ -18,9 +18,20 @@
           <span class="voice-panel__close" @click="onClose">×</span>
         </div>
 
-        <!-- ASR 模型选择器 -->
-        <div class="model-selector">
-          <span class="model-selector__label">识别模型</span>
+        <!-- 模式 + 模型选择 -->
+        <div class="top-bar">
+          <div class="mode-toggle">
+            <div
+              class="mode-btn"
+              :class="{ 'mode-btn--active': mode === 'single' }"
+              @click="onModeChange('single')"
+            >单次</div>
+            <div
+              class="mode-btn"
+              :class="{ 'mode-btn--active': mode === 'multi' }"
+              @click="onModeChange('multi')"
+            >多段</div>
+          </div>
           <div class="model-selector__chips">
             <div
               v-for="m in ASR_MODELS"
@@ -28,41 +39,99 @@
               class="model-chip"
               :class="{ 'model-chip--active': selectedModel === m.value }"
               @click="onModelChange(m.value)"
-            >
-              {{ m.label }}
-            </div>
+            >{{ m.label }}</div>
           </div>
-          <span class="model-selector__hint" v-if="lastUsedModel && rawText">
-            本次：{{ ASR_MODELS.find(m => m.value === lastUsedModel)?.label || lastUsedModel }}
-          </span>
         </div>
 
-        <!-- 识别原文（始终可见，识别完成后可编辑+重新解析） -->
-        <div class="section" v-if="rawText || state === 'uploading'">
+        <!-- 多段：片段列表 -->
+        <div class="section" v-if="mode === 'multi' && (segments.length > 0 || state === 'asr')">
+          <div class="section__title">
+            <span>🎬 已录片段 ({{ segments.length }})</span>
+            <span class="section__hint" v-if="state === 'asr'">
+              <van-loading size="12px" /> 识别第 {{ segments.length + 1 }} 段...
+            </span>
+          </div>
+          <div class="segments-list">
+            <div class="segment-item" v-for="(seg, idx) in segments" :key="idx">
+              <div class="segment-item__head">
+                <span class="segment-item__index">片段 {{ idx + 1 }}</span>
+                <span class="segment-item__meta">{{ seg.asrModel }} · {{ (seg.elapsedMs / 1000).toFixed(1) }}s</span>
+                <span class="segment-item__del" @click="onDeleteSegment(idx)">删除</span>
+              </div>
+              <textarea
+                class="segment-item__text"
+                v-model="seg.rawText"
+                rows="2"
+                placeholder="可编辑识别原文"
+              />
+            </div>
+            <div class="segment-item segment-item--loading" v-if="state === 'asr'">
+              <span>正在识别...</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 单段：识别原文 -->
+        <div class="section" v-if="mode === 'single' && (rawText || state === 'asr' || state === 'parsing')">
           <div class="section__title">
             <span>📝 识别原文</span>
-            <span class="section__hint" v-if="rawText && state === 'review'">可编辑后重新解析</span>
+            <span class="section__hint" v-if="state === 'asr'">
+              <van-loading size="12px" /> 语音识别中...
+            </span>
+            <span class="section__hint section__hint--ok" v-else-if="rawText && asrElapsedMs">
+              ✓ {{ (asrElapsedMs / 1000).toFixed(1) }}s
+            </span>
+            <span class="section__hint" v-else-if="rawText && state === 'review'">可编辑后重新解析</span>
           </div>
           <textarea
             v-if="state === 'review'"
             class="raw-text-edit"
             v-model="editableText"
             rows="3"
-            placeholder="识别结果会显示在这里"
           />
-          <div class="raw-text-display" v-else-if="state === 'uploading'">
-            <van-loading size="14px" /> 识别中...
+          <div class="raw-text-display raw-text-display--loading" v-else-if="state === 'asr'">
+            正在调用 ASR ({{ selectedModel }})...
           </div>
           <div class="raw-text-display" v-else>{{ rawText }}</div>
         </div>
 
-        <!-- 解析结果 -->
-        <div class="section" v-if="parsedData && state === 'review'">
+        <!-- AI 课程档案（多段模式） -->
+        <div class="section" v-if="mode === 'multi' && (aiDigest || state === 'parsing')">
           <div class="section__title">
-            <span>🤖 AI 解析结果</span>
-            <span class="section__hint">{{ parsedFieldCount }} 个字段</span>
+            <span>📋 课程档案</span>
+            <span class="section__hint" v-if="state === 'parsing'">
+              <van-loading size="12px" /> 收敛档案中...
+            </span>
+            <span class="section__hint section__hint--ok" v-else-if="aiDigest && llmElapsedMs">
+              ✓ {{ (llmElapsedMs / 1000).toFixed(1) }}s
+            </span>
           </div>
-          <div class="parsed-fields">
+          <textarea
+            v-if="state === 'review' && aiDigest"
+            class="digest-edit"
+            v-model="aiDigest"
+            rows="6"
+          />
+          <div class="digest-display digest-display--loading" v-else-if="state === 'parsing'">
+            分析片段中，归纳本次课程档案...
+          </div>
+        </div>
+
+        <!-- 解析结果 -->
+        <div class="section" v-if="state === 'parsing' || (parsedData && state === 'review')">
+          <div class="section__title">
+            <span>🤖 自动填表预览</span>
+            <span class="section__hint section__hint--ok" v-if="parsedData && llmElapsedMs && mode === 'single'">
+              {{ parsedFieldCount }} 个字段 · {{ (llmElapsedMs / 1000).toFixed(1) }}s
+            </span>
+            <span class="section__hint section__hint--ok" v-else-if="parsedData">
+              {{ parsedFieldCount }} 个字段
+            </span>
+          </div>
+          <div class="parsed-fields parsed-fields--loading" v-if="state === 'parsing' && mode === 'single'">
+            <span>分析语义结构中...</span>
+          </div>
+          <div class="parsed-fields" v-else-if="parsedData">
             <div class="parsed-row" v-for="row in parsedRows" :key="row.label">
               <span class="parsed-row__label">{{ row.label }}</span>
               <span class="parsed-row__value" :class="{ 'parsed-row__value--empty': !row.value }">
@@ -72,8 +141,8 @@
           </div>
         </div>
 
-        <!-- 录音区（无结果时显示） -->
-        <div class="record-section" v-if="state === 'idle' || state === 'recording' || state === 'error'">
+        <!-- 录音区 -->
+        <div class="record-section" v-if="canShowRecordBtn">
           <div
             class="record-btn"
             :class="{ 'record-btn--active': state === 'recording' }"
@@ -87,24 +156,34 @@
               <span class="record-btn__icon">🎤</span>
             </div>
             <span class="record-btn__label">
-              {{ state === 'recording' ? `松开结束 ${durationLabel}` : '按住说话' }}
+              {{ recordBtnLabel }}
             </span>
           </div>
-          <div class="record-tip" v-if="state === 'idle'">
+          <div class="record-tip" v-if="state === 'idle' && mode === 'single'">
             示例："明天下午三点给张三上普拉提，旺君馆"
+          </div>
+          <div class="record-tip" v-else-if="state === 'idle' && mode === 'multi' && segments.length === 0">
+            可以分多次按住说话，最后统一生成课程档案
           </div>
           <div class="record-tip record-tip--error" v-if="state === 'error'">
             ⚠ {{ errorMsg }}
           </div>
         </div>
 
+        <!-- 多段：完成本次记录按钮 -->
+        <div class="finalize-section" v-if="mode === 'multi' && segments.length > 0 && state !== 'asr' && state !== 'parsing' && state !== 'review'">
+          <van-button type="primary" block @click="onFinalizeMulti" :loading="finalizing">
+            ✨ 完成本次记录（共 {{ segments.length }} 段）
+          </van-button>
+        </div>
+
         <!-- 审核操作 -->
         <div class="review-actions" v-if="state === 'review'">
-          <van-button size="small" plain @click="onReparse" :loading="reparsing">
+          <van-button size="small" plain @click="onReparse" :loading="reparsing" v-if="mode === 'single'">
             🔄 重新解析
           </van-button>
           <van-button size="small" plain @click="onDiscard">
-            重新录音
+            重新录入
           </van-button>
           <van-button size="small" type="primary" @click="onApply">
             ✓ 应用到表单
@@ -117,9 +196,20 @@
 
 <script setup>
 import { ref, computed } from 'vue'
-import { showToast } from 'vant'
+import { showToast, showSuccessToast, showConfirmDialog } from 'vant'
 import { createAudioRecorder } from '../utils/audioRecorder'
-import { parseVoiceSession, parseTextSession } from '../services/api'
+import { recognizeSpeech, parseTextSession, parseSegments } from '../services/api'
+
+const ASR_MODELS = [
+  { value: 'fun-asr', label: 'fun-asr' },
+  { value: 'paraformer-v2', label: 'paraformer-v2' },
+  { value: 'paraformer-v1', label: 'paraformer-v1' },
+  { value: 'paraformer-mtl-v1', label: 'paraformer-mtl' },
+  { value: 'paraformer-8k-v1', label: 'paraformer-8k' },
+  { value: 'sensevoice-v1', label: 'sensevoice' }
+]
+const ASR_MODEL_KEY = 'pk_asr_model'
+const MODE_KEY = 'pk_voice_mode'
 
 const props = defineProps({
   members: { type: Array, default: () => [] },
@@ -128,33 +218,25 @@ const props = defineProps({
 
 const emit = defineEmits(['result'])
 
-const ASR_MODELS = [
-  { value: 'paraformer-v2', label: 'paraformer-v2' },
-  { value: 'paraformer-v1', label: 'paraformer-v1' },
-  { value: 'paraformer-mtl-v1', label: 'paraformer-mtl' },
-  { value: 'paraformer-8k-v1', label: 'paraformer-8k' },
-  { value: 'sensevoice-v1', label: 'sensevoice' },
-  { value: 'fun-asr', label: 'fun-asr' }
-]
-const ASR_MODEL_KEY = 'pk_asr_model'
-
 const showPanel = ref(false)
-const state = ref('idle') // idle | recording | uploading | review | error
+// state: idle | recording | asr | parsing | review | error
+const state = ref('idle')
+const mode = ref(localStorage.getItem(MODE_KEY) || 'single')
 const rawText = ref('')
 const editableText = ref('')
 const parsedData = ref(null)
+const aiDigest = ref('')
+const segments = ref([])
 const errorMsg = ref('')
 const duration = ref(0)
 const reparsing = ref(false)
-const selectedModel = ref(localStorage.getItem(ASR_MODEL_KEY) || 'paraformer-v2')
+const finalizing = ref(false)
+const selectedModel = ref(localStorage.getItem(ASR_MODEL_KEY) || 'fun-asr')
 const lastUsedModel = ref('')
+const asrElapsedMs = ref(0)
+const llmElapsedMs = ref(0)
 
 let recorder = null
-
-function onModelChange(value) {
-  selectedModel.value = value
-  localStorage.setItem(ASR_MODEL_KEY, value)
-}
 
 const durationLabel = computed(() => {
   const s = duration.value
@@ -179,6 +261,36 @@ const parsedRows = computed(() => {
 
 const parsedFieldCount = computed(() => parsedRows.value.filter(r => r.value).length)
 
+const canShowRecordBtn = computed(() => {
+  if (state.value === 'recording') return true
+  if (state.value === 'idle' || state.value === 'error') return true
+  // 多段模式下，已有片段时仍可继续录新片段
+  if (mode.value === 'multi' && state.value !== 'asr' && state.value !== 'parsing' && state.value !== 'review') return true
+  return false
+})
+
+const recordBtnLabel = computed(() => {
+  if (state.value === 'recording') return `松开结束 ${durationLabel.value}`
+  if (mode.value === 'multi' && segments.value.length > 0) return '按住续录'
+  return '按住说话'
+})
+
+function onModeChange(m) {
+  if (m === mode.value) return
+  if (state.value === 'recording' || state.value === 'asr' || state.value === 'parsing') {
+    showToast('请先完成或取消当前操作')
+    return
+  }
+  mode.value = m
+  localStorage.setItem(MODE_KEY, m)
+  resetState()
+}
+
+function onModelChange(value) {
+  selectedModel.value = value
+  localStorage.setItem(ASR_MODEL_KEY, value)
+}
+
 function buildContext() {
   return {
     memberNames: props.members.map(m => m.name),
@@ -194,14 +306,28 @@ function resetState() {
   rawText.value = ''
   editableText.value = ''
   parsedData.value = null
+  aiDigest.value = ''
+  segments.value = []
   errorMsg.value = ''
   duration.value = 0
+  asrElapsedMs.value = 0
+  llmElapsedMs.value = 0
 }
 
 async function onRecordStart() {
-  if (state.value === 'recording' || state.value === 'uploading') return
+  if (state.value === 'recording' || state.value === 'asr' || state.value === 'parsing') return
 
-  resetState()
+  // 单段模式：每次开始录音前清掉旧结果
+  if (mode.value === 'single') {
+    rawText.value = ''
+    parsedData.value = null
+    aiDigest.value = ''
+    editableText.value = ''
+    asrElapsedMs.value = 0
+    llmElapsedMs.value = 0
+  }
+  errorMsg.value = ''
+  duration.value = 0
   state.value = 'recording'
 
   try {
@@ -226,23 +352,91 @@ async function onRecordStop() {
   recorder = null
 
   if (!blob || duration.value < 1) {
-    state.value = 'idle'
+    state.value = mode.value === 'multi' && segments.value.length > 0 ? 'idle' : 'idle'
     showToast('录音太短，请重试')
     return
   }
 
-  state.value = 'uploading'
-
+  // Phase 1: ASR
+  state.value = 'asr'
+  const asrStart = Date.now()
+  let asrResult
   try {
-    const data = await parseVoiceSession(blob, buildContext(), selectedModel.value)
-    rawText.value = data.rawText || ''
-    editableText.value = rawText.value
-    parsedData.value = data
-    lastUsedModel.value = data.asrModel || selectedModel.value
-    state.value = 'review'
+    asrResult = await recognizeSpeech(blob, selectedModel.value)
   } catch (err) {
     state.value = 'error'
-    errorMsg.value = err.message || '识别失败，请重试'
+    errorMsg.value = err.message || '语音识别失败，请重试'
+    return
+  }
+
+  const elapsed = asrResult.asrElapsedMs || (Date.now() - asrStart)
+
+  if (mode.value === 'multi') {
+    // 多段：累积到 segments，不立刻 LLM
+    segments.value.push({
+      rawText: asrResult.rawText || '',
+      asrModel: asrResult.asrModel || selectedModel.value,
+      recordedAt: Date.now(),
+      elapsedMs: elapsed
+    })
+    state.value = 'idle'
+    return
+  }
+
+  // 单段：继续走 LLM 解析
+  asrElapsedMs.value = elapsed
+  rawText.value = asrResult.rawText || ''
+  editableText.value = rawText.value
+  lastUsedModel.value = asrResult.asrModel || selectedModel.value
+
+  state.value = 'parsing'
+  const llmStart = Date.now()
+  try {
+    const data = await parseTextSession(rawText.value, buildContext())
+    llmElapsedMs.value = data.llmElapsedMs || (Date.now() - llmStart)
+    parsedData.value = data
+    state.value = 'review'
+  } catch (err) {
+    parsedData.value = null
+    llmElapsedMs.value = Date.now() - llmStart
+    state.value = 'review'
+    showToast(err.message || 'AI 解析失败，可手动编辑后重新解析')
+  }
+}
+
+function onDeleteSegment(idx) {
+  segments.value.splice(idx, 1)
+}
+
+async function onFinalizeMulti() {
+  if (segments.value.length === 0) {
+    showToast('请先录制至少一段语音')
+    return
+  }
+  const validSegments = segments.value.filter(s => s.rawText && s.rawText.trim())
+  if (validSegments.length === 0) {
+    showToast('所有片段都是空的，请重录')
+    return
+  }
+
+  finalizing.value = true
+  state.value = 'parsing'
+  const llmStart = Date.now()
+  try {
+    const data = await parseSegments(
+      validSegments.map(s => ({ rawText: s.rawText.trim(), asrModel: s.asrModel })),
+      buildContext()
+    )
+    llmElapsedMs.value = data.llmElapsedMs || (Date.now() - llmStart)
+    aiDigest.value = data.aiDigest || ''
+    parsedData.value = data
+    rawText.value = data.rawText || validSegments.map(s => s.rawText).join('\n\n')
+    state.value = 'review'
+  } catch (err) {
+    state.value = 'idle'
+    showToast(err.message || 'AI 收敛失败，请重试')
+  } finally {
+    finalizing.value = false
   }
 }
 
@@ -254,11 +448,13 @@ async function onReparse() {
   }
 
   reparsing.value = true
+  const start = Date.now()
   try {
     const data = await parseTextSession(text, buildContext())
     rawText.value = text
     parsedData.value = data
-    showToast('已重新解析')
+    llmElapsedMs.value = data.llmElapsedMs || (Date.now() - start)
+    showSuccessToast({ message: '已重新解析', forbidClick: true })
   } catch (err) {
     showToast(err.message || '解析失败')
   } finally {
@@ -272,12 +468,18 @@ function onDiscard() {
 
 function onApply() {
   if (!parsedData.value) return
-  emit('result', parsedData.value)
-  showToast({ message: `已应用 ${parsedFieldCount.value} 个字段`, type: 'success' })
+  const data = {
+    ...parsedData.value,
+    voiceSegments: mode.value === 'multi'
+      ? segments.value.map(s => ({ rawText: s.rawText, asrModel: s.asrModel, recordedAt: s.recordedAt }))
+      : (rawText.value ? [{ rawText: rawText.value, asrModel: lastUsedModel.value || selectedModel.value, recordedAt: Date.now() }] : []),
+    aiDigest: aiDigest.value || ''
+  }
+  showPanel.value = false
   setTimeout(() => {
-    showPanel.value = false
+    emit('result', data)
     resetState()
-  }, 400)
+  }, 250)
 }
 
 function onClose() {
@@ -304,42 +506,65 @@ function onClose() {
 .voice-panel { padding: 16px 16px 24px; }
 .voice-panel__header {
   display: flex; justify-content: space-between; align-items: center;
-  font-size: 16px; font-weight: 500; margin-bottom: 16px;
+  font-size: 16px; font-weight: 500; margin-bottom: 12px;
 }
 .voice-panel__close { font-size: 22px; cursor: pointer; color: #999; }
 
-.model-selector {
-  margin-bottom: 12px; padding: 10px 12px;
+.top-bar {
+  display: flex; flex-direction: column; gap: 8px;
   background: var(--bg-input, #f5f5f5); border-radius: 8px;
+  padding: 10px 12px; margin-bottom: 12px;
 }
-.model-selector__label {
-  font-size: 12px; color: #666; display: block; margin-bottom: 6px;
+.mode-toggle {
+  display: flex; gap: 4px; background: #fff;
+  padding: 3px; border-radius: 6px; align-self: flex-start;
 }
-.model-selector__chips {
-  display: flex; flex-wrap: wrap; gap: 6px;
+.mode-btn {
+  padding: 4px 14px; font-size: 12px; cursor: pointer;
+  color: #666; border-radius: 4px; user-select: none;
 }
-.model-chip {
-  padding: 4px 10px; border-radius: 12px;
-  background: #fff; border: 1px solid #ddd;
-  font-size: 11px; color: #666; cursor: pointer;
-  user-select: none; -webkit-user-select: none;
-}
-.model-chip--active {
-  background: var(--color-primary, #4A7C59);
-  border-color: var(--color-primary, #4A7C59);
-  color: #fff;
-}
-.model-selector__hint {
-  display: block; margin-top: 6px;
-  font-size: 11px; color: #999;
+.mode-btn--active {
+  background: var(--color-primary, #4A7C59); color: #fff;
 }
 
-.section { margin-bottom: 16px; }
+.section { margin-bottom: 14px; }
 .section__title {
   display: flex; align-items: center; justify-content: space-between;
   font-size: 13px; color: #666; margin-bottom: 6px;
 }
-.section__hint { font-size: 11px; color: #999; }
+.section__hint {
+  font-size: 11px; color: #999;
+  display: inline-flex; align-items: center; gap: 4px;
+}
+.section__hint--ok { color: var(--color-primary, #4A7C59); }
+
+.segments-list {
+  display: flex; flex-direction: column; gap: 8px;
+}
+.segment-item {
+  background: var(--bg-input, #f5f5f5); border-radius: 8px;
+  padding: 8px 10px;
+}
+.segment-item--loading {
+  text-align: center; padding: 12px; color: #999; font-style: italic; font-size: 13px;
+}
+.segment-item__head {
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: 11px; color: #999; margin-bottom: 4px;
+}
+.segment-item__index { color: var(--color-primary, #4A7C59); font-weight: 500; }
+.segment-item__meta { flex: 1; padding: 0 8px; }
+.segment-item__del {
+  color: #e74c3c; cursor: pointer;
+  padding: 2px 6px; border-radius: 4px;
+}
+.segment-item__text {
+  width: 100%; padding: 6px 8px; border-radius: 6px;
+  background: #fff; border: 1px solid #e0e0e0;
+  font-size: 13px; line-height: 1.5;
+  resize: vertical; font-family: inherit; box-sizing: border-box;
+  color: var(--text-primary, #333);
+}
 
 .raw-text-edit {
   width: 100%; padding: 10px 12px; border-radius: 8px;
@@ -348,21 +573,34 @@ function onClose() {
   color: var(--text-primary, #333); resize: vertical;
   font-family: inherit; box-sizing: border-box;
 }
-.raw-text-edit:focus {
+.raw-text-edit:focus, .digest-edit:focus, .segment-item__text:focus {
   outline: none; border-color: var(--color-primary, #4A7C59);
 }
 
-.raw-text-display {
+.raw-text-display, .digest-display {
   padding: 10px 12px; border-radius: 8px;
   background: var(--bg-input, #f5f5f5);
   font-size: 14px; line-height: 1.6;
   color: var(--text-primary, #333);
   min-height: 40px;
 }
+.raw-text-display--loading, .digest-display--loading { color: #999; font-style: italic; }
+
+.digest-edit {
+  width: 100%; padding: 10px 12px; border-radius: 8px;
+  background: var(--bg-input, #f5f5f5);
+  border: 1px solid #e0e0e0; font-size: 14px; line-height: 1.7;
+  color: var(--text-primary, #333); resize: vertical;
+  font-family: inherit; box-sizing: border-box;
+}
 
 .parsed-fields {
   background: var(--bg-input, #f5f5f5); border-radius: 8px;
   padding: 8px 12px;
+}
+.parsed-fields--loading {
+  padding: 12px; text-align: center;
+  color: #999; font-style: italic; font-size: 13px;
 }
 .parsed-row {
   display: flex; padding: 4px 0; font-size: 13px;
@@ -408,9 +646,28 @@ function onClose() {
 }
 .record-tip--error { color: #e74c3c; }
 
+.finalize-section {
+  padding: 8px 0 4px;
+}
+
 .review-actions {
   display: flex; gap: 8px; justify-content: flex-end;
-  padding-top: 8px; border-top: 1px solid #ececec;
+  padding-top: 8px; border-top: 1px solid #ececec; margin-top: 8px;
 }
 .review-actions :deep(.van-button) { font-size: 13px; }
+
+.model-selector__chips {
+  display: flex; flex-wrap: wrap; gap: 6px;
+}
+.model-chip {
+  padding: 4px 10px; border-radius: 12px;
+  background: #fff; border: 1px solid #ddd;
+  font-size: 11px; color: #666; cursor: pointer;
+  user-select: none; -webkit-user-select: none;
+}
+.model-chip--active {
+  background: var(--color-primary, #4A7C59);
+  border-color: var(--color-primary, #4A7C59);
+  color: #fff;
+}
 </style>
