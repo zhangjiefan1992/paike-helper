@@ -207,4 +207,30 @@
     <button class="btn btn--primary" bindtap="onSave">保存</button>
     <button class="btn btn--danger" wx:if="{{isEdit}}" bindtap="onDelete">删除此课程</button>
   </view>
+
+  <!-- 课后快速记录弹窗 -->
+  <view class="qn-mask" wx:if="{{quickNote.show}}" catchtap="onQuickNoteSkip"></view>
+  <view class="qn-panel" wx:if="{{quickNote.show}}" catchtap="noop">
+    <view class="qn-title">5 秒速记 · 课后</view>
+    <view class="qn-chips">
+      <view
+        wx:for="{{QUICK_NOTE_TAGS}}"
+        wx:key="*this"
+        class="qn-chip {{quickNote.tags.indexOf(item) >= 0 ? 'qn-chip--active' : ''}}"
+        data-tag="{{item}}"
+        bindtap="onQuickNoteTagTap"
+      >{{item}}</view>
+    </view>
+    <input
+      class="qn-input"
+      value="{{quickNote.text}}"
+      bindinput="onQuickNoteInput"
+      placeholder="补一句话（可选）"
+      maxlength="80"
+    />
+    <view class="qn-actions">
+      <button class="qn-btn qn-btn--plain" bindtap="onQuickNoteSkip">不记了</button>
+      <button class="qn-btn qn-btn--primary" bindtap="onQuickNoteSave">保存</button>
+    </view>
+  </view>
 </view>

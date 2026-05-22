@@ -98,7 +98,7 @@
             <div class="duration-chips">
               <span v-for="s in statusOptions" :key="s.value"
                 class="chip" :class="'chip--status-' + s.value + (form.status === s.value ? ' chip--active' : '')"
-                @click="form.status = s.value">{{ s.label }}</span>
+                @click="onStatusChange(s.value)">{{ s.label }}</span>
             </div>
           </template>
         </van-field>
@@ -178,6 +178,37 @@
     <!-- Member Picker -->
     <van-popup v-model:show="showMemberPicker" position="bottom" round>
       <van-picker :columns="memberColumns" @confirm="onMemberConfirm" @cancel="showMemberPicker = false" />
+    </van-popup>
+
+    <!-- 课后快速记录（标记完成时弹出） -->
+    <van-popup
+      v-model:show="quickNote.show"
+      round
+      position="bottom"
+      :style="{ padding: '20px 16px 24px' }"
+    >
+      <div class="qn-dialog">
+        <div class="qn-dialog__title">5 秒速记 · 课后</div>
+        <div class="qn-dialog__chips">
+          <span
+            v-for="t in QUICK_NOTE_TAGS"
+            :key="t"
+            class="qn-chip"
+            :class="{ 'qn-chip--active': quickNote.tags.includes(t) }"
+            @click="toggleQuickTag(t)"
+          >{{ t }}</span>
+        </div>
+        <input
+          v-model="quickNote.text"
+          class="qn-dialog__input"
+          placeholder="补一句话（可选）"
+          maxlength="80"
+        />
+        <div class="qn-dialog__actions">
+          <van-button size="small" plain @click="quickNoteSkip">不记了</van-button>
+          <van-button size="small" type="primary" @click="quickNoteSave">保存</van-button>
+        </div>
+      </div>
     </van-popup>
 
     <!-- 会员确认/纠正对话框（语音识别后） -->
@@ -271,6 +302,43 @@ const showDatePicker = ref(false)
 const showTimePicker = ref(false)
 const showMemberPicker = ref(false)
 const showSegments = ref(false)
+
+// 课后快速记录
+const QUICK_NOTE_TAGS = ['进步明显', '配合很好', '状态一般', '需要注意', '动作改善', '体力欠佳']
+const quickNote = reactive({ show: false, tags: [], text: '' })
+
+function onStatusChange(value) {
+  const wasCompleted = form.status === 'completed'
+  form.status = value
+  if (value === 'completed' && !wasCompleted) {
+    // 切换到已完成 → 弹快速记录
+    quickNote.tags = []
+    quickNote.text = ''
+    quickNote.show = true
+  }
+}
+
+function toggleQuickTag(tag) {
+  const i = quickNote.tags.indexOf(tag)
+  if (i >= 0) quickNote.tags.splice(i, 1)
+  else quickNote.tags.push(tag)
+}
+
+function quickNoteSkip() {
+  quickNote.show = false
+}
+
+function quickNoteSave() {
+  const parts = []
+  if (quickNote.tags.length) parts.push(quickNote.tags.join('、'))
+  if (quickNote.text.trim()) parts.push(quickNote.text.trim())
+  if (parts.length) {
+    const append = parts.join('；')
+    form.notes = form.notes ? `${form.notes}\n${append}` : append
+    showSuccessToast({ message: '已记录', duration: 1200, forbidClick: true })
+  }
+  quickNote.show = false
+}
 
 // 会员确认对话框
 const memberConfirm = reactive({ show: false, name: '' })
@@ -376,9 +444,70 @@ onMounted(() => {
   }
 
   form.date = route.query.date || toDateStr(new Date())
-  form.startTime = route.query.time || '09:00'
+  form.startTime = route.query.time || findNextEmptySlot(form.date) || '09:00'
   form.duration = config.value.defaultDuration || 60
+
+  // 套用上次的"常用组合"，让会员/课程/地点几乎总是预填好
+  const lastCombo = loadLastCombo()
+  if (lastCombo) {
+    if (!form.courseType && lastCombo.courseType) form.courseType = lastCombo.courseType
+    if (!form.location && lastCombo.location) form.location = lastCombo.location
+    if (lastCombo.classMode) form.classMode = lastCombo.classMode
+    if (lastCombo.focusAreas?.length && !form.focusAreas?.length) {
+      form.focusAreas = [...lastCombo.focusAreas]
+    }
+  }
 })
+
+const LAST_COMBO_KEY = 'pk_last_session_combo'
+
+function loadLastCombo() {
+  try {
+    const raw = localStorage.getItem(LAST_COMBO_KEY)
+    return raw ? JSON.parse(raw) : null
+  } catch { return null }
+}
+
+function saveLastCombo() {
+  try {
+    localStorage.setItem(LAST_COMBO_KEY, JSON.stringify({
+      courseType: form.courseType,
+      location: form.location,
+      classMode: form.classMode,
+      focusAreas: form.focusAreas
+    }))
+  } catch {}
+}
+
+function findNextEmptySlot(dateStr) {
+  const wh = config.value.workingHours || { start: '08:00', end: '21:00' }
+  const [whStartH] = wh.start.split(':').map(Number)
+  const [whEndH] = wh.end.split(':').map(Number)
+  const sessions = storage.getSessionsByDate(dateStr) || []
+  const occupied = new Set()
+  sessions.forEach(s => {
+    if (s.status === 'cancelled') return
+    const [h, m] = s.startTime.split(':').map(Number)
+    const startMin = h * 60 + m
+    const endMin = startMin + (s.duration || 60)
+    for (let t = startMin; t < endMin; t += 30) occupied.add(Math.floor(t / 30))
+  })
+
+  const isToday = dateStr === toDateStr(new Date())
+  const now = new Date()
+  const nowMin = now.getHours() * 60 + now.getMinutes()
+
+  for (let h = whStartH; h < whEndH; h++) {
+    for (let m of [0, 30]) {
+      const slotMin = h * 60 + m
+      if (isToday && slotMin <= nowMin) continue
+      if (!occupied.has(Math.floor(slotMin / 30))) {
+        return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+      }
+    }
+  }
+  return null
+}
 
 function onDateConfirm({ selectedValues }) {
   form.date = selectedValues.join('-')
@@ -433,6 +562,7 @@ function doSave() {
   }
   form.updatedAt = Date.now()
   storage.saveSession({ ...form })
+  saveLastCombo()
   showToast({ message: '保存成功', type: 'success' })
   setTimeout(() => router.back(), 500)
 }
@@ -596,6 +726,32 @@ async function onVoiceResult(data) {
 }
 .mc-chip:active { background: rgba(74,124,89,0.12); }
 .mc-dialog__actions {
+  display: flex; gap: 8px; justify-content: flex-end;
+  padding-top: 4px;
+}
+
+/* 课后快速记录 */
+.qn-dialog { display: flex; flex-direction: column; gap: 12px; }
+.qn-dialog__title { font-size: 15px; font-weight: 600; color: var(--text-primary, #333); }
+.qn-dialog__chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.qn-chip {
+  font-size: 12px; padding: 6px 12px; border-radius: 14px;
+  background: var(--bg-input, #f5f5f5); color: var(--text-secondary, #555);
+  cursor: pointer; user-select: none;
+  border: 1px solid #e0e0e0;
+}
+.qn-chip--active {
+  background: var(--color-primary, #4A7C59);
+  border-color: var(--color-primary, #4A7C59);
+  color: #fff;
+}
+.qn-dialog__input {
+  width: 100%; padding: 10px 12px; border-radius: 8px;
+  border: 1px solid #e0e0e0; font-size: 14px; outline: none;
+  box-sizing: border-box; color: var(--text-primary, #333);
+}
+.qn-dialog__input:focus { border-color: var(--color-primary, #4A7C59); }
+.qn-dialog__actions {
   display: flex; gap: 8px; justify-content: flex-end;
   padding-top: 4px;
 }

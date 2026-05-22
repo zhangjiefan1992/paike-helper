@@ -41,7 +41,9 @@ Page({
     showMemberPicker: false,
     selectedMemberName: '',
     memberIdMap: {},
-    focusAreaMap: {}
+    focusAreaMap: {},
+    quickNote: { show: false, tags: [], text: '' },
+    QUICK_NOTE_TAGS: ['进步明显', '配合很好', '状态一般', '需要注意', '动作改善', '体力欠佳']
   },
 
   onLoad(options) {
@@ -78,19 +80,86 @@ Page({
           updatedAtLabel
         })
         wx.setNavigationBarTitle({ title: '编辑课程' })
+        if (options.quickNote === '1' && session.status === 'completed') {
+          setTimeout(() => this._showQuickNote(), 300)
+        }
         return
       }
     }
 
     const today = dateUtil.toDateStr(new Date())
+    const date = options.date || today
+    const startTime = options.time || this._findNextEmptySlot(date, config) || '09:00'
+
     const form = Object.assign({}, this.data.form, {
-      date: options.date || today,
-      startTime: options.time || '09:00',
+      date,
+      startTime,
       duration: config.defaultDuration || 60
     })
 
+    // 套用上次"常用组合"
+    const lastCombo = this._loadLastCombo()
+    if (lastCombo) {
+      if (!form.courseType && lastCombo.courseType) form.courseType = lastCombo.courseType
+      if (!form.location && lastCombo.location) form.location = lastCombo.location
+      if (lastCombo.classMode) form.classMode = lastCombo.classMode
+      if (lastCombo.focusAreas && lastCombo.focusAreas.length && (!form.focusAreas || !form.focusAreas.length)) {
+        form.focusAreas = lastCombo.focusAreas.slice()
+        const focusAreaMap = {}
+        lastCombo.focusAreas.forEach(a => { focusAreaMap[a] = true })
+        this.setData({ focusAreaMap })
+      }
+    }
+
     this.setData({ form, config, members })
     wx.setNavigationBarTitle({ title: '新增课程' })
+  },
+
+  _findNextEmptySlot(dateStr, config) {
+    const wh = (config && config.workingHours) || { start: '08:00', end: '21:00' }
+    const whStartH = parseInt(wh.start.split(':')[0])
+    const whEndH = parseInt(wh.end.split(':')[0])
+    const sessions = storage.getSessionsByDate(dateStr) || []
+    const occupied = {}
+    sessions.forEach(s => {
+      if (s.status === 'cancelled') return
+      const [h, m] = s.startTime.split(':').map(Number)
+      const startMin = h * 60 + m
+      const endMin = startMin + (s.duration || 60)
+      for (let t = startMin; t < endMin; t += 30) occupied[Math.floor(t / 30)] = true
+    })
+
+    const isToday = dateStr === dateUtil.toDateStr(new Date())
+    const now = new Date()
+    const nowMin = now.getHours() * 60 + now.getMinutes()
+
+    for (let h = whStartH; h < whEndH; h++) {
+      for (const m of [0, 30]) {
+        const slotMin = h * 60 + m
+        if (isToday && slotMin <= nowMin) continue
+        if (!occupied[Math.floor(slotMin / 30)]) {
+          return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+        }
+      }
+    }
+    return null
+  },
+
+  _loadLastCombo() {
+    try {
+      return wx.getStorageSync('pk_last_session_combo') || null
+    } catch { return null }
+  },
+
+  _saveLastCombo() {
+    try {
+      wx.setStorageSync('pk_last_session_combo', {
+        courseType: this.data.form.courseType,
+        location: this.data.form.location,
+        classMode: this.data.form.classMode,
+        focusAreas: this.data.form.focusAreas
+      })
+    } catch {}
   },
 
   onDateChange(e) {
@@ -187,10 +256,57 @@ Page({
 
   onStatusChange(e) {
     const idx = Number(e.detail.value)
+    const newStatus = this.data.statusOptions[idx].value
+    const wasCompleted = this.data.form.status === 'completed'
     this.setData({
       statusIndex: idx,
-      'form.status': this.data.statusOptions[idx].value
+      'form.status': newStatus
     })
+    if (newStatus === 'completed' && !wasCompleted) {
+      this._showQuickNote()
+    }
+  },
+
+  noop() {},
+
+  _showQuickNote() {
+    this.setData({
+      quickNote: { show: true, tags: [], text: '' }
+    })
+  },
+
+  onQuickNoteTagTap(e) {
+    const tag = e.currentTarget.dataset.tag
+    const tags = this.data.quickNote.tags.slice()
+    const i = tags.indexOf(tag)
+    if (i >= 0) tags.splice(i, 1)
+    else tags.push(tag)
+    this.setData({ 'quickNote.tags': tags })
+  },
+
+  onQuickNoteInput(e) {
+    this.setData({ 'quickNote.text': e.detail.value })
+  },
+
+  onQuickNoteSkip() {
+    this.setData({ 'quickNote.show': false })
+  },
+
+  onQuickNoteSave() {
+    const { tags, text } = this.data.quickNote
+    const parts = []
+    if (tags.length) parts.push(tags.join('、'))
+    if (text.trim()) parts.push(text.trim())
+    if (parts.length) {
+      const append = parts.join('；')
+      const cur = this.data.form.notes
+      this.setData({
+        'form.notes': cur ? cur + '\n' + append : append
+      })
+      wx.showToast({ title: '已记录', icon: 'success', duration: 1200 })
+      wx.vibrateShort({ type: 'light' })
+    }
+    this.setData({ 'quickNote.show': false })
   },
 
   onMemberSelect(e) {
@@ -316,6 +432,7 @@ Page({
     form.updatedAt = Date.now()
 
     storage.saveSession(form)
+    this._saveLastCombo()
     wx.showToast({ title: '保存成功', icon: 'success' })
     wx.vibrateShort({ type: 'medium' })
     setTimeout(() => { wx.navigateBack() }, 500)

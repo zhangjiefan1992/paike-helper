@@ -459,6 +459,7 @@ export default {
       if (session.status !== 'completed') actions.push({ name: '标记已完成', value: 'completed' })
       if (session.status !== 'cancelled') actions.push({ name: '标记取消', value: 'cancelled' })
       if (session.status !== 'scheduled') actions.push({ name: '恢复待上课', value: 'scheduled' })
+      actions.push({ name: '复制到下周同时段', value: 'copy_next_week' })
       actions.push({ name: '编辑课程', value: 'edit' })
       this.activeCard = card
       this.cardActions = actions
@@ -472,9 +473,39 @@ export default {
         this.$router.push('/session/' + card.id)
         return
       }
+      if (action.value === 'copy_next_week') {
+        this.copyToNextWeek(card.id)
+        return
+      }
       storage.updateSessionStatus(card.id, action.value)
       const msg = action.value === 'completed' ? '已标记完成' : action.value === 'cancelled' ? '已取消' : '已恢复'
       showToast({ message: msg, type: action.value === 'completed' ? 'success' : 'text' })
+      this.loadWeek()
+    },
+    copyToNextWeek(sessionId) {
+      const session = storage.getSessionById(sessionId)
+      if (!session) return
+      const d = new Date(session.date)
+      d.setDate(d.getDate() + 7)
+      const newDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+      const newSession = {
+        ...session,
+        id: 's_' + Date.now() + Math.random().toString(36).slice(2, 6),
+        date: newDate,
+        status: 'scheduled',
+        summaryText: '',
+        summarySent: false,
+        photos: [],
+        beforePhotos: [],
+        afterPhotos: [],
+        notes: '',
+        voiceSegments: [],
+        aiDigest: '',
+        createdAt: Date.now(),
+        updatedAt: Date.now()
+      }
+      storage.saveSession(newSession)
+      showToast({ message: `已复制到 ${newDate}`, type: 'success' })
       this.loadWeek()
     },
   }

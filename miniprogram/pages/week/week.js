@@ -209,6 +209,7 @@ Page({
     if (session.status !== 'completed') items.push('标记已完成')
     if (session.status !== 'cancelled') items.push('标记取消')
     if (session.status !== 'scheduled') items.push('恢复待上课')
+    items.push('复制到下周同时段')
     items.push('编辑课程')
     wx.showActionSheet({
       itemList: items,
@@ -218,6 +219,10 @@ Page({
           storage.updateSessionStatus(id, 'completed')
           wx.showToast({ title: '已标记完成', icon: 'success' })
           wx.vibrateShort({ type: 'medium' })
+          // 跳到课程页触发课后速记弹窗
+          setTimeout(() => {
+            wx.navigateTo({ url: '/pages/session/session?id=' + id + '&quickNote=1' })
+          }, 400)
         } else if (action === '标记取消') {
           storage.updateSessionStatus(id, 'cancelled')
           wx.showToast({ title: '已取消', icon: 'none' })
@@ -226,6 +231,8 @@ Page({
           storage.updateSessionStatus(id, 'scheduled')
           wx.showToast({ title: '已恢复', icon: 'success' })
           wx.vibrateShort({ type: 'light' })
+        } else if (action === '复制到下周同时段') {
+          this._copyToNextWeek(id)
         } else if (action === '编辑课程') {
           wx.navigateTo({ url: '/pages/session/session?id=' + id })
           return
@@ -233,6 +240,33 @@ Page({
         this.loadWeek(this._currentDate || new Date())
       }
     })
+  },
+
+  _copyToNextWeek(sessionId) {
+    const session = storage.getSessionById(sessionId)
+    if (!session) return
+    const d = new Date(session.date)
+    d.setDate(d.getDate() + 7)
+    const newDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+    const { generateSessionId } = require('../../utils/idGenerator')
+    const newSession = Object.assign({}, session, {
+      id: generateSessionId(),
+      date: newDate,
+      status: 'scheduled',
+      summaryText: '',
+      summarySent: false,
+      photos: [],
+      beforePhotos: [],
+      afterPhotos: [],
+      notes: '',
+      voiceSegments: [],
+      aiDigest: '',
+      createdAt: Date.now(),
+      updatedAt: Date.now()
+    })
+    storage.saveSession(newSession)
+    wx.showToast({ title: '已复制到 ' + newDate, icon: 'success' })
+    wx.vibrateShort({ type: 'medium' })
   },
 
   onAddSession() {
