@@ -26,6 +26,7 @@ function createRecognizer() {
   let _model = 'fun-asr'
 
   recorder.onStart(() => {
+    console.log('[ASR] recorder.onStart fired')
     _recording = true
     _startTime = Date.now()
     if (_durationTimer) clearInterval(_durationTimer)
@@ -36,6 +37,7 @@ function createRecognizer() {
   })
 
   recorder.onStop((res) => {
+    console.log('[ASR] recorder.onStop fired', { tempFilePath: res.tempFilePath, fileSize: res.fileSize, duration: res.duration })
     _recording = false
     if (_durationTimer) {
       clearInterval(_durationTimer)
@@ -57,6 +59,7 @@ function createRecognizer() {
   })
 
   recorder.onError((res) => {
+    console.error('[ASR] recorder.onError fired:', res)
     _recording = false
     if (_durationTimer) {
       clearInterval(_durationTimer)
@@ -67,35 +70,50 @@ function createRecognizer() {
 
   function uploadAndRecognize(filePath, durationSec) {
     const startedAt = Date.now()
+    console.log('[ASR] uploadAndRecognize start', { filePath, durationSec, model: _model })
+
+    let base64
     try {
       const buffer = fs.readFileSync(filePath)
-      const base64 = wx.arrayBufferToBase64(buffer)
-
-      wx.cloud.callFunction({
-        name: 'recognizeSpeech',
-        data: { audio: base64, format: 'pcm', model: _model },
-        success: (res) => {
-          const r = res.result
-          if (r && r.success) {
-            if (_onStop) {
-              _onStop({
-                rawText: r.data.rawText || '',
-                asrModel: r.data.asrModel || _model,
-                asrElapsedMs: r.data.asrElapsedMs || (Date.now() - startedAt),
-                durationSec
-              })
-            }
-          } else {
-            if (_onError) _onError(new Error((r && r.error) || '识别失败'))
-          }
-        },
-        fail: (err) => {
-          if (_onError) _onError(new Error(err.errMsg || '云函数调用失败'))
-        }
-      })
+      console.log('[ASR] raw buffer byteLength:', buffer.byteLength)
+      base64 = wx.arrayBufferToBase64(buffer)
+      console.log('[ASR] base64 string length:', base64.length)
     } catch (err) {
-      if (_onError) _onError(new Error('读取录音失败：' + (err.message || err)))
+      console.error('[ASR] readFileSync failed:', err)
+      if (_onError) _onError(new Error('读取录音失败：' + (err.message || JSON.stringify(err))))
+      return
     }
+
+    if (!base64 || base64.length === 0) {
+      if (_onError) _onError(new Error('录音文件为空'))
+      return
+    }
+
+    console.log('[ASR] calling cloud function recognizeSpeech...')
+    wx.cloud.callFunction({
+      name: 'recognizeSpeech',
+      data: { audio: base64, format: 'mp3', model: _model },
+      success: (res) => {
+        console.log('[ASR] cloud function returned:', res)
+        const r = res.result
+        if (r && r.success) {
+          if (_onStop) {
+            _onStop({
+              rawText: r.data.rawText || '',
+              asrModel: r.data.asrModel || _model,
+              asrElapsedMs: r.data.asrElapsedMs || (Date.now() - startedAt),
+              durationSec
+            })
+          }
+        } else {
+          if (_onError) _onError(new Error((r && r.error) || '识别失败'))
+        }
+      },
+      fail: (err) => {
+        console.error('[ASR] cloud function failed:', err)
+        if (_onError) _onError(new Error(err.errMsg || '云函数调用失败：' + JSON.stringify(err)))
+      }
+    })
   }
 
   return {
@@ -106,16 +124,18 @@ function createRecognizer() {
     onError(cb) { _onError = cb },
     start(options = {}) {
       if (options.model) _model = options.model
+      console.log('[ASR] recorder.start invoked, model=', _model)
       recorder.start({
-        format: 'PCM',
+        format: 'mp3',
         sampleRate: 16000,
         numberOfChannels: 1,
-        encodeBitRate: 48000,
-        frameSize: 50
+        encodeBitRate: 48000
       })
     },
     stop() {
-      if (_recording) recorder.stop()
+      console.log('[ASR] recognizer.stop called, _recording=', _recording)
+      // 强制停止，避免某些机型 _recording 标志位与实际状态不一致
+      try { recorder.stop() } catch (e) { console.error('[ASR] recorder.stop error:', e) }
     },
     isRecording() { return _recording },
     destroy() {

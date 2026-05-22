@@ -196,7 +196,9 @@ async function recognizeSpeech(env, audioBuffer, format = 'wav', overrideModel) 
   if (!apiKey) throw Object.assign(new Error('DASHSCOPE_API_KEY 未配置'), { statusCode: 500 })
 
   const base64Audio = Buffer.from(audioBuffer).toString('base64')
-  const dataUri = `data:audio/${format === 'pcm' ? 'pcm' : 'wav'};base64,${base64Audio}`
+  // DashScope 支持 wav / mp3 / aac / m4a / opus / flac / ogg / pcm 等
+  const safeFormat = ['wav', 'mp3', 'aac', 'm4a', 'opus', 'flac', 'ogg', 'pcm'].includes(format) ? format : 'wav'
+  const dataUri = `data:audio/${safeFormat};base64,${base64Audio}`
 
   const model = overrideModel || env.ASR_MODEL || 'paraformer-v2'
   const taskId = await submitTranscription(apiKey, model, dataUri)
