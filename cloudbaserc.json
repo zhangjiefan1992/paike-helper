@@ -1,0 +1,30 @@
+{
+  "envId": "paike-dev-d7gix2yk472064a97",
+  "functionRoot": "./cloudfunctions/paike-dev-d7gix2yk472064a97/functions",
+  "functions": [
+    {
+      "name": "parseVoiceSession",
+      "runtime": "Nodejs18.15",
+      "timeout": 30,
+      "memorySize": 128
+    },
+    {
+      "name": "generateSummary",
+      "runtime": "Nodejs18.15",
+      "timeout": 30,
+      "memorySize": 128
+    },
+    {
+      "name": "recognizeSpeech",
+      "runtime": "Nodejs18.15",
+      "timeout": 30,
+      "memorySize": 256
+    },
+    {
+      "name": "parseSegments",
+      "runtime": "Nodejs18.15",
+      "timeout": 60,
+      "memorySize": 256
+    }
+  ]
+}
