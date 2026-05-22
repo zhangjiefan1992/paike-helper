@@ -155,6 +155,29 @@
     <textarea class="textarea" placeholder="添加备注..." value="{{form.notes}}" bindinput="onNotesInput" auto-height></textarea>
   </view>
 
+  <!-- AI 课程档案 -->
+  <view class="section" wx:if="{{form.aiDigest || (form.voiceSegments && form.voiceSegments.length)}}">
+    <view class="section__title">课程档案</view>
+    <textarea
+      wx:if="{{form.aiDigest}}"
+      class="textarea"
+      value="{{form.aiDigest}}"
+      bindinput="onDigestInput"
+      auto-height
+      placeholder="AI 收敛的本次课程档案"
+    />
+    <view class="seg-toggle" wx:if="{{form.voiceSegments && form.voiceSegments.length}}" bindtap="onToggleSegments">
+      <text>原始语音片段（{{form.voiceSegments.length}}）</text>
+      <text class="seg-toggle__arrow">{{showSegments ? '▲' : '▼'}}</text>
+    </view>
+    <view class="seg-list" wx:if="{{showSegments && form.voiceSegments}}">
+      <view class="seg-item" wx:for="{{form.voiceSegments}}" wx:key="recordedAt">
+        <text class="seg-item__head">片段 {{index + 1}} · {{item.asrModel}}</text>
+        <text class="seg-item__text">{{item.rawText}}</text>
+      </view>
+    </view>
+  </view>
+
   <!-- Summary CTA -->
   <view class="section" wx:if="{{form.summaryText}}">
     <view class="section__title">课后总结</view>

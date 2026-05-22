@@ -21,8 +21,11 @@ Page({
       focusAreas: [],
       photos: [],
       beforePhotos: [],
-      afterPhotos: []
+      afterPhotos: [],
+      voiceSegments: [],
+      aiDigest: ''
     },
+    showSegments: false,
     members: [],
     config: {},
     statusOptions: [
@@ -220,6 +223,14 @@ Page({
     this.setData({ 'form.notes': e.detail.value })
   },
 
+  onDigestInput(e) {
+    this.setData({ 'form.aiDigest': e.detail.value })
+  },
+
+  onToggleSegments() {
+    this.setData({ showSegments: !this.data.showSegments })
+  },
+
   onChoosePhoto(e) {
     const type = e.currentTarget.dataset.type || 'photos'
     const key = type === 'before' ? 'beforePhotos' : (type === 'after' ? 'afterPhotos' : 'photos')
@@ -364,21 +375,103 @@ Page({
       updates.focusAreaMap = focusAreaMap
     }
     if (data.notes) updates['form.notes'] = data.notes
+    if (data.voiceSegments && data.voiceSegments.length) {
+      updates['form.voiceSegments'] = data.voiceSegments
+    }
+    if (data.aiDigest) updates['form.aiDigest'] = data.aiDigest
 
+    let memberCreated = false
+    let memberFinalName = ''
     if (data.memberName) {
-      const member = this.data.members.find(m =>
-        m.name === data.memberName || m.name.includes(data.memberName)
-      )
-      if (member) {
-        updates['form.memberId'] = member.id
-        updates.selectedMemberName = member.name
+      const name = data.memberName.trim()
+      const exact = this.data.members.find(m => m.name === name)
+      if (exact) {
+        updates['form.memberId'] = exact.id
+        updates.selectedMemberName = exact.name
+        memberFinalName = exact.name
+      } else {
+        // 无精确匹配 → 弹确认框（采纳/纠正/取消）
+        this._pendingVoiceUpdates = updates
+        this._askMemberConfirm(name, this.data.members)
+        return
       }
     }
 
+    this._applyVoiceUpdates(updates, memberCreated, memberFinalName)
+  },
+
+  _applyVoiceUpdates(updates, memberCreated, memberFinalName) {
     this.setData(updates)
     const count = Object.keys(updates).filter(k => k.startsWith('form.')).length
     wx.vibrateShort({ type: 'medium' })
-    wx.showToast({ title: '已识别 ' + count + ' 个字段', icon: 'success' })
+    const suffix = memberCreated ? `，已新建『${memberFinalName}』` : ''
+    wx.showToast({ title: '已识别 ' + count + ' 个字段' + suffix, icon: 'success' })
+  },
+
+  _askMemberConfirm(name, members) {
+    // 找候选会员（字符交集排序）
+    const candidates = members
+      .map(m => ({ m, score: this._similarityScore(m.name, name) }))
+      .filter(x => x.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 4)
+      .map(x => x.m.name)
+
+    const itemList = ['新建会员「' + name + '」']
+    candidates.forEach(n => itemList.push('使用已有：' + n))
+    itemList.push('稍后手动选择')
+
+    wx.showActionSheet({
+      itemList,
+      success: (res) => {
+        const updates = this._pendingVoiceUpdates || {}
+        this._pendingVoiceUpdates = null
+        if (res.tapIndex === 0) {
+          // 新建
+          const storage = require('../../utils/storage')
+          const { generateMemberId } = require('../../utils/idGenerator')
+          const newMember = {
+            id: generateMemberId(),
+            name,
+            phone: '',
+            avatar: '',
+            tags: [],
+            notes: '',
+            createdAt: Date.now()
+          }
+          storage.saveMember(newMember)
+          const members = storage.getMembers()
+          this.setData({ members })
+          updates['form.memberId'] = newMember.id
+          updates.selectedMemberName = newMember.name
+          this._applyVoiceUpdates(updates, true, name)
+        } else if (res.tapIndex > 0 && res.tapIndex <= candidates.length) {
+          const chosen = members.find(m => m.name === candidates[res.tapIndex - 1])
+          if (chosen) {
+            updates['form.memberId'] = chosen.id
+            updates.selectedMemberName = chosen.name
+          }
+          this._applyVoiceUpdates(updates, false, '')
+        } else {
+          // 稍后选
+          this._applyVoiceUpdates(updates, false, '')
+        }
+      },
+      fail: () => {
+        const updates = this._pendingVoiceUpdates || {}
+        this._pendingVoiceUpdates = null
+        this._applyVoiceUpdates(updates, false, '')
+      }
+    })
+  },
+
+  _similarityScore(a, b) {
+    if (!a || !b) return 0
+    if (a.includes(b) || b.includes(a)) return 100
+    const setA = new Set(a)
+    let common = 0
+    for (const c of b) if (setA.has(c)) common++
+    return common
   },
 
   onDelete() {

@@ -1,0 +1,7 @@
+{
+  "name": "parseSegments",
+  "version": "1.0.0",
+  "description": "多段语音原文 → 结构化字段 + AI 课程档案（代理 Cloudflare）",
+  "main": "index.js",
+  "dependencies": {}
+}

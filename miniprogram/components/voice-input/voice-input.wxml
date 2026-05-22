@@ -8,41 +8,145 @@
   <view class="voice-panel__mask" bindtap="onClose"></view>
   <view class="voice-panel__body">
     <view class="voice-panel__header">
-      <text class="voice-panel__title">{{panelTitle}}</text>
+      <text class="voice-panel__title">语音录入</text>
       <view class="voice-panel__close" bindtap="onClose">×</view>
     </view>
 
-    <!-- 识别文本展示 -->
-    <view class="voice-panel__text-area">
-      <text class="voice-panel__transcript" wx:if="{{transcript}}">{{transcript}}</text>
-      <text class="voice-panel__placeholder" wx:elif="{{!recording}}">按住下方按钮开始说话</text>
-      <text class="voice-panel__listening" wx:else>正在聆听...</text>
+    <!-- 模式切换 + 模型选择 -->
+    <view class="top-bar">
+      <view class="mode-toggle">
+        <view class="mode-btn {{mode === 'single' ? 'mode-btn--active' : ''}}" bindtap="onSingleMode">单次</view>
+        <view class="mode-btn {{mode === 'multi' ? 'mode-btn--active' : ''}}" bindtap="onMultiMode">多段</view>
+      </view>
+      <view class="model-chips">
+        <view
+          wx:for="{{asrModels}}" wx:key="value"
+          class="model-chip {{selectedModel === item.value ? 'model-chip--active' : ''}}"
+          data-value="{{item.value}}"
+          bindtap="onModelChange"
+        >{{item.label}}</view>
+      </view>
+    </view>
+
+    <!-- 多段：片段列表 -->
+    <view class="section" wx:if="{{mode === 'multi' && (segments.length > 0 || state === 'asr')}}">
+      <view class="section__title">
+        <text>🎬 已录片段 ({{segments.length}})</text>
+        <text class="section__hint" wx:if="{{state === 'asr'}}">识别第 {{segments.length + 1}} 段...</text>
+      </view>
+      <view class="segments-list">
+        <view class="segment-item" wx:for="{{segments}}" wx:key="recordedAt" wx:for-index="idx">
+          <view class="segment-item__head">
+            <text class="segment-item__index">片段 {{idx + 1}}</text>
+            <text class="segment-item__meta">{{item.asrModel}} · {{item.elapsedMs / 1000}}s</text>
+            <text class="segment-item__del" data-idx="{{idx}}" bindtap="onDeleteSegment">删除</text>
+          </view>
+          <textarea
+            class="segment-item__text"
+            value="{{item.rawText}}"
+            data-idx="{{idx}}"
+            bindinput="onEditSegment"
+            auto-height
+            maxlength="500"
+          />
+        </view>
+        <view class="segment-item segment-item--loading" wx:if="{{state === 'asr'}}">
+          <text>正在识别...</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 单段：识别原文 -->
+    <view class="section" wx:if="{{mode === 'single' && (rawText || state === 'asr' || state === 'parsing')}}">
+      <view class="section__title">
+        <text>📝 识别原文</text>
+        <text class="section__hint" wx:if="{{state === 'asr'}}">语音识别中...</text>
+        <text class="section__hint section__hint--ok" wx:elif="{{rawText && asrElapsedMs}}">✓ {{asrElapsedMs / 1000}}s</text>
+      </view>
+      <textarea
+        wx:if="{{state === 'review'}}"
+        class="raw-text-edit"
+        value="{{rawText}}"
+        bindinput="onEditRawText"
+        auto-height
+        maxlength="500"
+      />
+      <view class="raw-text-display raw-text-display--loading" wx:elif="{{state === 'asr'}}">
+        正在调用 ASR ({{selectedModel}})...
+      </view>
+      <view class="raw-text-display" wx:else>{{rawText}}</view>
+    </view>
+
+    <!-- AI 课程档案（多段模式） -->
+    <view class="section" wx:if="{{mode === 'multi' && (aiDigest || state === 'parsing')}}">
+      <view class="section__title">
+        <text>📋 课程档案</text>
+        <text class="section__hint" wx:if="{{state === 'parsing'}}">收敛档案中...</text>
+        <text class="section__hint section__hint--ok" wx:elif="{{aiDigest && llmElapsedMs}}">✓ {{llmElapsedMs / 1000}}s</text>
+      </view>
+      <textarea
+        wx:if="{{state === 'review' && aiDigest}}"
+        class="digest-edit"
+        value="{{aiDigest}}"
+        bindinput="onEditDigest"
+        auto-height
+      />
+      <view class="digest-display digest-display--loading" wx:elif="{{state === 'parsing'}}">
+        分析片段中，归纳本次课程档案...
+      </view>
+    </view>
+
+    <!-- 解析字段预览 -->
+    <view class="section" wx:if="{{state === 'review' && parsedFields.length > 0}}">
+      <view class="section__title">
+        <text>🤖 自动填表预览</text>
+        <text class="section__hint section__hint--ok">{{parsedFieldCount}} 个字段</text>
+      </view>
+      <view class="parsed-fields">
+        <view class="parsed-row" wx:for="{{parsedFields}}" wx:key="label">
+          <text class="parsed-row__label">{{item.label}}</text>
+          <text class="parsed-row__value {{!item.value ? 'parsed-row__value--empty' : ''}}">{{item.value || '—'}}</text>
+        </view>
+      </view>
     </view>
 
     <!-- 录音按钮 -->
-    <view class="voice-panel__record-wrap" wx:if="{{state === 'idle' || state === 'recording'}}">
+    <view class="record-section" wx:if="{{state === 'idle' || state === 'recording' || state === 'error'}}">
       <view
-        class="voice-panel__record-btn {{recording ? 'voice-panel__record-btn--active' : ''}}"
+        class="record-btn {{recording ? 'record-btn--active' : ''}}"
         bindtouchstart="onRecordStart"
         bindtouchend="onRecordStop"
         bindtouchcancel="onRecordStop"
       >
-        <view class="voice-panel__ripple" wx:if="{{recording}}"></view>
-        <text class="voice-panel__record-icon">{{recording ? '⏹' : '🎤'}}</text>
+        <view class="record-btn__inner">
+          <view class="record-btn__ripple" wx:if="{{recording}}"></view>
+          <text class="record-btn__icon">🎤</text>
+        </view>
+        <text class="record-btn__label">{{recording ? '松手结束 ' + durationLabel : recordBtnLabel}}</text>
       </view>
-      <text class="voice-panel__hint">{{recording ? '松手结束' : '按住说话'}}</text>
+      <view class="record-tip" wx:if="{{state === 'idle' && mode === 'single'}}">
+        示例：「明天下午三点给张三上普拉提，旺君馆」
+      </view>
+      <view class="record-tip" wx:elif="{{state === 'idle' && mode === 'multi' && segments.length === 0}}">
+        可分多次说话，最后统一生成课程档案
+      </view>
+      <view class="record-tip record-tip--error" wx:if="{{state === 'error'}}">
+        ⚠ {{errorMsg}}
+      </view>
     </view>
 
-    <!-- 解析中 -->
-    <view class="voice-panel__loading" wx:if="{{state === 'parsing'}}">
-      <view class="voice-panel__spinner"></view>
-      <text class="voice-panel__loading-text">正在解析...</text>
+    <!-- 多段：完成本次记录 -->
+    <view class="finalize-section" wx:if="{{mode === 'multi' && segments.length > 0 && state !== 'asr' && state !== 'parsing' && state !== 'review'}}">
+      <button class="finalize-btn" bindtap="onFinalizeMulti" disabled="{{finalizing}}">
+        {{finalizing ? '处理中...' : '✨ 完成本次记录（共 ' + segments.length + ' 段）'}}
+      </button>
     </view>
 
-    <!-- 错误提示 -->
-    <view class="voice-panel__error" wx:if="{{state === 'error'}}">
-      <text class="voice-panel__error-text">{{errorMsg}}</text>
-      <view class="voice-panel__retry" bindtap="onRetry">重试</view>
+    <!-- 审核操作 -->
+    <view class="review-actions" wx:if="{{state === 'review'}}">
+      <button class="action-btn action-btn--plain" wx:if="{{mode === 'single'}}" bindtap="onReparse" disabled="{{reparsing}}">🔄 重新解析</button>
+      <button class="action-btn action-btn--plain" bindtap="onDiscard">重新录入</button>
+      <button class="action-btn action-btn--primary" bindtap="onApply">✓ 应用到表单</button>
     </view>
   </view>
 </view>

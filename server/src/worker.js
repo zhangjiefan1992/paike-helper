@@ -107,6 +107,29 @@ const ALLOWED_MODELS = new Set([
   'fun-asr'
 ])
 
+// POST /api/v1/ai/recognize-base64 — 接 base64 音频（小程序云函数代理用）
+app.post('/api/v1/ai/recognize-base64', async (c) => {
+  const { audio, format = 'pcm', model: modelInput } = await c.req.json()
+  if (!audio || typeof audio !== 'string') {
+    return c.json({ code: 40001, message: '未收到 audio base64' }, 400)
+  }
+  const model = ALLOWED_MODELS.has(modelInput) ? modelInput : (c.env.ASR_MODEL || 'fun-asr')
+
+  try {
+    const startedAt = Date.now()
+    const audioBuffer = Buffer.from(audio, 'base64')
+    const rawText = await recognizeSpeech(c.env, audioBuffer, format === 'pcm' ? 'pcm' : 'wav', model)
+    const elapsed = Date.now() - startedAt
+    if (!rawText) {
+      return c.json({ code: 40002, message: '语音识别结果为空，请重试' }, 400)
+    }
+    return c.json({ code: 0, data: { rawText, asrModel: model, asrElapsedMs: elapsed } })
+  } catch (err) {
+    const status = err.statusCode || 500
+    return c.json({ code: status === 400 ? 40000 : 50202, message: err.message }, status)
+  }
+})
+
 // POST /api/v1/ai/recognize — 仅做 ASR，返回原文
 app.post('/api/v1/ai/recognize', async (c) => {
   const formData = await c.req.formData()

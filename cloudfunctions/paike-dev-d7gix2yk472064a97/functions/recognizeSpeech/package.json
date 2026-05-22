@@ -1,0 +1,7 @@
+{
+  "name": "recognizeSpeech",
+  "version": "1.0.0",
+  "description": "音频 base64 → ASR 文本（代理 Cloudflare）",
+  "main": "index.js",
+  "dependencies": {}
+}
