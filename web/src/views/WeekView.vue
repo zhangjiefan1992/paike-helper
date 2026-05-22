@@ -1,12 +1,15 @@
 <template>
-  <div class="week-page" :class="themeClass"
+  <div class="week-page" :class="[themeClass, { 'is-shot': shotMode }]"
     @touchstart="onSwipeStart" @touchmove="onSwipeMove" @touchend="onSwipeEnd"
   >
     <!-- Header -->
-    <header class="wv-header">
+    <header class="wv-header" v-if="!shotMode">
       <div class="wv-header__top">
         <span class="wv-header__date">{{ todayLabel }}</span>
-        <button class="wv-header__today-btn" @click="goToday">回到今天</button>
+        <div class="wv-header__top-actions">
+          <button class="wv-header__shot-btn" @click="enterShotMode" title="截图模式">📷</button>
+          <button class="wv-header__today-btn" @click="goToday">回到今天</button>
+        </div>
       </div>
       <div class="wv-header__nav">
         <span class="wv-header__range">{{ rangeLabel }}</span>
@@ -14,6 +17,17 @@
           <button class="wv-header__arrow" @click="changeWeek(-1)">‹</button>
           <button class="wv-header__arrow" @click="changeWeek(1)">›</button>
         </div>
+      </div>
+    </header>
+
+    <!-- Shot mode header (clean) -->
+    <header class="wv-header wv-header--shot" v-else>
+      <div class="wv-header__shot-top">
+        <div>
+          <div class="wv-header__shot-title">本周课表</div>
+          <div class="wv-header__shot-range">{{ rangeLabel }}</div>
+        </div>
+        <button class="wv-header__exit-shot" @click="exitShotMode">退出截图</button>
       </div>
     </header>
 
@@ -53,9 +67,12 @@
         class="wv-day"
         :class="{ 'wv-day--today': day.isToday }"
       >
-        <div class="wv-day__head" @click="$router.push('/day/' + day.date)">
+        <div class="wv-day__head" @click="!shotMode && $router.push('/day/' + day.date)">
           <span class="wv-day__name">{{ day.weekday }}</span>
           <span class="wv-day__num">{{ day.dayNum }}</span>
+          <span class="wv-day__count" v-if="dayCards[day.date]?.length">
+            {{ dayCards[day.date].length }}节
+          </span>
         </div>
         <div class="wv-day__body">
           <div
@@ -92,8 +109,15 @@
     </div>
     </div><!-- end wv-swipe-wrap -->
 
+    <!-- Brand watermark (only in shot mode) -->
+    <div class="wv-brand" v-if="shotMode">
+      <span class="wv-brand__icon">🎙</span>
+      <span class="wv-brand__name">排课助手</span>
+      <span class="wv-brand__url">keleya.org</span>
+    </div>
+
     <!-- FAB -->
-    <div class="wv-fab" @click="$router.push('/session')"
+    <div class="wv-fab" v-if="!shotMode" @click="$router.push('/session')"
       @contextmenu.prevent="showThemePicker = true"
       @touchstart="onFabTouchStart"
       @touchend="onFabTouchEnd"
@@ -184,6 +208,7 @@ export default {
       swipeOffsetX: 0,
       swiping: false,
       swipeAnimating: false,
+      shotMode: false,
     }
   },
   computed: {
@@ -302,6 +327,13 @@ export default {
       this.currentDate = new Date()
       this.loadWeek()
     },
+    enterShotMode() {
+      this.shotMode = true
+      showToast({ message: '已进入截图模式，长按或截屏保存', duration: 2000 })
+    },
+    exitShotMode() {
+      this.shotMode = false
+    },
     scrollToToday() {
       const grid = this.$refs.gridRef
       if (!grid) return
@@ -331,6 +363,7 @@ export default {
       }
     },
     onSwipeStart(e) {
+      if (this.shotMode) return
       const touch = e.touches[0]
       this.touchStartX = touch.clientX
       this.touchStartY = touch.clientY
@@ -339,6 +372,7 @@ export default {
       this.swipeOffsetX = 0
     },
     onSwipeMove(e) {
+      if (this.shotMode) return
       const touch = e.touches[0]
       const dx = touch.clientX - this.touchStartX
       const dy = touch.clientY - this.touchStartY
@@ -473,6 +507,40 @@ export default {
   display: flex;
   align-items: center;
   justify-content: space-between;
+}
+
+.wv-header__top-actions {
+  display: flex; align-items: center; gap: 8px;
+}
+
+.wv-header__shot-btn {
+  width: 32px; height: 32px; border-radius: 8px;
+  border: none; cursor: pointer;
+  background: var(--wv-hairline, #F1F5F9);
+  font-size: 14px; display: inline-flex; align-items: center; justify-content: center;
+}
+
+/* Shot mode header */
+.wv-header--shot {
+  padding: 22px 22px 10px;
+  background: var(--wv-surface, #fff);
+}
+.wv-header__shot-top {
+  display: flex; justify-content: space-between; align-items: flex-start;
+}
+.wv-header__shot-title {
+  font-size: 22px; font-weight: 800;
+  color: var(--wv-ink, #1E293B);
+  letter-spacing: -0.5px;
+}
+.wv-header__shot-range {
+  font-size: 13px; color: var(--wv-ink-muted, #94A3B8);
+  margin-top: 4px;
+}
+.wv-header__exit-shot {
+  font-size: 12px; padding: 6px 12px; border-radius: 8px;
+  background: var(--wv-hairline, #F1F5F9); border: none; cursor: pointer;
+  color: var(--wv-ink-secondary, #475569);
 }
 
 .wv-header__date {
@@ -620,6 +688,21 @@ export default {
   font-weight: 700;
   color: var(--wv-ink, #1E293B);
   margin-top: 4px;
+}
+
+.wv-day__count {
+  display: inline-block;
+  font-size: 10px; font-weight: 600;
+  padding: 1px 6px; border-radius: 8px;
+  background: rgba(99,102,241,0.10);
+  color: var(--wv-today-accent, #6366F1);
+  margin-left: 4px;
+  vertical-align: middle;
+}
+
+.wv-day--today .wv-day__count {
+  background: rgba(255,255,255,0.85);
+  color: var(--wv-today-accent, #6366F1);
 }
 
 .wv-day--today .wv-day__num {
@@ -795,6 +878,48 @@ export default {
   font-size: 11px;
   color: var(--wv-ink-muted, #94A3B8);
   font-weight: 500;
+}
+
+/* Shot mode: 7 days visible, no scroll */
+.week-page.is-shot {
+  background: var(--wv-bg, #FAFBFD);
+  padding-bottom: 20px;
+}
+.is-shot .wv-grid {
+  overflow-x: hidden;
+  padding: 0 12px;
+  gap: 4px;
+}
+.is-shot .wv-day, .is-shot .wv-day--today {
+  flex: 1 1 0;
+  min-width: 0;
+}
+.is-shot .wv-day__num { width: 32px; height: 32px; font-size: 14px; }
+.is-shot .wv-day__name { font-size: 10px; }
+.is-shot .wv-day__count { display: block; margin: 4px 0 0 0; }
+.is-shot .wv-card { padding: 6px 6px; border-radius: 8px; }
+.is-shot .wv-card__time { font-size: 9px; }
+.is-shot .wv-card__type { font-size: 11px; margin-top: 2px; }
+.is-shot .wv-card__member { font-size: 10px; margin-top: 1px; }
+.is-shot .wv-card__location { display: none; }
+.is-shot .wv-card__footer { display: none; }
+.is-shot .wv-day-empty { padding: 16px 4px; }
+.is-shot .wv-day-empty__circle { width: 24px; height: 24px; font-size: 14px; }
+.is-shot .wv-day-empty__text { font-size: 10px; }
+
+/* Brand watermark */
+.wv-brand {
+  display: flex; align-items: center; justify-content: center;
+  gap: 6px; padding: 18px 20px 12px;
+  color: var(--wv-ink-muted, #94A3B8);
+  font-size: 12px; font-weight: 500;
+}
+.wv-brand__icon { font-size: 14px; }
+.wv-brand__name { font-weight: 700; color: var(--wv-ink, #1E293B); }
+.wv-brand__url {
+  margin-left: 6px; padding-left: 6px;
+  border-left: 1px solid var(--wv-hairline, #F1F5F9);
+  font-size: 11px; opacity: 0.8;
 }
 
 /* FAB */

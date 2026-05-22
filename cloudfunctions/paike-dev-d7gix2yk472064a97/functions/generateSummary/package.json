@@ -1,9 +1,7 @@
 {
   "name": "generateSummary",
-  "version": "1.0.0",
-  "description": "AI课后总结生成云函数",
+  "version": "2.0.0",
+  "description": "代理转发到 Cloudflare Worker（瘦身版）",
   "main": "index.js",
-  "dependencies": {
-    "wx-server-sdk": "latest"
-  }
+  "dependencies": {}
 }

@@ -29,6 +29,27 @@ app.post('/api/v1/ai/summary', async (c) => {
   }
 })
 
+// POST /api/v1/ai/llm — 通用 LLM 调用（小程序云函数代理用）
+app.post('/api/v1/ai/llm', async (c) => {
+  const { prompt, systemPrompt, temperature, maxTokens } = await c.req.json()
+  if (!prompt || !prompt.trim()) {
+    return c.json({ code: 40001, message: 'prompt 不能为空' }, 400)
+  }
+  try {
+    const startedAt = Date.now()
+    const text = await callLLM(c.env, prompt, {
+      systemPrompt,
+      temperature: typeof temperature === 'number' ? temperature : undefined,
+      maxTokens: typeof maxTokens === 'number' ? maxTokens : undefined
+    })
+    const elapsed = Date.now() - startedAt
+    return c.json({ code: 0, data: { text, llmElapsedMs: elapsed } })
+  } catch (err) {
+    const status = err.statusCode || 500
+    return c.json({ code: status === 502 ? 50205 : 50000, message: err.message }, status)
+  }
+})
+
 // POST /api/v1/ai/parse-text
 app.post('/api/v1/ai/parse-text', async (c) => {
   const { text, context = {} } = await c.req.json()

@@ -1,9 +1,7 @@
 {
   "name": "parseVoiceSession",
-  "version": "1.0.0",
-  "description": "语音文本 → 结构化课程数据（DeepSeek LLM）",
+  "version": "2.0.0",
+  "description": "代理转发到 Cloudflare Worker（瘦身版）",
   "main": "index.js",
-  "dependencies": {
-    "wx-server-sdk": "latest"
-  }
+  "dependencies": {}
 }
