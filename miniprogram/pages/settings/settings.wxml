@@ -150,6 +150,33 @@
 
   <view class="rule"></view>
 
+  <!-- 云端备份 -->
+  <view class="block">
+    <view class="block__head">
+      <text class="block__label">云端备份</text>
+      <text class="block__count" wx:if="{{backupHasCloud}}">已就绪</text>
+    </view>
+    <view class="rows">
+      <view class="row">
+        <text class="row__label">上次备份</text>
+        <text class="row__val serif">{{backupTimeLabel}}</text>
+      </view>
+      <view class="row" bindtap="onBackupNow">
+        <text class="row__label">立即备份</text>
+        <text class="row__val row__val--muted serif">{{backingUp ? '备份中...' : '上传到云存储'}}</text>
+        <text class="row__chev">›</text>
+      </view>
+      <view class="row {{!backupHasCloud ? 'row--disabled' : ''}}" bindtap="onRestore">
+        <text class="row__label">从云端恢复</text>
+        <text class="row__val row__val--muted serif">{{backupHasCloud ? '覆盖本地' : '无可用备份'}}</text>
+        <text class="row__chev">›</text>
+      </view>
+    </view>
+    <text class="block__note serif">每次切后台或退出小程序时自动备份；切换设备或重装请用上方"恢复"</text>
+  </view>
+
+  <view class="rule"></view>
+
   <!-- 数据 -->
   <view class="block">
     <view class="block__head"><text class="block__label">数据</text></view>

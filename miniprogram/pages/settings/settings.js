@@ -1,6 +1,19 @@
 const storage = require('../../utils/storage')
 const dateUtil = require('../../utils/dateUtil')
 const textImportExport = require('../../utils/textImportExport')
+const cloudBackup = require('../../utils/cloudBackup')
+
+function fmtBackupTime(ts) {
+  if (!ts) return '从未备份'
+  const d = new Date(ts)
+  const now = new Date()
+  const diffSec = Math.round((now - d) / 1000)
+  if (diffSec < 60) return '刚刚'
+  if (diffSec < 3600) return Math.round(diffSec / 60) + ' 分钟前'
+  if (diffSec < 86400) return Math.round(diffSec / 3600) + ' 小时前'
+  if (diffSec < 86400 * 7) return Math.round(diffSec / 86400) + ' 天前'
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
 
 Page({
   data: {
@@ -18,12 +31,107 @@ Page({
       { name: '渐变', value: 'candy-gradient', preview: 'linear-gradient(135deg, #667EEA, #764BA2)' },
       { name: '轻盈', value: 'airy-tint', preview: '#F0F4FF' }
     ],
-    currentTheme: 'airy-tint'
+    currentTheme: 'airy-tint',
+    backupTimeLabel: '从未备份',
+    backupHasCloud: false,
+    backingUp: false,
+    restoring: false
   },
 
   onShow() {
     const config = storage.getConfig()
     this.setData({ config, currentTheme: config.weekTheme || 'airy-tint' })
+    this._refreshBackupInfo()
+  },
+
+  _refreshBackupInfo() {
+    const ts = cloudBackup.getLastBackupTime()
+    this.setData({
+      backupTimeLabel: fmtBackupTime(ts),
+      backupHasCloud: !!cloudBackup.getLastBackupFileID()
+    })
+  },
+
+  async onBackupNow() {
+    if (this.data.backingUp) return
+    this.setData({ backingUp: true })
+    wx.showLoading({ title: '备份中...', mask: true })
+    try {
+      const result = await cloudBackup.uploadBackup()
+      wx.hideLoading()
+      if (result.success) {
+        wx.showToast({
+          title: `已备份 ${result.memberCount} 位会员 / ${result.sessionCount} 节课`,
+          icon: 'none',
+          duration: 2200
+        })
+        wx.vibrateShort({ type: 'medium' })
+        this._refreshBackupInfo()
+      } else {
+        wx.showModal({
+          title: '备份失败',
+          content: result.error || '请稍后重试',
+          showCancel: false
+        })
+      }
+    } catch (err) {
+      wx.hideLoading()
+      wx.showModal({
+        title: '备份失败',
+        content: err.message || '未知错误',
+        showCancel: false
+      })
+    } finally {
+      this.setData({ backingUp: false })
+    }
+  },
+
+  onRestore() {
+    if (!this.data.backupHasCloud) {
+      wx.showToast({ title: '本设备无备份记录', icon: 'none' })
+      return
+    }
+    if (this.data.restoring) return
+    wx.showModal({
+      title: '从云端恢复',
+      content: '将用云端备份覆盖本地数据，本地未备份的修改会丢失。确认继续？',
+      confirmText: '确认恢复',
+      confirmColor: '#B5573D',
+      success: async (res) => {
+        if (!res.confirm) return
+        this.setData({ restoring: true })
+        wx.showLoading({ title: '恢复中...', mask: true })
+        try {
+          const result = await cloudBackup.restoreBackup()
+          wx.hideLoading()
+          if (result.success) {
+            wx.showToast({
+              title: '恢复成功',
+              icon: 'success'
+            })
+            wx.vibrateShort({ type: 'medium' })
+            // 刷新当前 config
+            const config = storage.getConfig()
+            this.setData({ config, currentTheme: config.weekTheme || 'airy-tint' })
+          } else {
+            wx.showModal({
+              title: '恢复失败',
+              content: result.error || '请稍后重试',
+              showCancel: false
+            })
+          }
+        } catch (err) {
+          wx.hideLoading()
+          wx.showModal({
+            title: '恢复失败',
+            content: err.message || '未知错误',
+            showCancel: false
+          })
+        } finally {
+          this.setData({ restoring: false })
+        }
+      }
+    })
   },
 
   // === 预设管理 ===
