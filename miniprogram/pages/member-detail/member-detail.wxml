@@ -5,7 +5,10 @@
     <view class="profile__accent" style="background:{{accent}}"></view>
     <view class="profile__top">
       <text class="profile__name serif">{{member.name}}</text>
-      <view class="profile__edit" bindtap="onEdit">编辑</view>
+      <view class="profile__actions">
+        <view class="profile__action" bindtap="onExport">导出</view>
+        <view class="profile__action" bindtap="onEdit">编辑</view>
+      </view>
     </view>
     <view class="profile__meta" wx:if="{{member.phone || member.tags.length}}">
       <text wx:if="{{member.phone}}" class="profile__phone">{{member.phone}}</text>
@@ -44,13 +47,18 @@
       </view>
       <view class="stat__div"></view>
       <view class="stat">
-        <text class="stat__num serif">{{thisWeekCount}}</text>
-        <text class="stat__lbl">本周</text>
+        <text class="stat__num serif">{{totalCompleted}}</text>
+        <text class="stat__lbl">累计</text>
       </view>
       <view class="stat__div"></view>
       <view class="stat">
-        <text class="stat__num serif">{{totalCompleted}}</text>
-        <text class="stat__lbl">累计</text>
+        <text class="stat__num serif">{{attendRatePct}}<text class="stat__num-unit">%</text></text>
+        <text class="stat__lbl">出勤</text>
+      </view>
+      <view class="stat__div" wx:if="{{showAvg}}"></view>
+      <view class="stat" wx:if="{{showAvg}}">
+        <text class="stat__num serif">{{avgPerMonthLabel}}</text>
+        <text class="stat__lbl">月均</text>
       </view>
     </view>
   </view>
@@ -130,4 +138,21 @@
   </view>
 
   <view class="page__tail"></view>
+
+  <!-- 导出明细弹窗 -->
+  <view class="export-modal" wx:if="{{showExport}}" catchtouchmove="true">
+    <view class="export-modal__mask" bindtap="onCloseExport"></view>
+    <view class="export-modal__body" catchtap="noop">
+      <view class="export-modal__header">
+        <text class="export-modal__title serif">导出明细</text>
+        <view class="export-modal__close" bindtap="onCloseExport">×</view>
+      </view>
+      <text class="export-modal__hint serif">长按选中或点底部"复制全文"</text>
+      <textarea class="export-modal__text" value="{{exportText}}" disabled show-confirm-bar="{{false}}" />
+      <view class="export-modal__actions">
+        <view class="export-modal__btn export-modal__btn--ghost" bindtap="onCloseExport">关闭</view>
+        <view class="export-modal__btn" bindtap="onCopyExport">复制全文</view>
+      </view>
+    </view>
+  </view>
 </view>

@@ -7,7 +7,16 @@
           <path d="M15 18l-6-6 6-6" />
         </svg>
       </button>
-      <button class="text-btn" @click="$router.push('/member-edit/' + member.id)">编辑</button>
+      <div class="hdr__actions">
+        <button class="icon-btn" aria-label="导出明细" @click="onExport">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <polyline points="7 10 12 15 17 10" />
+            <line x1="12" y1="15" x2="12" y2="3" />
+          </svg>
+        </button>
+        <button class="text-btn" @click="$router.push('/member-edit/' + member.id)">编辑</button>
+      </div>
     </header>
 
     <!-- 档案块 -->
@@ -58,13 +67,18 @@
         </div>
         <span class="stat__div"></span>
         <div class="stat">
-          <span class="stat__num">{{ thisWeekCount }}</span>
-          <span class="stat__lbl">本周</span>
+          <span class="stat__num">{{ totalCompleted }}</span>
+          <span class="stat__lbl">累计</span>
         </div>
         <span class="stat__div"></span>
         <div class="stat">
-          <span class="stat__num">{{ totalCompleted }}</span>
-          <span class="stat__lbl">累计</span>
+          <span class="stat__num">{{ attendRatePct }}<small>%</small></span>
+          <span class="stat__lbl">出勤</span>
+        </div>
+        <span class="stat__div" v-if="avgPerMonth >= 0.5"></span>
+        <div class="stat" v-if="avgPerMonth >= 0.5">
+          <span class="stat__num">{{ avgPerMonthLabel }}</span>
+          <span class="stat__lbl">月均</span>
         </div>
       </div>
     </section>
@@ -139,13 +153,41 @@
     </section>
 
     <div class="page__tail"></div>
+
+    <!-- 导出明细弹窗 -->
+    <van-popup
+      v-model:show="exportModal.show"
+      position="bottom"
+      round
+      :style="{ height: '88%', background: 'var(--paper)' }"
+    >
+      <div class="export-dialog">
+        <header class="export-dialog__hdr">
+          <h2 class="export-dialog__title">导出明细</h2>
+          <button class="icon-btn" @click="exportModal.show = false" aria-label="关闭">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+              <line x1="6" y1="6" x2="18" y2="18" />
+              <line x1="6" y1="18" x2="18" y2="6" />
+            </svg>
+          </button>
+        </header>
+        <p class="export-dialog__hint">长按选中复制，或直接点下方"复制全文"</p>
+        <textarea class="export-dialog__text" v-model="exportModal.text" readonly></textarea>
+        <div class="export-dialog__actions">
+          <button class="export-dialog__btn export-dialog__btn--ghost" @click="exportModal.show = false">关闭</button>
+          <button class="export-dialog__btn" @click="onCopyExport">复制全文</button>
+        </div>
+      </div>
+    </van-popup>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
+import { showToast, showSuccessToast } from 'vant'
 import * as storage from '../services/storage'
+import { exportMemberDetail, buildMemberStats } from '../utils/memberExport'
 
 const route = useRoute()
 const member = ref(null)
@@ -180,6 +222,51 @@ const daysSinceLast = computed(() => {
 })
 
 const totalCompleted = computed(() => sessions.value.filter(s => s.status === 'completed').length)
+
+const memberStats = computed(() => buildMemberStats(member.value, sessions.value))
+const attendRatePct = computed(() => {
+  const total = memberStats.value.completed + memberStats.value.cancelled + memberStats.value.noshow
+  if (total === 0) return 0
+  return Math.round(memberStats.value.attendRate * 100)
+})
+const avgPerMonth = computed(() => memberStats.value.avgPerMonth)
+const avgPerMonthLabel = computed(() => {
+  const v = memberStats.value.avgPerMonth
+  if (v >= 10) return Math.round(v).toString()
+  return v.toFixed(1)
+})
+
+const exportModal = reactive({ show: false, text: '' })
+
+function onExport() {
+  if (!sessions.value.length) {
+    showToast('该会员还没有上课记录')
+    return
+  }
+  exportModal.text = exportMemberDetail(member.value, sessions.value)
+  exportModal.show = true
+}
+
+async function onCopyExport() {
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(exportModal.text)
+    } else {
+      // 兼容老浏览器
+      const ta = document.createElement('textarea')
+      ta.value = exportModal.text
+      ta.style.position = 'fixed'
+      ta.style.opacity = '0'
+      document.body.appendChild(ta)
+      ta.select()
+      document.execCommand('copy')
+      document.body.removeChild(ta)
+    }
+    showSuccessToast({ message: '已复制', duration: 1200, forbidClick: true })
+  } catch {
+    showToast('复制失败，请长按选中后复制')
+  }
+}
 
 const thisMonthCount = computed(() => {
   const ym = new Date().toISOString().slice(0, 7)
@@ -339,6 +426,11 @@ function cloudOpacity(i) { return Math.max(0.35, 1 - i * 0.08) }
   -webkit-tap-highlight-color: transparent;
 }
 .icon-btn:active { background: var(--rule-soft); }
+.hdr__actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
 .text-btn {
   font-size: 13px;
   letter-spacing: 0.04em;
@@ -349,6 +441,87 @@ function cloudOpacity(i) { return Math.max(0.35, 1 - i * 0.08) }
   -webkit-tap-highlight-color: transparent;
 }
 .text-btn:active { color: var(--primary); }
+.stat__num small {
+  font-size: 0.55em;
+  font-weight: 400;
+  color: var(--ink-3);
+  margin-left: 2px;
+  letter-spacing: 0;
+}
+
+/* === Export dialog === */
+.export-dialog {
+  height: 100%;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  box-sizing: border-box;
+}
+.export-dialog__hdr {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.export-dialog__title {
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: 22px;
+  color: var(--ink);
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+.export-dialog__hint {
+  font-family: var(--display);
+  font-style: italic;
+  font-weight: 300;
+  font-size: 13px;
+  color: var(--ink-3);
+  margin: 0;
+}
+.export-dialog__text {
+  flex: 1;
+  width: 100%;
+  font-family: var(--display);
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--ink);
+  background: var(--rule-soft);
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  padding: 14px 16px;
+  resize: none;
+  outline: none;
+  box-sizing: border-box;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.export-dialog__actions {
+  display: flex;
+  gap: 12px;
+  padding-top: 4px;
+}
+.export-dialog__btn {
+  flex: 1;
+  padding: 14px 0;
+  background: var(--ink);
+  color: var(--paper);
+  border: 1px solid var(--ink);
+  border-radius: 999px;
+  font-size: 13.5px;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  font-family: inherit;
+}
+.export-dialog__btn:active { background: var(--ink-2); }
+.export-dialog__btn--ghost {
+  background: transparent;
+  color: var(--ink);
+}
+.export-dialog__btn--ghost:active {
+  background: var(--ink);
+  color: var(--paper);
+}
 
 /* === Profile === */
 .profile {

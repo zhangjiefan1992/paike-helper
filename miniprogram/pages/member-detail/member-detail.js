@@ -1,4 +1,5 @@
 const storage = require('../../utils/storage')
+const { buildMemberStats, exportMemberDetail } = require('../../utils/memberExport')
 
 const MEDICAL_KEYWORDS = ['膝伤', '腰痛', '颈椎', '肩颈', '孕期', '经期', '受伤', '不适', '术后', '高血压', '低血压', '腰伤', '腰间盘']
 const ACCENT_PALETTE = ['#4A7C59', '#A8B8A0', '#C2A882', '#B8A898', '#9EABA2']
@@ -60,6 +61,11 @@ Page({
     totalCompleted: 0,
     thisMonthCount: 0,
     thisWeekCount: 0,
+    attendRatePct: 0,
+    avgPerMonthLabel: '',
+    showAvg: false,
+    exportText: '',
+    showExport: false,
 
     recent5: [],
     courseTypeDistribution: [],
@@ -108,6 +114,14 @@ Page({
     }
 
     const totalCompleted = sessions.filter(s => s.status === 'completed').length
+
+    const stats = buildMemberStats(member, sessions)
+    const denom = stats.completed + stats.cancelled + stats.noshow
+    const attendRatePct = denom > 0 ? Math.round(stats.attendRate * 100) : 0
+    const showAvg = stats.avgPerMonth >= 0.5
+    const avgPerMonthLabel = stats.avgPerMonth >= 10
+      ? Math.round(stats.avgPerMonth).toString()
+      : stats.avgPerMonth.toFixed(1)
 
     const ym = new Date().toISOString().slice(0, 7)
     const thisMonthCount = sessions.filter(s => s.status === 'completed' && s.date.startsWith(ym)).length
@@ -186,6 +200,9 @@ Page({
       totalCompleted,
       thisMonthCount,
       thisWeekCount,
+      attendRatePct,
+      avgPerMonthLabel,
+      showAvg,
       recent5,
       courseTypeDistribution,
       topFocusAreas
@@ -199,5 +216,31 @@ Page({
 
   onEdit() {
     wx.navigateTo({ url: '/pages/member-edit/member-edit?id=' + this.memberId })
-  }
+  },
+
+  onExport() {
+    const sessions = storage.getSessionsByMemberId(this.memberId)
+    if (!sessions.length) {
+      wx.showToast({ title: '该会员还没有上课记录', icon: 'none' })
+      return
+    }
+    const text = exportMemberDetail(this.data.member, sessions)
+    this.setData({ exportText: text, showExport: true })
+  },
+
+  onCopyExport() {
+    if (!this.data.exportText) return
+    wx.setClipboardData({
+      data: this.data.exportText,
+      success: () => {
+        wx.showToast({ title: '已复制', icon: 'success', duration: 1200 })
+      }
+    })
+  },
+
+  onCloseExport() {
+    this.setData({ showExport: false })
+  },
+
+  noop() {}
 })
