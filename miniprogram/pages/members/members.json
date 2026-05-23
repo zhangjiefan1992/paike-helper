@@ -1,9 +1,5 @@
 {
   "navigationBarTitleText": "会员",
   "enablePullDownRefresh": true,
-  "usingComponents": {
-    "member-avatar": "/components/member-avatar/member-avatar",
-    "tag": "/components/tag/tag",
-    "empty-state": "/components/empty-state/empty-state"
-  }
+  "usingComponents": {}
 }

@@ -5,17 +5,26 @@
     <!-- Header -->
     <header class="wv-header" v-if="!shotMode">
       <div class="wv-header__top">
-        <span class="wv-header__date">{{ todayLabel }}</span>
+        <h1 class="wv-header__title">{{ todayLabel }}</h1>
         <div class="wv-header__top-actions">
-          <button class="wv-header__shot-btn" @click="enterShotMode" title="截图模式">📷</button>
-          <button class="wv-header__today-btn" @click="goToday">回到今天</button>
+          <button class="wv-header__icon-btn" @click="enterShotMode" aria-label="截图模式">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+              <circle cx="12" cy="13" r="4" />
+            </svg>
+          </button>
+          <button class="wv-header__today-btn" @click="goToday">今天</button>
         </div>
       </div>
       <div class="wv-header__nav">
         <span class="wv-header__range">{{ rangeLabel }}</span>
         <div class="wv-header__arrows">
-          <button class="wv-header__arrow" @click="changeWeek(-1)">‹</button>
-          <button class="wv-header__arrow" @click="changeWeek(1)">›</button>
+          <button class="wv-header__arrow" @click="changeWeek(-1)" aria-label="上周">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+          </button>
+          <button class="wv-header__arrow" @click="changeWeek(1)" aria-label="下周">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
         </div>
       </div>
     </header>
@@ -24,7 +33,7 @@
     <header class="wv-header wv-header--shot" v-else>
       <div class="wv-header__shot-top">
         <div>
-          <div class="wv-header__shot-title">本周课表</div>
+          <h1 class="wv-header__shot-title">本周课表</h1>
           <div class="wv-header__shot-range">{{ rangeLabel }}</div>
         </div>
         <button class="wv-header__exit-shot" @click="exitShotMode">退出截图</button>
@@ -55,9 +64,9 @@
 
     <!-- Empty State -->
     <div class="wv-empty" v-if="!sessions.length">
-      <div class="wv-empty__icon">📋</div>
-      <p class="wv-empty__title">这周还没有排课哦～</p>
-      <p class="wv-empty__sub">点击下方 + 开始排课吧</p>
+      <span class="wv-empty__mark"></span>
+      <p class="wv-empty__title">这周尚是空白</p>
+      <p class="wv-empty__sub">从右下角开始排课</p>
     </div>
 
     <!-- Week Grid -->
@@ -101,8 +110,7 @@
 
           <!-- Empty day -->
           <div v-if="!dayCards[day.date]?.length" class="wv-day-empty" @click="$router.push('/session?date=' + day.date)">
-            <div class="wv-day-empty__circle">+</div>
-            <div class="wv-day-empty__text">休息日</div>
+            <span class="wv-day-empty__mark"></span>
           </div>
         </div>
       </div>
@@ -111,7 +119,7 @@
 
     <!-- Brand watermark (only in shot mode) -->
     <div class="wv-brand" v-if="shotMode">
-      <span class="wv-brand__icon">🎙</span>
+      <span class="wv-brand__mark"></span>
       <span class="wv-brand__name">排课助手</span>
       <span class="wv-brand__url">keleya.org</span>
     </div>
@@ -121,7 +129,13 @@
       @contextmenu.prevent="showThemePicker = true"
       @touchstart="onFabTouchStart"
       @touchend="onFabTouchEnd"
-    >+</div>
+      aria-label="新建课程"
+    >
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="12" y1="5" x2="12" y2="19"/>
+        <line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>
+    </div>
 
     <!-- Theme Switcher -->
     <van-action-sheet
@@ -515,333 +529,384 @@ export default {
 <style scoped>
 .week-page {
   min-height: 100vh;
-  background: var(--wv-bg, #FAFBFD);
+  background: var(--paper);
+  color: var(--ink-2);
   padding-bottom: 80px;
   overflow-x: hidden;
+  font-family: var(--sans);
+  font-feature-settings: 'palt', 'kern';
 }
 
-.wv-swipe-wrap {
-  will-change: transform;
-}
-
+.wv-swipe-wrap { will-change: transform; }
 .wv-swipe-wrap--animating {
   transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* Header */
+/* === Header === */
 .wv-header {
-  padding: 18px 20px 14px;
-  background: var(--wv-surface, #fff);
+  padding: 24px 28px 16px;
 }
-
 .wv-header__top {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   justify-content: space-between;
+  gap: 12px;
 }
-
+.wv-header__title {
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: 32px;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  margin: 0;
+  font-variation-settings: 'opsz' 80;
+}
 .wv-header__top-actions {
-  display: flex; align-items: center; gap: 8px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
-
-.wv-header__shot-btn {
-  width: 32px; height: 32px; border-radius: 8px;
-  border: none; cursor: pointer;
-  background: var(--wv-hairline, #F1F5F9);
-  font-size: 14px; display: inline-flex; align-items: center; justify-content: center;
+.wv-header__icon-btn {
+  width: 34px; height: 34px;
+  background: transparent;
+  border: none;
+  color: var(--ink-3);
+  border-radius: 50%;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center; justify-content: center;
+  -webkit-tap-highlight-color: transparent;
 }
-
-/* Shot mode header */
-.wv-header--shot {
-  padding: 22px 22px 10px;
-  background: var(--wv-surface, #fff);
+.wv-header__icon-btn:active {
+  background: var(--rule-soft);
+  color: var(--ink);
 }
-.wv-header__shot-top {
-  display: flex; justify-content: space-between; align-items: flex-start;
-}
-.wv-header__shot-title {
-  font-size: 22px; font-weight: 800;
-  color: var(--wv-ink, #1E293B);
-  letter-spacing: -0.5px;
-}
-.wv-header__shot-range {
-  font-size: 13px; color: var(--wv-ink-muted, #94A3B8);
-  margin-top: 4px;
-}
-.wv-header__exit-shot {
-  font-size: 12px; padding: 6px 12px; border-radius: 8px;
-  background: var(--wv-hairline, #F1F5F9); border: none; cursor: pointer;
-  color: var(--wv-ink-secondary, #475569);
-}
-
-.wv-header__date {
-  font-size: 26px;
-  font-weight: 800;
-  color: var(--wv-ink, #1E293B);
-  letter-spacing: -0.8px;
-}
-
 .wv-header__today-btn {
   font-size: 12px;
-  font-weight: 600;
-  color: var(--wv-today-accent, #6366F1);
-  background: var(--wv-today-bg, rgba(99,102,241,0.08));
-  padding: 6px 14px;
-  border-radius: 8px;
+  letter-spacing: 0.08em;
+  color: var(--ink-2);
+  background: transparent;
   border: none;
+  padding: 8px 10px;
   cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
 }
+.wv-header__today-btn:active { color: var(--primary); }
 
 .wv-header__nav {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px solid var(--wv-hairline, #F1F5F9);
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--rule);
 }
-
 .wv-header__range {
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--wv-ink-muted, #94A3B8);
+  font-family: var(--display);
+  font-weight: 300;
+  font-size: 13.5px;
+  color: var(--ink-3);
+  letter-spacing: 0.02em;
+  font-variation-settings: 'opsz' 14;
 }
-
 .wv-header__arrows {
   display: flex;
-  gap: 4px;
+  gap: 2px;
 }
-
 .wv-header__arrow {
-  width: 28px;
-  height: 28px;
-  border-radius: 8px;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
   border: none;
-  background: var(--wv-hairline, #F1F5F9);
-  font-size: 14px;
-  color: var(--wv-ink-secondary, #475569);
-  display: flex;
+  background: transparent;
+  color: var(--ink-3);
+  cursor: pointer;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.wv-header__arrow:active {
+  background: var(--rule-soft);
+  color: var(--ink);
 }
 
-/* Summary */
+/* === Shot mode header === */
+.wv-header--shot {
+  padding: 28px 28px 12px;
+}
+.wv-header__shot-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+.wv-header__shot-title {
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: 28px;
+  line-height: 1.1;
+  color: var(--ink);
+  letter-spacing: -0.02em;
+  margin: 0 0 6px;
+  font-variation-settings: 'opsz' 60;
+}
+.wv-header__shot-range {
+  font-family: var(--display);
+  font-style: italic;
+  font-weight: 300;
+  font-size: 13px;
+  color: var(--ink-3);
+}
+.wv-header__exit-shot {
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  padding: 8px 12px;
+  background: transparent;
+  color: var(--ink-3);
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.wv-header__exit-shot:active {
+  background: var(--rule-soft);
+  color: var(--ink);
+}
+
+/* === Summary === */
 .wv-summary {
   display: flex;
-  padding: 14px 20px;
-  gap: 16px;
-  background: var(--wv-surface, #fff);
-  border-bottom: 1px solid var(--wv-hairline, #F1F5F9);
+  align-items: center;
+  padding: 8px 28px 20px;
+  gap: 22px;
 }
-
 .wv-summary__item {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   gap: 8px;
 }
-
 .wv-summary__num {
-  font-size: 20px;
-  font-weight: 800;
-  color: var(--wv-ink, #1E293B);
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: 22px;
   line-height: 1;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+  font-variation-settings: 'opsz' 30;
 }
-
 .wv-summary__label {
   font-size: 11px;
-  color: var(--wv-ink-muted, #94A3B8);
-  font-weight: 500;
+  color: var(--ink-3);
+  letter-spacing: 0.08em;
   line-height: 1.3;
 }
-
 .wv-summary__divider {
   width: 1px;
-  background: var(--wv-hairline, #F1F5F9);
-  align-self: stretch;
+  height: 18px;
+  background: var(--rule);
 }
 
-/* Empty */
+/* === Empty === */
 .wv-empty {
   text-align: center;
-  padding: 80px 20px;
+  padding: 100px 32px 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.wv-empty__mark {
+  width: 36px;
+  height: 1px;
+  background: var(--ink-4);
+  opacity: 0.5;
+  margin-bottom: 24px;
+}
+.wv-empty__title {
+  font-family: var(--display);
+  font-weight: 300;
+  font-size: 22px;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+  margin: 0 0 6px;
+  font-variation-settings: 'opsz' 30;
+}
+.wv-empty__sub {
+  font-family: var(--display);
+  font-style: italic;
+  font-weight: 300;
+  font-size: 13px;
+  color: var(--ink-3);
 }
 
-.wv-empty__icon { font-size: 48px; margin-bottom: 12px; }
-.wv-empty__title { font-size: 16px; color: var(--wv-ink, #1E293B); font-weight: 500; }
-.wv-empty__sub { font-size: 13px; color: var(--wv-ink-muted, #94A3B8); margin-top: 4px; }
-
-/* Week Grid */
+/* === Week Grid === */
 .wv-grid {
   display: flex;
   overflow-x: auto;
   scroll-snap-type: x mandatory;
   -webkit-overflow-scrolling: touch;
-  padding: 0 10px;
-  gap: 6px;
-  margin-top: 10px;
+  padding: 0 16px;
+  gap: 4px;
+  margin-top: 4px;
+  border-top: 1px solid var(--rule-soft);
+  padding-top: 14px;
 }
-
 .wv-grid::-webkit-scrollbar { display: none; }
 
 .wv-day {
-  flex: 0 0 calc((100% - 30px) / 3.5);
+  flex: 0 0 calc((100% - 32px) / 3.5);
   scroll-snap-align: start;
   min-width: 100px;
 }
-
 .wv-day--today {
-  flex: 0 0 calc((100% - 30px) / 3);
+  flex: 0 0 calc((100% - 32px) / 3);
 }
 
-/* Day Header */
+/* === Day header === */
 .wv-day__head {
   text-align: center;
-  padding: 10px 0 8px;
+  padding: 4px 0 12px;
   cursor: pointer;
+  border-bottom: 1px solid var(--rule-soft);
+  margin-bottom: 8px;
 }
-
 .wv-day__name {
   display: block;
-  font-size: 11px;
-  color: var(--wv-ink-muted, #94A3B8);
-  font-weight: 500;
+  font-size: 10px;
+  color: var(--ink-4);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  margin-bottom: 4px;
 }
-
 .wv-day__num {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  border-radius: 12px;
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--wv-ink, #1E293B);
-  margin-top: 4px;
-}
-
-.wv-day__count {
   display: inline-block;
-  font-size: 10px; font-weight: 600;
-  padding: 1px 6px; border-radius: 8px;
-  background: rgba(99,102,241,0.10);
-  color: var(--wv-today-accent, #6366F1);
-  margin-left: 4px;
-  vertical-align: middle;
+  font-family: var(--display);
+  font-weight: 300;
+  font-size: 24px;
+  line-height: 1;
+  color: var(--ink-2);
+  letter-spacing: -0.01em;
+  font-variation-settings: 'opsz' 30;
 }
-
-.wv-day--today .wv-day__count {
-  background: rgba(255,255,255,0.85);
-  color: var(--wv-today-accent, #6366F1);
-}
-
-.wv-day--today .wv-day__num {
-  background: var(--wv-today-accent, #6366F1);
-  color: #fff;
-  box-shadow: var(--wv-today-shadow, 0 2px 8px rgba(99,102,241,0.3));
+.wv-day__count {
+  display: block;
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: 10.5px;
+  color: var(--ink-4);
+  letter-spacing: 0.04em;
+  margin-top: 4px;
+  font-variation-settings: 'opsz' 12;
 }
 
 .wv-day--today .wv-day__name {
-  color: var(--wv-today-accent, #6366F1);
-  font-weight: 600;
+  color: var(--ink);
+  font-weight: 500;
+}
+.wv-day--today .wv-day__num {
+  color: var(--ink);
+  font-weight: 500;
+}
+.wv-day--today .wv-day__num::after {
+  content: "";
+  display: block;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--primary);
+  margin: 6px auto 0;
 }
 
-/* Day Body */
+/* === Day body === */
 .wv-day__body {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 5px;
   padding: 0 2px 16px;
 }
-
 .wv-day--today .wv-day__body {
-  background: var(--wv-today-bg, rgba(99,102,241,0.06));
-  border-radius: 16px;
-  padding: 8px 6px 16px;
-  margin: 0 -2px;
+  position: relative;
+}
+.wv-day--today .wv-day__body::before {
+  content: "";
+  position: absolute;
+  top: -8px; left: 0; right: 0; bottom: 0;
+  background: rgba(74, 124, 89, 0.04);
+  border-radius: 8px;
+  pointer-events: none;
 }
 
-/* Cards */
+/* === Cards === */
 .wv-card {
-  border-radius: var(--wv-radius-card, 14px);
+  border-radius: 10px;
   padding: 10px 11px;
   cursor: pointer;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
-  box-shadow: var(--wv-shadow-card, 0 1px 3px rgba(0,0,0,0.03));
+  transition: transform 0.15s ease;
   position: relative;
   overflow: hidden;
-  border: 1px solid transparent;
 }
-
-.wv-card:active {
-  transform: scale(0.97);
-  box-shadow: 0 4px 16px rgba(0,0,0,0.08);
-}
-
-.wv-card--done {
-  opacity: var(--wv-done-opacity, 0.6);
-}
+.wv-card:active { transform: scale(0.97); }
+.wv-card--done { opacity: 0.45; }
 
 .wv-card__header {
   display: flex;
   align-items: center;
   gap: 6px;
 }
-
 .wv-card__dot {
-  width: 7px;
-  height: 7px;
+  width: 5px;
+  height: 5px;
   border-radius: 50%;
   flex-shrink: 0;
+  background: var(--ink-3);
 }
-
 .wv-card__time {
-  font-size: 10px;
-  font-weight: 600;
-  color: var(--wv-ink-muted, #94A3B8);
-  letter-spacing: 0.2px;
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: 11px;
+  color: var(--ink-3);
+  letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
+  font-variation-settings: 'opsz' 14;
 }
-
 .wv-card__type {
+  font-family: var(--display);
+  font-weight: 400;
   font-size: 14px;
-  font-weight: 700;
-  color: var(--wv-ink, #1E293B);
+  color: var(--ink);
   margin-top: 4px;
   line-height: 1.2;
+  letter-spacing: -0.005em;
+  font-variation-settings: 'opsz' 18;
 }
-
 .wv-card__member {
   font-size: 12px;
-  color: var(--wv-ink-secondary, #475569);
+  color: var(--ink-2);
   margin-top: 3px;
-  font-weight: 500;
+  letter-spacing: 0.01em;
 }
-
 .wv-card__location {
-  font-size: 10px;
-  color: var(--wv-ink-muted, #94A3B8);
+  font-size: 10.5px;
+  color: var(--ink-3);
   margin-top: 2px;
+  letter-spacing: 0.02em;
 }
-
 .wv-card__footer {
   margin-top: 8px;
 }
-
 .wv-card__status {
-  font-size: 10px;
-  font-weight: 600;
-  padding: 2px 8px;
-  border-radius: 6px;
-  background: rgba(255,255,255,0.7);
+  font-size: 9.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-4);
 }
+.wv-card__status--completed { color: var(--primary); }
+.wv-card__status--scheduled { color: var(--ink-3); }
 
-.wv-card__status--completed {
-  color: #10B981;
-}
-
-.wv-card__status--scheduled {
-  color: var(--wv-ink-muted, #94A3B8);
+/* Default (no theme picked) — soft sage tint */
+.wv-card {
+  background: rgba(74, 124, 89, 0.04);
+  border: 1px solid rgba(74, 124, 89, 0.10);
 }
 
 /* Gradient theme overrides (via parent class) */
@@ -878,104 +943,106 @@ export default {
 .theme-soft-color .wv-card--fitness .wv-card__type { color: #1A7A4C; }
 .theme-soft-color .wv-card--group .wv-card__type { color: #7C3AED; }
 
-/* Empty Day */
+/* === Empty Day === */
 .wv-day-empty {
   text-align: center;
-  padding: 28px 6px;
+  padding: 28px 0;
   cursor: pointer;
 }
-
-.wv-day-empty__circle {
-  width: 38px;
-  height: 38px;
-  border-radius: 12px;
-  border: 2px dashed var(--wv-hairline, #F1F5F9);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto 6px;
-  font-size: 18px;
-  color: var(--wv-ink-muted, #94A3B8);
-  transition: all 0.15s;
+.wv-day-empty__mark {
+  display: inline-block;
+  width: 16px;
+  height: 1px;
+  background: var(--ink-5);
+  opacity: 0.6;
+  transition: width 0.18s, background 0.18s;
+}
+.wv-day-empty:active .wv-day-empty__mark {
+  width: 24px;
+  background: var(--primary);
+  opacity: 1;
 }
 
-.wv-day-empty__circle:active {
-  border-color: var(--wv-today-accent, #6366F1);
-  color: var(--wv-today-accent, #6366F1);
-  background: var(--wv-today-bg);
-}
-
-.wv-day-empty__text {
-  font-size: 11px;
-  color: var(--wv-ink-muted, #94A3B8);
-  font-weight: 500;
-}
-
-/* Shot mode: 7 days visible, no scroll */
+/* === Shot mode: 7 days visible, no scroll === */
 .week-page.is-shot {
-  background: var(--wv-bg, #FAFBFD);
+  background: var(--paper);
   padding-bottom: 20px;
 }
 .is-shot .wv-grid {
   overflow-x: hidden;
-  padding: 0 12px;
+  padding: 14px 16px 0;
   gap: 4px;
+  border-top: none;
 }
 .is-shot .wv-day, .is-shot .wv-day--today {
   flex: 1 1 0;
   min-width: 0;
 }
-.is-shot .wv-day__num { width: 32px; height: 32px; font-size: 14px; }
-.is-shot .wv-day__name { font-size: 10px; }
-.is-shot .wv-day__count { display: block; margin: 4px 0 0 0; }
-.is-shot .wv-card { padding: 6px 6px; border-radius: 8px; }
+.is-shot .wv-day__num { font-size: 18px; }
+.is-shot .wv-day__name { font-size: 9px; }
+.is-shot .wv-day__count { font-size: 9.5px; margin-top: 2px; }
+.is-shot .wv-card { padding: 6px; border-radius: 6px; }
 .is-shot .wv-card__time { font-size: 9px; }
 .is-shot .wv-card__type { font-size: 11px; margin-top: 2px; }
 .is-shot .wv-card__member { font-size: 10px; margin-top: 1px; }
 .is-shot .wv-card__location { display: none; }
 .is-shot .wv-card__footer { display: none; }
-.is-shot .wv-day-empty { padding: 16px 4px; }
-.is-shot .wv-day-empty__circle { width: 24px; height: 24px; font-size: 14px; }
-.is-shot .wv-day-empty__text { font-size: 10px; }
+.is-shot .wv-day-empty { padding: 14px 0; }
 
-/* Brand watermark */
+/* === Brand watermark === */
 .wv-brand {
-  display: flex; align-items: center; justify-content: center;
-  gap: 6px; padding: 18px 20px 12px;
-  color: var(--wv-ink-muted, #94A3B8);
-  font-size: 12px; font-weight: 500;
-}
-.wv-brand__icon { font-size: 14px; }
-.wv-brand__name { font-weight: 700; color: var(--wv-ink, #1E293B); }
-.wv-brand__url {
-  margin-left: 6px; padding-left: 6px;
-  border-left: 1px solid var(--wv-hairline, #F1F5F9);
-  font-size: 11px; opacity: 0.8;
-}
-
-/* FAB */
-.wv-fab {
-  position: fixed;
-  bottom: 80px;
-  right: 20px;
-  width: 52px;
-  height: 52px;
-  border-radius: 16px;
-  background: var(--wv-today-accent, #6366F1);
-  color: #fff;
-  font-size: 24px;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 16px rgba(99, 102, 241, 0.35);
+  gap: 10px;
+  padding: 28px 20px 16px;
+  color: var(--ink-3);
+}
+.wv-brand__mark {
+  display: inline-block;
+  width: 14px;
+  height: 1px;
+  background: var(--ink-3);
+  opacity: 0.5;
+}
+.wv-brand__name {
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: 12.5px;
+  color: var(--ink-2);
+  letter-spacing: 0.04em;
+}
+.wv-brand__url {
+  font-family: var(--display);
+  font-style: italic;
+  font-weight: 300;
+  font-size: 11px;
+  color: var(--ink-4);
+  letter-spacing: 0.02em;
+}
+
+/* === FAB === */
+.wv-fab {
+  position: fixed;
+  bottom: 78px;
+  right: 22px;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: var(--ink);
+  color: var(--paper);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 6px 24px rgba(31, 29, 26, 0.18);
   cursor: pointer;
   z-index: 10;
-  transition: transform 0.15s;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
   -webkit-user-select: none;
   user-select: none;
 }
-
 .wv-fab:active {
   transform: scale(0.92);
+  box-shadow: 0 4px 14px rgba(31, 29, 26, 0.25);
 }
 </style>

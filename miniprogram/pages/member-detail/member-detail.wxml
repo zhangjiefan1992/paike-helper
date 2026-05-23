@@ -1,102 +1,133 @@
 <view class="page" wx:if="{{member}}">
-  <!-- 顶部信息 -->
+
+  <!-- Profile -->
   <view class="profile">
-    <view class="profile__header">
-      <member-avatar src="{{member.avatar}}" size="large" />
-      <view class="profile__info">
-        <view class="profile__name">{{member.name}}</view>
-        <view class="profile__phone" wx:if="{{member.phone}}">{{member.phone}}</view>
-      </view>
+    <view class="profile__accent" style="background:{{accent}}"></view>
+    <view class="profile__top">
+      <text class="profile__name serif">{{member.name}}</text>
       <view class="profile__edit" bindtap="onEdit">编辑</view>
     </view>
-    <view class="profile__tags" wx:if="{{member.tags.length > 0}}">
-      <tag wx:for="{{member.tags}}" wx:key="*this" text="{{item}}" />
+    <view class="profile__meta" wx:if="{{member.phone || member.tags.length}}">
+      <text wx:if="{{member.phone}}" class="profile__phone">{{member.phone}}</text>
+      <text wx:if="{{member.phone && member.tags.length}}" class="dot-sep">·</text>
+      <text wx:for="{{member.tags}}" wx:key="*this" wx:for-item="tg">
+        {{tg}}<text class="dot-sep" wx:if="{{index < member.tags.length - 1}}">·</text>
+      </text>
     </view>
-    <view class="profile__notes" wx:if="{{member.notes}}">{{member.notes}}</view>
-  </view>
-
-  <!-- 统计卡片 -->
-  <view class="stats">
-    <view class="stat-card">
-      <view class="stat-card__value">{{stats.total}}</view>
-      <view class="stat-card__label">累计课程</view>
-    </view>
-    <view class="stat-card">
-      <view class="stat-card__value">{{stats.thisMonth}}</view>
-      <view class="stat-card__label">本月课程</view>
-    </view>
-    <view class="stat-card">
-      <view class="stat-card__value">{{stats.lastDate || '-'}}</view>
-      <view class="stat-card__label">最近上课</view>
-    </view>
-    <view class="stat-card">
-      <view class="stat-card__value">{{stats.topCourseType}}</view>
-      <view class="stat-card__label">最常课程</view>
+    <view class="profile__quote serif" wx:if="{{notesParts.length}}">
+      <text wx:for="{{notesParts}}" wx:key="index" class="{{item.mark ? 'med-mark' : ''}}">{{item.t}}</text>
     </view>
   </view>
 
-  <!-- 上课时间轴 -->
-  <view class="timeline-section">
-    <view class="section-title">上课记录</view>
+  <!-- Medical alert -->
+  <view class="alert" wx:if="{{medicalKeywords.length}}">
+    <text class="alert__icon">○</text>
+    <text class="alert__label">健康关注</text>
+    <text wx:for="{{medicalKeywords}}" wx:key="*this" class="alert__kw">{{item}}</text>
+  </view>
 
-    <block wx:if="{{monthGroups.length === 0}}">
-      <empty-state title="还没有上课记录" subtitle="添加课程后将在这里显示" />
-    </block>
+  <view class="rule"></view>
 
-    <block wx:for="{{monthGroups}}" wx:key="monthKey" wx:for-index="groupIndex">
-      <view class="month-group">
-        <view class="month-header" bindtap="onToggleMonth" data-index="{{groupIndex}}">
-          <text class="month-label">{{item.month}}</text>
-          <text class="month-count">{{item.records.length}}节</text>
-          <text class="month-arrow {{item.collapsed ? 'month-arrow--collapsed' : ''}}">▾</text>
+  <!-- Hero: 距上次上课天数 -->
+  <view class="hero" wx:if="{{lastSession}}">
+    <text class="hero__label">上一次课程</text>
+    <view class="hero__display">
+      <text class="hero__num serif">{{daysSinceLast}}</text>
+      <text class="hero__unit serif">{{daysSinceUnit}}</text>
+    </view>
+    <text class="hero__sub">{{lastMeta}}</text>
+
+    <view class="hero__stats">
+      <view class="stat">
+        <text class="stat__num serif">{{thisMonthCount}}</text>
+        <text class="stat__lbl">本月</text>
+      </view>
+      <view class="stat__div"></view>
+      <view class="stat">
+        <text class="stat__num serif">{{thisWeekCount}}</text>
+        <text class="stat__lbl">本周</text>
+      </view>
+      <view class="stat__div"></view>
+      <view class="stat">
+        <text class="stat__num serif">{{totalCompleted}}</text>
+        <text class="stat__lbl">累计</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="hero hero--empty" wx:else>
+    <text class="hero--empty__title serif">还没有上过课</text>
+    <text class="hero--empty__hint serif">从周视图为这位会员安排第一节课</text>
+  </view>
+
+  <view class="rule" wx:if="{{recent5.length}}"></view>
+
+  <!-- 近期记录 -->
+  <view class="block" wx:if="{{recent5.length}}">
+    <text class="block__title">近期记录</text>
+    <view class="timeline">
+      <view
+        class="entry"
+        wx:for="{{recent5}}"
+        wx:key="id"
+        wx:for-item="s"
+        wx:for-index="i"
+        data-id="{{s.id}}"
+        bindtap="onSessionTap"
+      >
+        <view class="entry__rail">
+          <view class="entry__dot entry__dot--{{s.status}}"></view>
+          <view class="entry__line" wx:if="{{i < recent5.length - 1}}"></view>
         </view>
-
-        <view class="month-records" wx:if="{{!item.collapsed}}">
-          <view class="timeline-item" wx:for="{{item.records}}" wx:key="id" wx:for-item="record">
-            <view class="timeline-dot timeline-dot--{{record.status}}"></view>
-            <view class="timeline-line" wx:if="{{index < item.records.length - 1}}"></view>
-            <view class="timeline-content" bindtap="onToggleRecord" data-id="{{record.id}}">
-              <view class="record-header">
-                <text class="record-date">{{record.date}} {{record.weekday}}</text>
-                <text class="record-status record-status--{{record.status}}">{{record.statusText}}</text>
-              </view>
-              <view class="record-body">
-                <text class="record-type">{{record.courseType}}</text>
-                <text class="record-time" wx:if="{{record.startTime}}">{{record.startTime}} · {{record.duration}}分钟</text>
-                <text class="record-location" wx:if="{{record.location}}">{{record.location}}</text>
-              </view>
-              <view class="record-tags" wx:if="{{record.focusAreas.length > 0}}">
-                <text class="record-tag" wx:for="{{record.focusAreas}}" wx:key="*this" wx:for-item="area">{{area}}</text>
-              </view>
-
-              <!-- 展开内容 -->
-              <block wx:if="{{expandedRecords[record.id]}}">
-                <view class="record-notes" wx:if="{{record.notes}}">
-                  <text class="record-notes__label">备注</text>
-                  <text class="record-notes__text">{{record.notes}}</text>
-                </view>
-                <view class="record-photos" wx:if="{{record.photos.length > 0}}">
-                  <image
-                    wx:for="{{record.photos}}"
-                    wx:key="*this"
-                    wx:for-item="photo"
-                    src="{{photo}}"
-                    class="record-photo"
-                    mode="aspectFill"
-                    bindtap="onPreviewPhoto"
-                    data-urls="{{record.photos}}"
-                    data-current="{{photo}}"
-                  />
-                </view>
-              </block>
-
-              <view class="record-expand-hint" wx:if="{{record.notes || record.photos.length > 0}}">
-                <text>{{expandedRecords[record.id] ? '收起' : '展开详情'}}</text>
-              </view>
-            </view>
+        <view class="entry__body">
+          <view class="entry__head">
+            <text class="entry__date serif">{{s.date}}</text>
+            <text class="entry__time">{{s.startTime}}</text>
+            <text class="entry__status entry__status--{{s.status}}">{{s.statusLabel}}</text>
+          </view>
+          <view class="entry__type">
+            <text>{{s.courseType}}</text><text wx:if="{{s.location}}" class="entry__loc"> · {{s.location}}</text>
+          </view>
+          <view class="entry__focus" wx:if="{{s.focusAreas.length}}">
+            <text class="entry__focus-label">重点</text>
+            <text>{{s.focusJoin}}</text>
+          </view>
+          <view class="entry__digest" wx:if="{{s.hasContent}}">
+            <text wx:for="{{s.digestParts}}" wx:key="index" wx:for-item="p" class="{{p.mark ? 'med-mark' : ''}}">{{p.t}}</text>
           </view>
         </view>
       </view>
-    </block>
+    </view>
   </view>
+
+  <view class="rule" wx:if="{{courseTypeDistribution.length || topFocusAreas.length}}"></view>
+
+  <!-- 训练分布 -->
+  <view class="block" wx:if="{{courseTypeDistribution.length || topFocusAreas.length}}">
+    <text class="block__title">训练分布</text>
+
+    <view class="bars" wx:if="{{courseTypeDistribution.length}}">
+      <view class="bar" wx:for="{{courseTypeDistribution}}" wx:key="name">
+        <text class="bar__name">{{item.name}}</text>
+        <view class="bar__track">
+          <view class="bar__fill" style="width:{{item.pct}}%"></view>
+        </view>
+        <text class="bar__count serif">{{item.count}}</text>
+      </view>
+    </view>
+
+    <view class="cloud" wx:if="{{topFocusAreas.length}}">
+      <text class="cloud__title">常练部位</text>
+      <view class="cloud__items">
+        <text
+          wx:for="{{topFocusAreas}}"
+          wx:key="name"
+          class="cloud__item serif"
+          style="font-size:{{item.size}}rpx;opacity:{{item.opacity}};"
+        >{{item.name}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="page__tail"></view>
 </view>

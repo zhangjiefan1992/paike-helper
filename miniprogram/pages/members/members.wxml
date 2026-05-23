@@ -1,38 +1,82 @@
 <view class="page">
-  <view class="header">
-    <input class="search" placeholder="搜索会员" value="{{searchKeyword}}" bindinput="onSearch" />
-    <view class="stats-btn" bindtap="onGoStats">统计</view>
-    <view class="add-btn" bindtap="onAddMember">+</view>
-  </view>
-
-  <empty-state
-    wx:if="{{isEmpty}}"
-    title="还没有会员"
-    subtitle="点击右上角 + 添加会员"
-  />
-
-  <view class="list" wx:else>
-    <view
-      class="member-row"
-      wx:for="{{filteredMembers}}"
-      wx:key="id"
-      data-id="{{item.id}}"
-      bindtap="onMemberTap"
-    >
-      <member-avatar src="{{item.avatar}}" size="medium" />
-      <view class="member-info">
-        <view class="member-info__top">
-          <text class="member-name">{{item.name}}</text>
-          <view class="member-tags">
-            <tag wx:for="{{item.tags}}" wx:for-item="t" wx:key="*this" text="{{t}}" />
-          </view>
-        </view>
-        <view class="member-info__bottom">
-          <text class="member-stat" wx:if="{{item.lastSessionDate}}">最近: {{item.lastSessionDate}}</text>
-          <text class="member-stat">共 {{item.totalSessions}} 节</text>
-        </view>
-      </view>
-      <text class="member-arrow">›</text>
+  <view class="hdr">
+    <view class="hdr__lead">
+      <text class="hdr__title serif">会员</text>
+      <text class="hdr__count" wx:if="{{totalCount}}">{{totalCount}} 位</text>
+    </view>
+    <view class="hdr__add" bindtap="onAddMember">
+      <text class="hdr__add-plus">+</text>
+      <text class="hdr__add-text">新建</text>
     </view>
   </view>
+
+  <view class="search">
+    <text class="search__icon">⌕</text>
+    <input
+      class="search__input"
+      placeholder="姓名 或 手机号"
+      placeholder-class="search__placeholder"
+      value="{{searchKeyword}}"
+      bindinput="onSearch"
+      confirm-type="search"
+    />
+    <text class="search__clear" wx:if="{{searchKeyword}}" bindtap="onClearSearch">×</text>
+  </view>
+
+  <view class="list" wx:if="{{!isEmpty}}">
+    <view class="group" wx:for="{{sections}}" wx:key="label" wx:for-item="group">
+      <view class="group__head">
+        <text class="group__label">{{group.label}}</text>
+        <text class="group__count">{{group.members.length}}</text>
+      </view>
+      <view class="group__rows">
+        <view
+          class="row"
+          wx:for="{{group.members}}"
+          wx:key="id"
+          wx:for-item="m"
+          data-id="{{m.id}}"
+          bindtap="onMemberTap"
+          hover-class="row--hover"
+          hover-stay-time="80"
+        >
+          <view class="row__accent" style="background:{{m.accent}}"></view>
+          <view class="row__main">
+            <view class="row__top">
+              <text class="row__name serif">{{m.name}}</text>
+              <view class="row__alert" wx:if="{{m.hasMedical}}"></view>
+              <text class="row__time serif">{{m.relativeLabel}}</text>
+            </view>
+            <view class="row__bottom">
+              <text wx:if="{{m.phone}}" class="row__phone">{{m.phone}}</text>
+              <text class="dot-sep" wx:if="{{m.phone && m.tags.length}}">·</text>
+              <text class="row__tag" wx:for="{{m.tags}}" wx:key="*this" wx:for-item="t">{{t}} </text>
+              <text class="dot-sep" wx:if="{{(m.phone || m.tags.length) && m.totalSessions}}">·</text>
+              <text wx:if="{{m.totalSessions}}" class="row__count">{{m.totalSessions}} 节累计</text>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view class="empty" wx:elif="{{!searchKeyword}}">
+    <view class="empty__mark"></view>
+    <text class="empty__title serif">名单尚未开始</text>
+    <text class="empty__hint serif">第一位会员的故事，从这里写起。</text>
+    <view class="empty__cta" bindtap="onAddMember">
+      <text>新建会员</text>
+      <text class="empty__arrow">→</text>
+    </view>
+  </view>
+
+  <view class="empty" wx:else>
+    <text class="empty__title serif">未找到</text>
+    <text class="empty__hint serif">关键词「{{searchKeyword}}」无匹配会员</text>
+    <view class="empty__cta" bindtap="onClearSearch">
+      <text>清空搜索</text>
+    </view>
+  </view>
+
+  <view class="page__tail"></view>
 </view>

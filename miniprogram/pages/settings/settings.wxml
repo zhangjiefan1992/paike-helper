@@ -1,139 +1,193 @@
 <view class="page">
-  <!-- 预设管理 -->
-  <view class="section">
-    <view class="section__title">预设管理</view>
+  <view class="hdr">
+    <text class="hdr__title serif">设置</text>
+    <text class="hdr__sub serif">预设、外观与数据</text>
+  </view>
 
-    <!-- 课程类型 -->
-    <view class="preset-group">
-      <view class="preset-label">课程类型</view>
-      <view class="preset-list">
-        <view class="preset-item" wx:for="{{config.courseTypes}}" wx:key="*this">
-          <text class="preset-item__text">{{item}}</text>
-          <view class="preset-item__del" bindtap="onDeleteCourseType" data-index="{{index}}">×</view>
-        </view>
-      </view>
-      <view class="preset-add">
-        <input class="preset-input" placeholder="添加课程类型" value="{{courseTypeInput}}" bindinput="onCourseTypeInput" bindconfirm="onAddCourseType" />
-        <view class="preset-add-btn" bindtap="onAddCourseType">添加</view>
+  <view class="rule"></view>
+
+  <!-- 预设：课程类型 -->
+  <view class="block">
+    <view class="block__head">
+      <text class="block__label">课程类型</text>
+      <text class="block__count" wx:if="{{config.courseTypes.length}}">{{config.courseTypes.length}}</text>
+    </view>
+    <view class="chips" wx:if="{{config.courseTypes.length}}">
+      <view class="chip" wx:for="{{config.courseTypes}}" wx:key="*this">
+        <text>{{item}}</text>
+        <view class="chip__x" data-index="{{index}}" bindtap="onDeleteCourseType">×</view>
       </view>
     </view>
+    <text class="empty-line serif" wx:else>未添加</text>
+    <view class="add">
+      <input
+        class="add__input"
+        placeholder="新增课程类型"
+        value="{{courseTypeInput}}"
+        bindinput="onCourseTypeInput"
+        bindconfirm="onAddCourseType"
+      />
+      <view class="add__btn" bindtap="onAddCourseType">添加</view>
+    </view>
+  </view>
 
-    <!-- 地点 -->
-    <view class="preset-group">
-      <view class="preset-label">地点</view>
-      <view class="preset-list">
-        <view class="preset-item" wx:for="{{config.locations}}" wx:key="*this">
-          <text class="preset-item__text">{{item}}</text>
-          <view class="preset-item__del" bindtap="onDeleteLocation" data-index="{{index}}">×</view>
-        </view>
-        <view class="preset-empty" wx:if="{{config.locations.length === 0}}">暂无预设地点</view>
-      </view>
-      <view class="preset-add">
-        <input class="preset-input" placeholder="添加地点" value="{{locationInput}}" bindinput="onLocationInput" bindconfirm="onAddLocation" />
-        <view class="preset-add-btn" bindtap="onAddLocation">添加</view>
+  <view class="rule"></view>
+
+  <!-- 预设：常用地点 -->
+  <view class="block">
+    <view class="block__head">
+      <text class="block__label">常用地点</text>
+      <text class="block__count" wx:if="{{config.locations.length}}">{{config.locations.length}}</text>
+    </view>
+    <view class="chips" wx:if="{{config.locations.length}}">
+      <view class="chip" wx:for="{{config.locations}}" wx:key="*this">
+        <text>{{item}}</text>
+        <view class="chip__x" data-index="{{index}}" bindtap="onDeleteLocation">×</view>
       </view>
     </view>
+    <text class="empty-line serif" wx:else>未添加</text>
+    <view class="add">
+      <input
+        class="add__input"
+        placeholder="新增地点"
+        value="{{locationInput}}"
+        bindinput="onLocationInput"
+        bindconfirm="onAddLocation"
+      />
+      <view class="add__btn" bindtap="onAddLocation">添加</view>
+    </view>
+  </view>
 
-    <!-- 训练重点 -->
-    <view class="preset-group">
-      <view class="preset-label">训练重点</view>
-      <view class="preset-list">
-        <view class="preset-item" wx:for="{{config.focusAreaOptions}}" wx:key="*this">
-          <text class="preset-item__text">{{item}}</text>
-          <view class="preset-item__del" bindtap="onDeleteFocusArea" data-index="{{index}}">×</view>
-        </view>
-      </view>
-      <view class="preset-add">
-        <input class="preset-input" placeholder="添加训练重点" value="{{focusAreaInput}}" bindinput="onFocusAreaInput" bindconfirm="onAddFocusArea" />
-        <view class="preset-add-btn" bindtap="onAddFocusArea">添加</view>
+  <view class="rule"></view>
+
+  <!-- 预设：训练重点 -->
+  <view class="block">
+    <view class="block__head">
+      <text class="block__label">训练重点</text>
+      <text class="block__count" wx:if="{{config.focusAreaOptions.length}}">{{config.focusAreaOptions.length}}</text>
+    </view>
+    <view class="chips" wx:if="{{config.focusAreaOptions.length}}">
+      <view class="chip" wx:for="{{config.focusAreaOptions}}" wx:key="*this">
+        <text>{{item}}</text>
+        <view class="chip__x" data-index="{{index}}" bindtap="onDeleteFocusArea">×</view>
       </view>
     </view>
+    <text class="empty-line serif" wx:else>未添加</text>
+    <view class="add">
+      <input
+        class="add__input"
+        placeholder="新增训练重点"
+        value="{{focusAreaInput}}"
+        bindinput="onFocusAreaInput"
+        bindconfirm="onAddFocusArea"
+      />
+      <view class="add__btn" bindtap="onAddFocusArea">添加</view>
+    </view>
+  </view>
 
-    <!-- 默认时长 -->
-    <view class="preset-group">
-      <view class="preset-label">默认课程时长</view>
-      <picker mode="selector" range="{{durationOptions}}" value="{{0}}" bindchange="onDurationChange">
-        <view class="picker-row">
-          <text>{{config.defaultDuration}} 分钟</text>
-          <text class="picker-arrow">▸</text>
+  <view class="rule"></view>
+
+  <!-- 默认 -->
+  <view class="block">
+    <view class="block__head"><text class="block__label">默认</text></view>
+    <view class="rows">
+      <picker mode="selector" range="{{durationOptions}}" bindchange="onDurationChange">
+        <view class="row">
+          <text class="row__label">课程时长</text>
+          <text class="row__val serif">{{config.defaultDuration}} 分钟</text>
+          <text class="row__chev">›</text>
+        </view>
+      </picker>
+      <picker mode="time" value="{{config.workingHours.start}}" bindchange="onStartTimeChange">
+        <view class="row">
+          <text class="row__label">工作开始</text>
+          <text class="row__val serif">{{config.workingHours.start}}</text>
+          <text class="row__chev">›</text>
+        </view>
+      </picker>
+      <picker mode="time" value="{{config.workingHours.end}}" bindchange="onEndTimeChange">
+        <view class="row">
+          <text class="row__label">工作结束</text>
+          <text class="row__val serif">{{config.workingHours.end}}</text>
+          <text class="row__chev">›</text>
         </view>
       </picker>
     </view>
+  </view>
 
-    <!-- 可排课时间 -->
-    <view class="preset-group">
-      <view class="preset-label">可排课时间段</view>
-      <view class="time-range">
-        <picker mode="time" value="{{config.workingHours.start}}" bindchange="onStartTimeChange">
-          <view class="time-pick">{{config.workingHours.start}}</view>
-        </picker>
-        <text class="time-sep">至</text>
-        <picker mode="time" value="{{config.workingHours.end}}" bindchange="onEndTimeChange">
-          <view class="time-pick">{{config.workingHours.end}}</view>
-        </picker>
+  <view class="rule"></view>
+
+  <!-- 周视图主题 -->
+  <view class="block">
+    <view class="block__head"><text class="block__label">周视图主题</text></view>
+    <view class="themes">
+      <view
+        wx:for="{{themeOptions}}"
+        wx:key="value"
+        class="theme {{currentTheme === item.value ? 'theme--active' : ''}}"
+        data-value="{{item.value}}"
+        bindtap="onThemeSelect"
+      >
+        <view class="theme__preview" style="background: {{item.preview}}"></view>
+        <text class="theme__name">{{item.name}}</text>
       </view>
     </view>
   </view>
 
-  <!-- 外观 -->
-  <view class="section">
-    <view class="section__title">外观</view>
-    <view class="preset-group">
-      <view class="preset-label">周视图主题</view>
-      <view class="theme-picker">
-        <view
-          wx:for="{{themeOptions}}"
-          wx:key="value"
-          class="theme-option {{currentTheme === item.value ? 'theme-option--active' : ''}}"
-          bindtap="onThemeSelect"
-          data-value="{{item.value}}"
-        >
-          <view class="theme-option__preview" style="background: {{item.preview}}"></view>
-          <text class="theme-option__name">{{item.name}}</text>
-        </view>
+  <view class="rule"></view>
+
+  <!-- 工具 -->
+  <view class="block">
+    <view class="block__head"><text class="block__label">工具</text></view>
+    <view class="rows">
+      <view class="row" bindtap="onGoStats">
+        <text class="row__label">课程统计</text>
+        <text class="row__val row__val--muted serif">查看数据</text>
+        <text class="row__chev">›</text>
       </view>
     </view>
   </view>
 
-  <!-- 数据管理 -->
-  <view class="section">
-    <view class="section__title">数据管理</view>
-    <view class="action-row" bindtap="onExport">
-      <text class="action-text">导出数据</text>
-      <text class="action-hint">备份到微信聊天</text>
-      <text class="action-arrow">▸</text>
-    </view>
-    <view class="action-row" bindtap="onImport">
-      <text class="action-text">导入数据</text>
-      <text class="action-hint">从聊天文件恢复</text>
-      <text class="action-arrow">▸</text>
+  <view class="rule"></view>
+
+  <!-- 数据 -->
+  <view class="block">
+    <view class="block__head"><text class="block__label">数据</text></view>
+    <view class="rows">
+      <view class="row" bindtap="onExport">
+        <text class="row__label">导出数据</text>
+        <text class="row__val row__val--muted">备份到聊天</text>
+        <text class="row__chev">›</text>
+      </view>
+      <view class="row" bindtap="onImport">
+        <text class="row__label">导入数据</text>
+        <text class="row__val row__val--muted">从聊天文件</text>
+        <text class="row__chev">›</text>
+      </view>
+      <view class="row" bindtap="onTextExport">
+        <text class="row__label">导出 · 文本课表</text>
+        <text class="row__chev">›</text>
+      </view>
+      <view class="row" bindtap="onTextImport">
+        <text class="row__label">导入 · 文本课表</text>
+        <text class="row__chev">›</text>
+      </view>
     </view>
   </view>
 
-  <!-- 文本导入导出 -->
-  <view class="section">
-    <view class="section__title">课程文本导入导出</view>
-    <view class="text-format-hint">
-      <text class="text-format-hint__text">格式：3.23 私教 10:30 周一 周文娟 旺君馆</text>
-    </view>
-    <view class="action-row" bindtap="onTextExport">
-      <text class="action-text">导出为文本</text>
-      <text class="action-hint">复制课程列表</text>
-      <text class="action-arrow">▸</text>
-    </view>
-    <view class="action-row" bindtap="onTextImport">
-      <text class="action-text">从文本导入</text>
-      <text class="action-hint">粘贴课程列表</text>
-      <text class="action-arrow">▸</text>
-    </view>
+  <view class="foot">
+    <text class="foot__brand serif">排课助手</text>
+    <text class="foot__ver">v1.0.0 · keleya.org</text>
   </view>
 
-  <!-- 文本弹窗 -->
+  <view class="page__tail"></view>
+
+  <!-- 文本弹窗（保留原逻辑，仅样式编辑式化） -->
   <view class="text-modal" wx:if="{{showTextModal}}" catchtouchmove="true">
     <view class="text-modal__mask" bindtap="onTextModalClose"></view>
     <view class="text-modal__body">
       <view class="text-modal__header">
-        <text class="text-modal__title">{{textModalMode === 'export' ? '课程文本' : '粘贴课程文本'}}</text>
+        <text class="text-modal__title serif">{{textModalMode === 'export' ? '课程文本' : '粘贴课表'}}</text>
         <view class="text-modal__close" bindtap="onTextModalClose">×</view>
       </view>
       <block wx:if="{{textModalMode === 'export'}}">
@@ -148,7 +202,7 @@
         <view class="text-modal__content">
           <textarea
             class="text-modal__textarea"
-            placeholder="每行一节课，格式如：&#10;3.23 私教 10:30 周一 周文娟 旺君馆"
+            placeholder="每行一节课，例：3.23 私教 10:30 周一 周文娟 旺君馆"
             value="{{textImportContent}}"
             bindinput="onTextModalInput"
             maxlength="-1"
@@ -159,25 +213,6 @@
           <view class="text-modal__btn text-modal__btn--primary" bindtap="onTextModalConfirmImport">导入</view>
         </view>
       </block>
-    </view>
-  </view>
-
-  <!-- 统计 -->
-  <view class="section">
-    <view class="section__title">统计</view>
-    <view class="action-row" bindtap="onGoStats">
-      <text class="action-text">课程统计</text>
-      <text class="action-hint">按月/按类型/按会员</text>
-      <text class="action-arrow">▸</text>
-    </view>
-  </view>
-
-  <!-- 关于 -->
-  <view class="section">
-    <view class="section__title">关于</view>
-    <view class="about">
-      <text class="about__name">排课助手</text>
-      <text class="about__version">v1.0.0</text>
     </view>
   </view>
 </view>
