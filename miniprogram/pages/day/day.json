@@ -1,7 +1,6 @@
 {
-  "navigationBarTitleText": "日视图",
+  "navigationBarTitleText": "",
   "usingComponents": {
-    "session-card": "/components/session-card/session-card",
-    "empty-state": "/components/empty-state/empty-state"
+    "session-card": "/components/session-card/session-card"
   }
 }

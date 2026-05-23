@@ -1,50 +1,64 @@
 <view class="page" bindtouchstart="onSwipeStart" bindtouchmove="onSwipeMove" bindtouchend="onSwipeEnd">
-  <view class="dv-swipe-wrap {{swipeAnimating ? 'dv-swipe-wrap--animating' : ''}}" style="{{swipeTransform}}">
-    <view class="header">
-      <text class="header__date">{{dateLabel}}</text>
+  <view class="swipe-wrap {{swipeAnimating ? 'swipe-wrap--animating' : ''}}" style="{{swipeTransform}}">
+
+    <view class="hdr">
+      <text class="hdr__date serif">{{dateLabel}}</text>
+      <text class="hdr__sub serif" wx:if="{{sessions.length}}">{{sessions.length}} 节课</text>
+      <text class="hdr__sub serif" wx:else>无课</text>
     </view>
 
-    <empty-state
-      wx:if="{{sessions.length === 0}}"
-      title="今天还没有课程"
-      subtitle="点击时间段或右下角 + 添加课程"
-    />
+    <view class="rule"></view>
 
+    <!-- Empty -->
+    <view class="empty" wx:if="{{sessions.length === 0}}">
+      <view class="empty__mark"></view>
+      <text class="empty__title serif">空白的一天</text>
+      <text class="empty__hint serif">点击下方任意时段，安排一节</text>
+    </view>
+
+    <!-- Timeline -->
     <scroll-view class="timeline" scroll-y wx:else>
       <view class="timeline__body">
-      <!-- Time slots -->
-      <view class="time-slot" wx:for="{{timeSlots}}" wx:key="*this" data-time="{{item}}" bindtap="onSlotTap">
-        <text class="time-slot__label">{{item}}</text>
-        <view class="time-slot__line"></view>
-      </view>
+        <!-- Time slots -->
+        <view class="slot" wx:for="{{timeSlots}}" wx:key="*this" data-time="{{item}}" bindtap="onSlotTap">
+          <text class="slot__label serif">{{item}}</text>
+          <view class="slot__line"></view>
+        </view>
 
-      <!-- Sessions positioned absolutely -->
-      <view
-        class="session-pos"
-        wx:for="{{sessions}}"
-        wx:key="id"
-        style="top: {{item._top}}rpx; height: {{item._height}}rpx;"
-      >
-        <session-card
-          session="{{item}}"
-          memberName="{{memberMap[item.memberId].name || (item.classMode === 'group' ? '团课' : '')}}"
-          compact="{{false}}"
-          bind:cardtap="onSessionTap"
-          bind:complete="onComplete"
-          bind:cancel="onCancel"
-        />
-      </view>
+        <!-- Sessions positioned absolutely -->
+        <view
+          class="session-pos"
+          wx:for="{{sessions}}"
+          wx:key="id"
+          style="top: {{item._top}}rpx; height: {{item._height}}rpx;"
+        >
+          <session-card
+            session="{{item}}"
+            memberName="{{memberMap[item.memberId].name || (item.classMode === 'group' ? '团课' : '')}}"
+            compact="{{false}}"
+            bind:cardtap="onSessionTap"
+            bind:complete="onComplete"
+            bind:cancel="onCancel"
+          />
+        </view>
 
-      <!-- Current time line -->
-      <view class="current-time" wx:if="{{showTimeLine}}" style="top: {{currentTimeTop}}rpx;">
-        <view class="current-time__dot"></view>
-        <view class="current-time__line"></view>
+        <!-- Current time indicator -->
+        <view class="now" wx:if="{{showTimeLine}}" style="top: {{currentTimeTop}}rpx;">
+          <view class="now__dot"></view>
+          <view class="now__line"></view>
+        </view>
       </view>
+    </scroll-view>
+
+    <!-- Empty state CTA: also works under timeline -->
+    <view class="bottom-actions" wx:if="{{sessions.length === 0}}">
+      <view class="bottom-cta" bindtap="onAddSession">新建课程 →</view>
     </view>
-  </scroll-view>
+
   </view>
 
-  <view class="fab" bindtap="onAddSession">
-    <text class="fab__icon">+</text>
+  <!-- FAB only when there are sessions -->
+  <view class="fab" wx:if="{{sessions.length > 0}}" bindtap="onAddSession">
+    <text class="fab__plus">+</text>
   </view>
 </view>

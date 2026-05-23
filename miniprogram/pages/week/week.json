@@ -1,7 +1,5 @@
 {
-  "navigationBarTitleText": "排课助手",
+  "navigationBarTitleText": "",
   "enablePullDownRefresh": true,
-  "usingComponents": {
-    "empty-state": "/components/empty-state/empty-state"
-  }
+  "usingComponents": {}
 }
