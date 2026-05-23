@@ -1,36 +1,83 @@
 <view class="page">
-  <view class="section">
-    <view class="section__title">昵称 *</view>
-    <input class="input" placeholder="输入会员昵称" value="{{form.name}}" bindinput="onNameInput" />
+  <view class="hdr">
+    <text class="hdr__title serif">{{form.id ? '编辑会员' : '新建会员'}}</text>
+    <text class="hdr__sub serif">{{form.id ? '调整这位会员的基本信息' : '只需姓名即可创建'}}</text>
   </view>
 
-  <view class="section">
-    <view class="section__title">联系方式</view>
-    <input class="input" placeholder="手机号或微信号" value="{{form.phone}}" bindinput="onPhoneInput" />
+  <view class="rule"></view>
+
+  <view class="block">
+    <view class="block__head">
+      <text class="block__label">姓名</text>
+      <text class="block__req">必填</text>
+    </view>
+    <input
+      class="field-input"
+      placeholder="如 王晓芳"
+      value="{{form.name}}"
+      bindinput="onNameInput"
+      maxlength="20"
+    />
   </view>
 
-  <view class="section">
-    <view class="section__title">标签</view>
-    <view class="tags-wrap">
-      <tag
-        wx:for="{{form.tags}}"
-        wx:key="*this"
-        text="{{item}}"
-        closable="{{true}}"
-        bind:close="onTagClose"
+  <view class="rule"></view>
+
+  <view class="block">
+    <view class="block__head">
+      <text class="block__label">联系方式</text>
+    </view>
+    <input
+      class="field-input"
+      placeholder="手机号或微信号"
+      value="{{form.phone}}"
+      bindinput="onPhoneInput"
+    />
+  </view>
+
+  <view class="rule"></view>
+
+  <view class="block">
+    <view class="block__head">
+      <text class="block__label">标签</text>
+      <text class="block__hint">如「新手」「VIP」「腰伤」</text>
+    </view>
+    <view class="chips" wx:if="{{form.tags.length}}">
+      <view class="chip" wx:for="{{form.tags}}" wx:key="*this">
+        <text>{{item}}</text>
+        <view class="chip__x" data-name="{{item}}" bindtap="onTagClose">×</view>
+      </view>
+    </view>
+    <view class="add">
+      <input
+        class="add__input"
+        placeholder="输入标签后回车添加"
+        value="{{tagInput}}"
+        bindinput="onTagInput"
+        bindconfirm="onTagConfirm"
+        confirm-type="done"
       />
     </view>
-    <view class="row">
-      <input class="input" placeholder="输入标签后回车添加" value="{{tagInput}}" bindinput="onTagInput" bindconfirm="onTagConfirm" />
-    </view>
   </view>
 
-  <view class="section">
-    <view class="section__title">备注</view>
-    <textarea class="textarea" placeholder="添加备注..." value="{{form.notes}}" bindinput="onNotesInput" auto-height></textarea>
+  <view class="rule"></view>
+
+  <view class="block">
+    <view class="block__head">
+      <text class="block__label">备注</text>
+    </view>
+    <textarea
+      class="field-textarea"
+      placeholder="健康状况、训练偏好、注意事项..."
+      value="{{form.notes}}"
+      bindinput="onNotesInput"
+      auto-height
+      maxlength="500"
+    />
   </view>
 
   <view class="actions">
-    <button class="btn btn--primary" bindtap="onSave">保存</button>
+    <button class="btn-primary" bindtap="onSave">保存</button>
   </view>
+
+  <view class="page__tail"></view>
 </view>

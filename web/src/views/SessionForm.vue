@@ -6,7 +6,6 @@
       </template>
     </van-nav-bar>
 
-    <VoiceInput v-if="!isEdit" :members="members" :config="config" @result="onVoiceResult" />
     <TextInput v-if="!isEdit" :members="members" :config="config" @result="onVoiceResult" />
 
     <van-form @submit="onSave">
@@ -267,7 +266,6 @@ import { showToast, showSuccessToast, showConfirmDialog } from 'vant'
 import * as storage from '../services/storage'
 import { toDateStr } from '../utils/dateUtil'
 import { generateSessionId, generateMemberId } from '../utils/idGenerator'
-import VoiceInput from '../components/VoiceInput.vue'
 import TextInput from '../components/TextInput.vue'
 
 const route = useRoute()

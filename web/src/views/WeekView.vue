@@ -66,7 +66,9 @@
     <div class="wv-empty" v-if="!sessions.length">
       <span class="wv-empty__mark"></span>
       <p class="wv-empty__title">这周尚是空白</p>
-      <p class="wv-empty__sub">从右下角开始排课</p>
+      <p class="wv-empty__sub">把整周课表粘进来，AI 自动整理</p>
+      <button class="wv-empty__cta" @click="$router.push('/settings')">前往批量导入 →</button>
+      <span class="wv-empty__alt" @click="$router.push('/session')">或新增单节课程</span>
     </div>
 
     <!-- Week Grid -->
@@ -737,7 +739,35 @@ export default {
   font-weight: 300;
   font-size: 13px;
   color: var(--ink-3);
+  margin-bottom: 28px;
+  line-height: 1.6;
+  max-width: 240px;
 }
+.wv-empty__cta {
+  display: inline-flex;
+  align-items: center;
+  padding: 12px 22px;
+  background: var(--ink);
+  color: var(--paper);
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+  font-family: inherit;
+}
+.wv-empty__cta:active { background: var(--ink-2); }
+.wv-empty__alt {
+  margin-top: 14px;
+  font-size: 12px;
+  color: var(--ink-3);
+  letter-spacing: 0.04em;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  text-decoration-color: var(--ink-4);
+  cursor: pointer;
+}
+.wv-empty__alt:active { color: var(--primary); }
 
 /* === Week Grid === */
 .wv-grid {

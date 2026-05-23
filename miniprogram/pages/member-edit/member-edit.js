@@ -56,7 +56,8 @@ Page({
   },
 
   onTagClose(e) {
-    const tags = this.data.form.tags.filter(t => t !== e.detail.text)
+    const name = e.currentTarget.dataset.name
+    const tags = this.data.form.tags.filter(t => t !== name)
     this.setData({ 'form.tags': tags })
   },
 
