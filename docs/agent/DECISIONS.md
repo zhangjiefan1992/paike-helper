@@ -115,6 +115,32 @@
 
 ---
 
+## D9 · Session V2 数据模型与 AI 输出对齐（2026-05-26）
+
+**决策**：
+
+- AI 备课建议的输出 schema **直接对齐 V2 目标 Session model**，不是抽象描述性建议
+- V2 字段参考真实教练记录格式（参见 PRD § 1.x）：
+  - `sessionNumber` / `memberState` / `focusArea` / `trainingItems[]` / `intensity` / `trainingResult` / `summary[]` / `homework[]` / `createdBy`
+- **数据演化走路径 2**：
+  - V1（已上线）不动，继续兼容
+  - V2 跟 Phase 3 (AI Agent) 一起升级
+  - 不强制迁移历史 notes，可选 LLM 拆分工具
+- **AI 输出原则**：
+  - `trainingItems` 是有序自由文本动作清单，**不解析 "R" 等教练自定义前缀**
+  - `sessionNumber` 系统建议默认值，**允许覆盖**（兼容线下未录入数据）
+  - `memberState` / `homework` 是自由文本，**不限制结构**（不同馆工作流差异大）
+  - `trainingResult` 可留空（课前 vs 课后填写）
+
+**理由**：
+
+- 教练真实工作流的字段比抽象描述更直接可用
+- "应用到下次课程" 字段映射零摩擦
+- 不限制自由度 = 不被工作流差异拒绝
+- V1 不动 = 不影响审核中的小程序
+
+---
+
 ## D8 · 启动节奏（2026-05-26）
 
 **决策**：先发现期，再实施期。**不急着写代码**。

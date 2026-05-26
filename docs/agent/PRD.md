@@ -24,6 +24,8 @@
 - H2：教练课后想给会员发文字反馈但写不出来。AI 帮起草。
 - H3：教练遇到不熟悉的会员状况（孕期 / 术后 / 老年）会犹豫，AI 多流派视角能拓宽思路。
 - H4：会员级数据 + AI 是教练为何换我们而不是用 ChatGPT 的关键差异点。
+- H5：AI 输出按教练真实记录格式（动作清单 + 强度% + 结构化字段），而不是描述性建议。
+   是"用 vs 不用"的决定性因素。
 
 ---
 
@@ -61,6 +63,57 @@
 - 4 派视角（默认折叠，可展开）
 - 综合建议：训练重点 / 推荐动作家族 / 注意事项 / 时长强度
 - 一键"应用到下次课程"（跳转到新建课程页，预填字段）
+
+### 1.x 输出格式标准（参考教练真实工作流）
+
+AI 备课建议应输出与教练真实手写记录一致的结构化格式，以便"应用到下次课程"时无需重新整理。
+
+**Session 完整字段（V2 目标模型）**：
+
+| 字段 | 类型 | 必填 | 说明 | 示例 |
+|------|------|------|------|------|
+| `sessionNumber` | int | 否 | 该会员累计第几节课。**可由系统建议**（已上完节数+1）**但允许覆盖**（线下历史数据可能未录入）| 16 |
+| `memberState` | string | 否 | 课前/课中观察记录，自由文本，可多字 | "良好"、"今天明显焦虑，左肩紧张" |
+| `focusArea` | string | 否 | 练习部位，自由文本，可单可多 | "骨盆带" |
+| `trainingItems` | string[] | 否 | 训练内容，有序动作清单。每项是教练自由文本（包括"R"等自定义前缀，系统不解析） | ["坐姿髋部灵活", "单腿屈伸髋", "R 直背后倒"] |
+| `courseType` | string | 是 | 运动方式（普拉提/瑜伽/体能等）| "普拉提" |
+| `intensity` | int | 否 | 运动强度百分比 0-100 | 60 |
+| `trainingResult` | string | 否 | 课后填写，自由文本 | "完成度高，但腰部代偿明显" |
+| `summary` | string[] | 否 | 课程总结，要点列表 | ["仍存在两侧不平衡问题", "没有反应腰部代偿"] |
+| `homework` | string[] | 否 | 家庭作业/课中记录，要点列表。**结构不固定**（每个馆/教练可能格式不同） | ["蜡笔小新走"] |
+| `createdBy` | string | 否 | 创建/修改人，多人协作场景显示 | "天琪-83645" |
+
+**示例（一节真实记录）**：
+
+```yaml
+date: 2026-05-14
+sessionNumber: 16
+memberState: 良好
+focusArea: 骨盆带
+trainingItems:
+  - 坐姿髋部灵活
+  - 单腿屈伸髋
+  - 双腿交错平衡练习
+  - 步态基础
+  - R 直背后倒
+  - R 侧链
+  - R 滑板滑板车
+courseType: 普拉提
+intensity: 60
+trainingResult: (留空，课后补)
+summary:
+  - 仍存在两侧不平衡问题
+  - 没有反应腰部代偿
+homework:
+  - 蜡笔小新走
+```
+
+**关键设计原则**：
+
+1. **不限制自由度**：`memberState` / `homework` / `trainingItems` 都是自由文本，因为不同教练 / 不同馆的工作流差异大
+2. **AI 输出 vs 教练填写**：AI 备课建议生成的是**草稿默认值**，教练随时可改
+3. **课时序号智能建议**：系统根据已有数据建议默认值，但允许手动覆盖（兼容线下未录入数据）
+4. **训练结果留空可接受**：课前/课后两次填写场景
 
 ### 功能 2：多轮跟进（必做）
 
@@ -154,3 +207,77 @@ v0.3 ───── 跟开发对齐，根据技术预研调整范围
 
 v1.0 ───── 进入实施期前的冻结版本
 ```
+
+---
+
+## 九、Session 数据模型演化（路径 2 决策）
+
+### 决策
+
+**V1 不动数据模型，V2/Phase 3 一起升级**。当前已发布的小程序数据继续兼容。
+
+### V1（当前生产中）
+
+```typescript
+Session {
+  id, memberId, memberIds[],
+  date, startTime, duration,
+  classMode, courseType, location, status,
+  focusAreas: string[],   // 多标签
+  notes: string,           // 自由文本（混杂了总结/作业/观察等）
+  photos, beforePhotos, afterPhotos,
+  summaryText, summarySent,
+  voiceSegments, aiDigest,
+  createdAt, updatedAt
+}
+```
+
+### V2 目标（Phase 3 同步上）
+
+```typescript
+Session {
+  // 保留的 V1 字段
+  id, memberId, memberIds[],
+  date, startTime, duration,
+  classMode, courseType, location, status,
+  photos, beforePhotos, afterPhotos,
+  createdAt, updatedAt,
+
+  // 新增字段（参考真实教练记录格式）
+  sessionNumber: number?,     // 课时序号（系统建议+允许覆盖）
+  memberState: string?,        // 会员状态（自由文本）
+  focusArea: string?,          // 练习部位（自由文本，可单可多）
+  trainingItems: string[],     // 训练内容（有序动作清单）
+  intensity: number?,          // 运动强度 0-100
+  trainingResult: string?,     // 课后训练结果
+  summary: string[],           // 课程总结要点
+  homework: string[],          // 家庭作业/课中记录
+  createdBy: string?,          // 多人协作时
+
+  // V1 字段在 V2 里的处理
+  focusAreas: string[],        // 保留，跟 focusArea 并行（前者结构化标签，后者自由文本）
+  notes: string?,              // 保留为"备注"兜底字段（如果新字段不够用）
+  voiceSegments, aiDigest,     // 保留（AI 草稿源）
+  summaryText, summarySent     // 保留（专门给"发给会员的文字版总结"用）
+}
+```
+
+### V1 → V2 迁移策略
+
+不需要复杂的数据迁移，因为：
+- V2 新字段都是 optional，旧 Session 缺失时按 null/空数组对待
+- V1 的 `notes` 文本字段保留，新字段提供更细分的存储
+
+**可选迁移工具**（不强制）：
+- 一次性脚本：用 LLM 把 V1 `notes` 拆解成 V2 的 `summary` + `homework` + `trainingResult`
+- 用户在编辑课程时可选 "智能拆分备注到结构化字段"
+
+### 对 V1 的反向影响
+
+无。V1 用户继续用 `notes` 自由文本，不会被打扰。
+
+### 对 AI Agent（Phase 3）的影响
+
+- Agent 输出 schema 直接对齐 V2 结构（`memberState` / `trainingItems` / `intensity` / `summary` / `homework`）
+- "应用到下次课程"映射到 V2 字段，无需中间翻译
+- 教练审核 AI 输出时看到的是熟悉的"训练内容清单 + 强度% + 课程总结要点"，不是抽象描述
