@@ -1,0 +1,1303 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>AI 备课助手 · 交互稿 v0.1</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --paper: #FAF7F0;
+  --paper-2: #F5F0E5;
+  --ink: #1F1D1A;
+  --ink-2: #4A4642;
+  --ink-3: #7A7470;
+  --ink-4: #A8A29B;
+  --ink-5: #C4BEB6;
+  --rule: #E8E2D8;
+  --rule-soft: #F0EBE2;
+  --primary: #4A7C59;
+  --primary-soft: rgba(74, 124, 89, 0.08);
+  --warm: #B5573D;
+  --warm-soft: rgba(181, 87, 61, 0.08);
+  --display: 'Fraunces', 'Times New Roman', serif;
+  --sans: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hiragino Sans GB', sans-serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: var(--sans);
+  background: linear-gradient(180deg, #2A2724 0%, #1A1815 100%);
+  color: var(--ink-2);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  font-feature-settings: 'palt', 'kern';
+  padding: 60px 20px;
+}
+
+/* === Top header === */
+.intro {
+  max-width: 980px;
+  margin: 0 auto 80px;
+  text-align: center;
+  color: #E8E2D8;
+}
+.intro__eyebrow {
+  font-size: 11px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: #A8A29B;
+  margin-bottom: 14px;
+}
+.intro__title {
+  font-family: var(--display);
+  font-weight: 300;
+  font-size: 56px;
+  letter-spacing: -0.02em;
+  color: #FAF7F0;
+  line-height: 1.1;
+  margin-bottom: 20px;
+}
+.intro__sub {
+  font-family: var(--display);
+  font-style: italic;
+  font-size: 18px;
+  color: #C4BEB6;
+  font-weight: 300;
+  line-height: 1.6;
+  max-width: 620px;
+  margin: 0 auto 40px;
+}
+.intro__meta {
+  display: inline-flex;
+  gap: 28px;
+  padding: 14px 28px;
+  background: rgba(250, 247, 240, 0.06);
+  border: 1px solid rgba(250, 247, 240, 0.12);
+  border-radius: 999px;
+  font-size: 12px;
+  color: #C4BEB6;
+  letter-spacing: 0.04em;
+}
+.intro__meta strong {
+  color: #FAF7F0;
+  font-weight: 500;
+  font-family: var(--display);
+}
+
+/* === Screen Grid === */
+.screens {
+  max-width: 1280px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+  gap: 80px 60px;
+}
+
+.screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.screen__caption {
+  margin-bottom: 28px;
+  text-align: center;
+  color: #FAF7F0;
+}
+.screen__caption-eyebrow {
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #A8A29B;
+  margin-bottom: 6px;
+}
+.screen__caption-title {
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: 24px;
+  color: #FAF7F0;
+  letter-spacing: -0.01em;
+  margin-bottom: 8px;
+}
+.screen__caption-note {
+  font-family: var(--display);
+  font-style: italic;
+  font-size: 13px;
+  color: #C4BEB6;
+  font-weight: 300;
+  max-width: 360px;
+  margin: 0 auto;
+  line-height: 1.55;
+}
+
+/* === iPhone Frame === */
+.frame {
+  width: 390px;
+  height: 844px;
+  background: var(--paper);
+  border-radius: 50px;
+  overflow: hidden;
+  position: relative;
+  box-shadow:
+    0 0 0 8px #1A1815,
+    0 0 0 9px #2A2724,
+    0 24px 64px rgba(0, 0, 0, 0.4),
+    0 8px 16px rgba(0, 0, 0, 0.3);
+}
+.frame__notch {
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 120px;
+  height: 32px;
+  background: #1A1815;
+  border-radius: 24px;
+  z-index: 100;
+}
+.frame__home {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 134px;
+  height: 5px;
+  background: var(--ink);
+  border-radius: 3px;
+  opacity: 0.4;
+  z-index: 100;
+}
+.statusbar {
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 30px 0 32px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  font-family: -apple-system, sans-serif;
+}
+.statusbar__icons {
+  display: flex;
+  gap: 4px;
+  font-size: 11px;
+}
+
+/* === Screen body wrapper (under statusbar) === */
+.body {
+  height: calc(100% - 50px);
+  overflow-y: auto;
+  position: relative;
+  padding-bottom: 28px;
+}
+.body::-webkit-scrollbar { display: none; }
+
+/* === Common === */
+.serif { font-family: var(--display); }
+
+.hairline {
+  height: 1px;
+  background: var(--rule);
+  margin: 0 28px;
+}
+
+.eyebrow {
+  font-size: 10px;
+  color: var(--ink-3);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-weight: 500;
+}
+
+/* === Screen A: Member Detail with Entry === */
+.member-hdr {
+  padding: 16px 28px 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.member-hdr__back svg, .member-hdr__action {
+  color: var(--ink-3);
+}
+.member-hdr__actions {
+  display: flex;
+  gap: 12px;
+  font-size: 13px;
+  color: var(--ink-3);
+  letter-spacing: 0.04em;
+}
+
+.profile {
+  padding: 24px 28px 32px;
+}
+.profile__accent {
+  width: 28px;
+  height: 2px;
+  background: #A8B8A0;
+  margin-bottom: 18px;
+  border-radius: 2px;
+}
+.profile__name {
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: 36px;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  margin-bottom: 10px;
+  line-height: 1.1;
+}
+.profile__meta {
+  font-size: 12px;
+  color: var(--ink-3);
+  line-height: 1.6;
+  letter-spacing: 0.02em;
+}
+.dot { margin: 0 6px; color: var(--ink-4); }
+
+.section {
+  padding: 24px 28px;
+}
+.section__lbl {
+  font-size: 10px;
+  color: var(--ink-3);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  margin-bottom: 16px;
+  font-weight: 500;
+}
+.hero-num {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+.hero-num__big {
+  font-family: var(--display);
+  font-weight: 300;
+  font-size: 76px;
+  line-height: 0.95;
+  color: var(--ink);
+  letter-spacing: -0.04em;
+}
+.hero-num__unit {
+  font-family: var(--display);
+  font-weight: 300;
+  font-size: 18px;
+  color: var(--ink-3);
+}
+.hero-sub {
+  font-size: 12px;
+  color: var(--ink-3);
+  margin-bottom: 20px;
+}
+
+.stats-row {
+  display: flex;
+  gap: 20px;
+  padding: 14px 0 0;
+  border-top: 1px solid var(--rule-soft);
+  align-items: center;
+}
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.stat__num {
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: 22px;
+  color: var(--ink);
+  line-height: 1;
+}
+.stat__num small {
+  font-size: 11px;
+  color: var(--ink-3);
+}
+.stat__lbl {
+  font-size: 10px;
+  color: var(--ink-4);
+  letter-spacing: 0.06em;
+}
+.stat__div {
+  width: 1px;
+  height: 18px;
+  background: var(--rule);
+}
+
+.entry-cta {
+  position: sticky;
+  bottom: 0;
+  margin: 8px 16px 0;
+  padding: 14px 20px;
+  background: var(--ink);
+  color: var(--paper);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 8px 24px rgba(31, 29, 26, 0.18);
+}
+.entry-cta__main {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.entry-cta__icon {
+  font-family: var(--display);
+  font-size: 18px;
+  color: var(--paper);
+}
+.entry-cta__text {
+  font-size: 13px;
+  letter-spacing: 0.04em;
+}
+.entry-cta__hint {
+  display: block;
+  font-family: var(--display);
+  font-style: italic;
+  font-size: 11px;
+  opacity: 0.7;
+  margin-top: 2px;
+}
+.entry-cta__arrow {
+  font-family: var(--display);
+  font-size: 20px;
+}
+
+/* === Screen B: Input === */
+.modal-hdr {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 22px 28px 12px;
+}
+.modal-hdr__title {
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: 22px;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+}
+.modal-hdr__close {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  color: var(--ink-3);
+}
+
+.context-block {
+  padding: 0 28px 24px;
+}
+.context-block__items {
+  background: var(--rule-soft);
+  border-radius: 12px;
+  padding: 14px 16px;
+}
+.ctx-line {
+  font-size: 12.5px;
+  color: var(--ink-2);
+  line-height: 1.7;
+  display: flex;
+  gap: 10px;
+}
+.ctx-line__dot {
+  color: var(--ink-4);
+}
+
+.input-block {
+  padding: 16px 28px 20px;
+}
+.input-area {
+  width: 100%;
+  min-height: 100px;
+  padding: 14px 16px;
+  background: transparent;
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--ink);
+  resize: none;
+  outline: none;
+  line-height: 1.6;
+}
+.input-placeholder {
+  color: var(--ink-4);
+  font-style: italic;
+  font-family: var(--display);
+  font-weight: 300;
+}
+
+.quick-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+.quick-chip {
+  padding: 6px 14px;
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  font-size: 12px;
+  color: var(--ink-2);
+  letter-spacing: 0.02em;
+  background: transparent;
+}
+.quick-chip:active {
+  background: var(--ink);
+  color: var(--paper);
+  border-color: var(--ink);
+}
+
+.cta-primary {
+  margin: 24px 28px;
+  padding: 16px 0;
+  background: var(--ink);
+  color: var(--paper);
+  border-radius: 999px;
+  text-align: center;
+  font-size: 14px;
+  letter-spacing: 0.06em;
+  font-weight: 500;
+}
+.cta-primary__icon {
+  font-family: var(--display);
+  margin-left: 6px;
+}
+
+/* === Screen C: Streaming === */
+.user-msg {
+  padding: 16px 28px 8px;
+  font-size: 13px;
+  color: var(--ink-3);
+}
+.user-msg__label {
+  font-family: var(--display);
+  color: var(--ink-2);
+}
+
+.school-block {
+  padding: 18px 28px;
+  border-bottom: 1px solid var(--rule-soft);
+}
+.school-block__hdr {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.school-block__icon {
+  font-family: var(--display);
+  font-size: 14px;
+  color: var(--primary);
+}
+.school-block__title {
+  font-family: var(--display);
+  font-size: 14px;
+  color: var(--ink);
+  font-weight: 500;
+  letter-spacing: -0.005em;
+}
+.school-block__status {
+  margin-left: auto;
+  font-family: var(--display);
+  font-style: italic;
+  font-size: 11px;
+  color: var(--ink-3);
+}
+.school-block__body {
+  font-size: 13px;
+  color: var(--ink-2);
+  line-height: 1.65;
+}
+.cursor {
+  display: inline-block;
+  width: 7px;
+  height: 14px;
+  background: var(--ink);
+  margin-left: 2px;
+  vertical-align: middle;
+  animation: blink 1s step-end infinite;
+}
+@keyframes blink {
+  50% { opacity: 0; }
+}
+
+/* === Screen D: Final advice === */
+.school-fold {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 28px;
+  border-bottom: 1px solid var(--rule-soft);
+  font-size: 13px;
+  color: var(--ink-2);
+}
+.school-fold__check {
+  color: var(--primary);
+}
+.school-fold__caret {
+  margin-left: auto;
+  color: var(--ink-4);
+  font-family: var(--display);
+}
+
+.judgment {
+  margin: 24px 16px;
+  padding: 24px;
+  border: 1px solid var(--rule);
+  border-radius: 16px;
+  background: linear-gradient(180deg, rgba(74,124,89,0.025), transparent);
+}
+.judgment__hdr {
+  text-align: center;
+  margin-bottom: 16px;
+  padding-bottom: 14px;
+  border-bottom: 2px double var(--rule);
+}
+.judgment__title {
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: 20px;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+}
+.judgment__subtitle {
+  font-family: var(--display);
+  font-style: italic;
+  font-size: 11px;
+  color: var(--ink-3);
+  margin-top: 4px;
+}
+
+.j-section {
+  margin-bottom: 16px;
+}
+.j-section__lbl {
+  font-size: 11px;
+  color: var(--ink-3);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+.j-section__lbl::before {
+  content: "◇ ";
+  color: var(--primary);
+}
+.j-section__body {
+  font-size: 13px;
+  color: var(--ink-2);
+  line-height: 1.7;
+}
+.j-section__body ul {
+  list-style: none;
+  padding: 0;
+}
+.j-section__body li {
+  padding-left: 14px;
+  position: relative;
+  margin-bottom: 4px;
+}
+.j-section__body li::before {
+  content: "·";
+  position: absolute;
+  left: 4px;
+  color: var(--ink-3);
+}
+.warning {
+  color: var(--warm);
+  font-weight: 500;
+}
+
+.disclaimer {
+  margin: 12px 28px 20px;
+  padding: 12px 14px;
+  font-size: 11px;
+  color: var(--ink-3);
+  font-family: var(--display);
+  font-style: italic;
+  border-top: 1px solid var(--rule-soft);
+  text-align: center;
+  line-height: 1.6;
+}
+
+.actions-row {
+  margin: 0 16px 16px;
+  display: flex;
+  gap: 10px;
+}
+.btn {
+  flex: 1;
+  padding: 12px 0;
+  border-radius: 999px;
+  text-align: center;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+}
+.btn--primary {
+  background: var(--ink);
+  color: var(--paper);
+}
+.btn--ghost {
+  background: transparent;
+  color: var(--ink);
+  border: 1px solid var(--ink-2);
+}
+.btn--text {
+  display: block;
+  text-align: center;
+  margin: 0 28px 8px;
+  font-size: 12px;
+  color: var(--ink-3);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+/* === Screen E: Multi-turn === */
+.turn-folded {
+  margin: 0 28px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--rule-soft);
+  font-size: 12px;
+  color: var(--ink-3);
+  display: flex;
+  justify-content: space-between;
+}
+.turn-folded__caret {
+  font-family: var(--display);
+}
+
+.turn-active__user {
+  padding: 16px 28px 8px;
+}
+.turn-active__user-q {
+  font-family: var(--display);
+  font-size: 16px;
+  color: var(--ink);
+  letter-spacing: -0.005em;
+  margin-bottom: 6px;
+}
+.turn-active__divider {
+  height: 1px;
+  background: var(--rule);
+  width: 60px;
+  margin-bottom: 12px;
+}
+
+.input-bar {
+  margin: 16px 16px 0;
+  display: flex;
+  gap: 8px;
+}
+.input-bar__input {
+  flex: 1;
+  padding: 12px 16px;
+  background: var(--paper-2);
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  font-size: 13px;
+  color: var(--ink-3);
+  font-family: inherit;
+}
+.input-bar__send {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--ink);
+  color: var(--paper);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--display);
+}
+
+/* === Screen G: Failure === */
+.failure-block {
+  margin: 80px 28px 0;
+  text-align: center;
+}
+.failure-block__mark {
+  width: 40px;
+  height: 1px;
+  background: var(--ink-4);
+  margin: 0 auto 28px;
+  opacity: 0.5;
+}
+.failure-block__title {
+  font-family: var(--display);
+  font-weight: 300;
+  font-size: 28px;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+  margin-bottom: 10px;
+}
+.failure-block__hint {
+  font-family: var(--display);
+  font-style: italic;
+  font-size: 14px;
+  color: var(--ink-3);
+  margin-bottom: 32px;
+}
+.failure-block__btns {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+/* === Footer === */
+.footer-note {
+  max-width: 980px;
+  margin: 80px auto 40px;
+  padding: 28px;
+  background: rgba(250, 247, 240, 0.04);
+  border: 1px solid rgba(250, 247, 240, 0.1);
+  border-radius: 16px;
+  color: #C4BEB6;
+}
+.footer-note__title {
+  font-family: var(--display);
+  font-weight: 400;
+  color: #FAF7F0;
+  font-size: 18px;
+  margin-bottom: 14px;
+  letter-spacing: -0.005em;
+}
+.footer-note__list {
+  font-size: 13px;
+  line-height: 1.8;
+  list-style: none;
+  padding: 0;
+}
+.footer-note__list li {
+  padding-left: 18px;
+  position: relative;
+}
+.footer-note__list li::before {
+  content: "—";
+  position: absolute;
+  left: 0;
+  color: #7A7470;
+}
+
+@media (max-width: 900px) {
+  body { padding: 40px 12px; }
+  .intro__title { font-size: 36px; }
+  .screens { gap: 60px 0; }
+  .frame {
+    width: 100%;
+    max-width: 390px;
+    height: 800px;
+  }
+}
+</style>
+</head>
+<body>
+
+<header class="intro">
+  <div class="intro__eyebrow">Wireframe v0.1 · 草稿</div>
+  <h1 class="intro__title">AI 备课助手</h1>
+  <p class="intro__sub">基于会员实际数据 + 4 流派知识，30 秒生成下次课结构化建议。</p>
+  <div class="intro__meta">
+    <span><strong>7</strong> 个屏幕</span>
+    <span><strong>4</strong> 流派 + <strong>1</strong> 裁判</span>
+    <span><strong>2026-05-26</strong> 起草</span>
+  </div>
+</header>
+
+<div class="screens">
+
+<!-- ============================================================ -->
+<!-- SCREEN A: Member Detail with AI Entry                        -->
+<!-- ============================================================ -->
+<div class="screen">
+  <div class="screen__caption">
+    <div class="screen__caption-eyebrow">A · 入口</div>
+    <h2 class="screen__caption-title">会员详情 · AI 备课入口</h2>
+    <p class="screen__caption-note">底部固定 CTA，不随滚动消失。教练翻看会员历史时随时触发。</p>
+  </div>
+  <div class="frame">
+    <div class="frame__notch"></div>
+    <div class="statusbar">
+      <span>9:41</span>
+      <span class="statusbar__icons">●●●● 5G ▮</span>
+    </div>
+    <div class="body">
+      <div class="member-hdr">
+        <span class="member-hdr__back" style="font-size:18px;color:var(--ink-3)">‹</span>
+        <div class="member-hdr__actions">
+          <span>导出</span>
+          <span>编辑</span>
+        </div>
+      </div>
+      <div class="profile">
+        <div class="profile__accent"></div>
+        <h1 class="profile__name">王晓芳</h1>
+        <div class="profile__meta">
+          138xxxx<span class="dot">·</span>腰伤注意<span class="dot">·</span>VIP
+        </div>
+      </div>
+      <div class="hairline"></div>
+      <div class="section">
+        <div class="section__lbl">上一次课程</div>
+        <div class="hero-num">
+          <span class="hero-num__big">12</span>
+          <span class="hero-num__unit">天前</span>
+        </div>
+        <div class="hero-sub">5月14日 · 普拉提 · 60 分钟</div>
+        <div class="stats-row">
+          <div class="stat"><span class="stat__num">8</span><span class="stat__lbl">本月</span></div>
+          <span class="stat__div"></span>
+          <div class="stat"><span class="stat__num">47</span><span class="stat__lbl">累计</span></div>
+          <span class="stat__div"></span>
+          <div class="stat"><span class="stat__num">92<small>%</small></span><span class="stat__lbl">出勤</span></div>
+          <span class="stat__div"></span>
+          <div class="stat"><span class="stat__num">5.3</span><span class="stat__lbl">月均</span></div>
+        </div>
+      </div>
+      <div class="hairline"></div>
+      <div class="section">
+        <div class="section__lbl">近期记录</div>
+        <div style="font-family:var(--display);font-size:13px;color:var(--ink);margin-bottom:4px">5月14日 · 14:00</div>
+        <div style="font-size:12.5px;color:var(--ink-3);margin-bottom:18px;line-height:1.55">普拉提 · 旺君馆<br>本次稳定性提升明显，髋部活动度有改善...</div>
+        <div style="font-family:var(--display);font-size:13px;color:var(--ink);margin-bottom:4px">5月7日 · 14:00</div>
+        <div style="font-size:12.5px;color:var(--ink-3);line-height:1.55">普拉提 · 旺君馆<br>...</div>
+      </div>
+      <div class="entry-cta">
+        <div class="entry-cta__main">
+          <span class="entry-cta__icon">✦</span>
+          <div>
+            <div class="entry-cta__text">用 AI 备课</div>
+            <span class="entry-cta__hint">30 秒看清下次该练什么</span>
+          </div>
+        </div>
+        <span class="entry-cta__arrow">→</span>
+      </div>
+    </div>
+    <div class="frame__home"></div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SCREEN B: Input                                              -->
+<!-- ============================================================ -->
+<div class="screen">
+  <div class="screen__caption">
+    <div class="screen__caption-eyebrow">B · 输入</div>
+    <h2 class="screen__caption-title">输入问题 + 上下文确认</h2>
+    <p class="screen__caption-note">显式列出 AI 看到的会员信息（不藏）；输入框可空，4 个快速选项给出抽象动作。</p>
+  </div>
+  <div class="frame">
+    <div class="frame__notch"></div>
+    <div class="statusbar">
+      <span>9:42</span>
+      <span class="statusbar__icons">●●●● 5G ▮</span>
+    </div>
+    <div class="body">
+      <div class="modal-hdr">
+        <h2 class="modal-hdr__title">AI 备课 · 王晓芳</h2>
+        <div class="modal-hdr__close">×</div>
+      </div>
+      <div class="hairline"></div>
+      <div class="context-block" style="padding-top:20px">
+        <div class="section__lbl" style="margin-bottom:12px">会员上下文</div>
+        <div class="context-block__items">
+          <div class="ctx-line"><span class="ctx-line__dot">·</span>47 节累计，最近 5/14 普拉提</div>
+          <div class="ctx-line"><span class="ctx-line__dot">·</span>本月 8 节，出勤 92%</div>
+          <div class="ctx-line"><span class="ctx-line__dot">·</span>标签：腰伤注意 · VIP</div>
+          <div class="ctx-line"><span class="ctx-line__dot">·</span>最近重点：核心、髋关节</div>
+          <div class="ctx-line"><span class="ctx-line__dot">·</span>注意：腰部曾有不适，避后弯</div>
+        </div>
+      </div>
+      <div class="hairline"></div>
+      <div class="input-block">
+        <div class="section__lbl" style="margin-bottom:14px">你想问什么</div>
+        <textarea class="input-area" placeholder="例：下次重点哪里 / 强度该不该升 / 评估近期表现"></textarea>
+        <div class="quick-row">
+          <span class="quick-chip">下次重点哪里</span>
+          <span class="quick-chip">评估近期进度</span>
+          <span class="quick-chip">强度建议</span>
+          <span class="quick-chip">注意事项检查</span>
+        </div>
+      </div>
+      <div class="cta-primary">开始咨询<span class="cta-primary__icon">✦</span></div>
+    </div>
+    <div class="frame__home"></div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SCREEN C: Streaming                                          -->
+<!-- ============================================================ -->
+<div class="screen">
+  <div class="screen__caption">
+    <div class="screen__caption-eyebrow">C · 思考中（流式）</div>
+    <h2 class="screen__caption-title">4 派并行流式输出</h2>
+    <p class="screen__caption-note">4 派同时打字机效果。状态实时显示"思考中" / ✓ / ×。</p>
+  </div>
+  <div class="frame">
+    <div class="frame__notch"></div>
+    <div class="statusbar">
+      <span>9:42</span>
+      <span class="statusbar__icons">●●●● 5G ▮</span>
+    </div>
+    <div class="body">
+      <div class="modal-hdr">
+        <h2 class="modal-hdr__title">AI 备课 · 王晓芳</h2>
+        <div class="modal-hdr__close">×</div>
+      </div>
+      <div class="hairline"></div>
+      <div class="user-msg">
+        <span class="user-msg__label">你问</span>：下次重点哪里
+      </div>
+      <div class="hairline"></div>
+      <div class="school-block">
+        <div class="school-block__hdr">
+          <span class="school-block__icon">✦</span>
+          <span class="school-block__title">经典派</span>
+          <span class="school-block__status">思考中...</span>
+        </div>
+        <div class="school-block__body">
+          从控制与流畅性出发，注意到她近期核心稳定有提升但呼吸节奏仍偏快。建议本次以呼吸引导核心激活为重点，<span class="cursor"></span>
+        </div>
+      </div>
+      <div class="school-block">
+        <div class="school-block__hdr">
+          <span class="school-block__icon">✦</span>
+          <span class="school-block__title">当代派</span>
+          <span class="school-block__status">思考中...</span>
+        </div>
+        <div class="school-block__body">
+          基于生物力学评估，髋部活动度已有改善。下一步应巩固髋-脊柱<span class="cursor"></span>
+        </div>
+      </div>
+      <div class="school-block">
+        <div class="school-block__hdr">
+          <span class="school-block__icon">✦</span>
+          <span class="school-block__title">康复派</span>
+          <span class="school-block__status">思考中...</span>
+        </div>
+        <div class="school-block__body">
+          腰部曾有不适，本阶段优先稳定<span class="cursor"></span>
+        </div>
+      </div>
+      <div class="school-block">
+        <div class="school-block__hdr">
+          <span class="school-block__icon">✦</span>
+          <span class="school-block__title">健身派</span>
+          <span class="school-block__status">思考中...</span>
+        </div>
+        <div class="school-block__body">
+          已具备进入下肢爆发训练<span class="cursor"></span>
+        </div>
+      </div>
+    </div>
+    <div class="frame__home"></div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SCREEN D: Final Advice                                       -->
+<!-- ============================================================ -->
+<div class="screen">
+  <div class="screen__caption">
+    <div class="screen__caption-eyebrow">D · 综合建议（核心屏）</div>
+    <h2 class="screen__caption-title">最终方案 + 4 派折叠</h2>
+    <p class="screen__caption-note">4 派输出折叠成单行，综合建议 ═══ 强调；共识 / 分歧 / 推荐 / 注意 四段结构化。</p>
+  </div>
+  <div class="frame">
+    <div class="frame__notch"></div>
+    <div class="statusbar">
+      <span>9:43</span>
+      <span class="statusbar__icons">●●●● 5G ▮</span>
+    </div>
+    <div class="body">
+      <div class="modal-hdr">
+        <h2 class="modal-hdr__title">AI 备课 · 王晓芳</h2>
+        <div class="modal-hdr__close">×</div>
+      </div>
+      <div class="hairline"></div>
+      <div class="school-fold">
+        <span class="school-fold__check">✓</span>
+        <span>经典派</span>
+        <span class="school-fold__caret">▸</span>
+      </div>
+      <div class="school-fold">
+        <span class="school-fold__check">✓</span>
+        <span>当代派</span>
+        <span class="school-fold__caret">▸</span>
+      </div>
+      <div class="school-fold">
+        <span class="school-fold__check">✓</span>
+        <span>康复派</span>
+        <span class="school-fold__caret">▸</span>
+      </div>
+      <div class="school-fold">
+        <span class="school-fold__check">✓</span>
+        <span>健身派</span>
+        <span class="school-fold__caret">▸</span>
+      </div>
+      <div class="judgment">
+        <div class="judgment__hdr">
+          <div class="judgment__title">综合建议</div>
+          <div class="judgment__subtitle">基于 4 派意见的综合判断</div>
+        </div>
+        <div class="j-section">
+          <div class="j-section__lbl">共识</div>
+          <div class="j-section__body">优先核心稳定 + 髋部活动度，避后弯</div>
+        </div>
+        <div class="j-section">
+          <div class="j-section__lbl">分歧</div>
+          <div class="j-section__body">
+            <ul>
+              <li>强度：经典 / 康复偏温和；健身建议提强</li>
+              <li>由你判断（建议本周温和，下周提）</li>
+            </ul>
+          </div>
+        </div>
+        <div class="j-section">
+          <div class="j-section__lbl">推荐方案</div>
+          <div class="j-section__body">
+            <ul>
+              <li>时长：60 分钟</li>
+              <li>重点：核心稳定 / 髋部 / 呼吸控制</li>
+              <li>动作家族：桥式系列 / 仰卧腿环 / 侧卧抬腿（避脊柱旋转）</li>
+              <li>强度：中（避免大幅后弯 / 跳跃）</li>
+            </ul>
+          </div>
+        </div>
+        <div class="j-section">
+          <div class="j-section__lbl">注意</div>
+          <div class="j-section__body">
+            <ul>
+              <li><span class="warning">⚠ 课中观察腰部反馈，有不适立即降低</span></li>
+              <li><span class="warning">⚠ 全程保持中立位，避免过度伸展</span></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div class="actions-row">
+        <div class="btn btn--primary">应用到下次课程</div>
+        <div class="btn btn--ghost">继续追问 →</div>
+      </div>
+      <div class="btn--text">保存到客档</div>
+      <div class="disclaimer">
+        AI 生成建议，仅供参考；最终决定由教练做出。<br>
+        不代表任何品牌官方意见。
+      </div>
+    </div>
+    <div class="frame__home"></div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SCREEN E: Multi-turn                                         -->
+<!-- ============================================================ -->
+<div class="screen">
+  <div class="screen__caption">
+    <div class="screen__caption-eyebrow">E · 多轮跟进</div>
+    <h2 class="screen__caption-title">追问与对话延续</h2>
+    <p class="screen__caption-note">历史轮次折叠成 1 行，当前轮聚焦；输入框常驻底部，连续追问。</p>
+  </div>
+  <div class="frame">
+    <div class="frame__notch"></div>
+    <div class="statusbar">
+      <span>9:45</span>
+      <span class="statusbar__icons">●●●● 5G ▮</span>
+    </div>
+    <div class="body">
+      <div class="modal-hdr">
+        <h2 class="modal-hdr__title">AI 备课 · 王晓芳</h2>
+        <div class="modal-hdr__close">×</div>
+      </div>
+      <div class="hairline"></div>
+      <div class="turn-folded">
+        <span style="display:flex;flex-direction:column;gap:3px"><span style="font-family:var(--display);color:var(--ink-2)">下次重点哪里</span><span style="font-size:11px">核心稳定 + 髋部 + 呼吸控制</span></span>
+        <span class="turn-folded__caret">▸</span>
+      </div>
+      <div class="turn-active__user">
+        <div class="turn-active__user-q">如果只有 30 分钟呢</div>
+        <div class="turn-active__divider"></div>
+      </div>
+      <div class="school-block">
+        <div class="school-block__hdr">
+          <span class="school-block__icon">✦</span>
+          <span class="school-block__title" style="font-size:13px">基于上轮共识</span>
+          <span class="school-block__status">综合调整中...</span>
+        </div>
+        <div class="school-block__body">
+          根据你已确定的"核心稳定 + 髋部 + 呼吸"重点，30 分钟版本建议精简为：<br><br>
+          • 5min 呼吸激活 + 核心 prep<br>
+          • 15min 桥式系列（避后弯）+ 侧卧抬腿<br>
+          • 7min 髋部 release<br>
+          • 3min 中立位收尾<br><br>
+          删除：本周不进入下肢爆发；分歧"提强"建议下次再说。<span class="cursor"></span>
+        </div>
+      </div>
+      <div class="input-bar">
+        <div class="input-bar__input">接着问</div>
+        <div class="input-bar__send">→</div>
+      </div>
+    </div>
+    <div class="frame__home"></div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SCREEN F: Apply to Next Session                              -->
+<!-- ============================================================ -->
+<div class="screen">
+  <div class="screen__caption">
+    <div class="screen__caption-eyebrow">F · 应用到课程</div>
+    <h2 class="screen__caption-title">跳转新建课程页 · 字段预填</h2>
+    <p class="screen__caption-note">字段标 ✦ AI 建议；教练可全部接受或单字段调整。</p>
+  </div>
+  <div class="frame">
+    <div class="frame__notch"></div>
+    <div class="statusbar">
+      <span>9:45</span>
+      <span class="statusbar__icons">●●●● 5G ▮</span>
+    </div>
+    <div class="body">
+      <div class="member-hdr">
+        <span style="font-size:18px;color:var(--ink-3)">‹</span>
+        <span style="font-family:var(--display);font-size:18px;color:var(--ink)">新建课程</span>
+        <span style="font-size:13px;color:var(--ink-3)">保存</span>
+      </div>
+      <div class="hairline"></div>
+      <div style="padding:16px 28px 0;background:rgba(74,124,89,0.04);border-bottom:1px solid var(--rule)">
+        <div style="display:flex;gap:8px;align-items:center;padding:12px 0;font-size:12px;color:var(--primary)">
+          <span style="font-family:var(--display);font-size:14px">✦</span>
+          <span>AI 备课建议已应用，可逐项调整</span>
+        </div>
+      </div>
+      <div class="section" style="padding-top:16px;padding-bottom:16px">
+        <div class="section__lbl">日期 · 时间</div>
+        <div style="font-family:var(--display);font-size:18px;color:var(--ink)">5月28日 周三 · 14:00</div>
+      </div>
+      <div class="hairline"></div>
+      <div class="section" style="padding-top:16px;padding-bottom:16px">
+        <div class="section__lbl">会员</div>
+        <div style="font-family:var(--display);font-size:18px;color:var(--ink)">王晓芳</div>
+      </div>
+      <div class="hairline"></div>
+      <div class="section" style="padding-top:16px;padding-bottom:16px">
+        <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:8px">
+          <div class="section__lbl" style="margin-bottom:0">课程类型</div>
+          <span style="font-size:10px;color:var(--primary);font-family:var(--display)">✦ AI</span>
+        </div>
+        <div style="font-family:var(--display);font-size:18px;color:var(--ink)">普拉提</div>
+      </div>
+      <div class="hairline"></div>
+      <div class="section" style="padding-top:16px;padding-bottom:16px">
+        <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:8px">
+          <div class="section__lbl" style="margin-bottom:0">时长</div>
+          <span style="font-size:10px;color:var(--primary);font-family:var(--display)">✦ AI</span>
+        </div>
+        <div style="font-family:var(--display);font-size:18px;color:var(--ink)">60 分钟</div>
+      </div>
+      <div class="hairline"></div>
+      <div class="section" style="padding-top:16px;padding-bottom:16px">
+        <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:10px">
+          <div class="section__lbl" style="margin-bottom:0">训练重点</div>
+          <span style="font-size:10px;color:var(--primary);font-family:var(--display)">✦ AI</span>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <span style="padding:5px 14px;border-radius:999px;background:var(--ink);color:var(--paper);font-size:12px">核心稳定</span>
+          <span style="padding:5px 14px;border-radius:999px;background:var(--ink);color:var(--paper);font-size:12px">髋部</span>
+          <span style="padding:5px 14px;border-radius:999px;background:var(--ink);color:var(--paper);font-size:12px">呼吸控制</span>
+        </div>
+      </div>
+      <div class="hairline"></div>
+      <div class="section" style="padding-top:16px;padding-bottom:16px">
+        <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:10px">
+          <div class="section__lbl" style="margin-bottom:0">备注</div>
+          <span style="font-size:10px;color:var(--primary);font-family:var(--display)">✦ AI</span>
+        </div>
+        <div style="padding:12px 0;font-size:13px;color:var(--ink-2);line-height:1.7;border-bottom:1px solid var(--rule)">
+          推荐：桥式系列 / 仰卧腿环 / 侧卧抬腿。<br>
+          注意：避免大幅后弯，全程保持中立位。
+        </div>
+      </div>
+    </div>
+    <div class="frame__home"></div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SCREEN G: Failure / Empty                                    -->
+<!-- ============================================================ -->
+<div class="screen">
+  <div class="screen__caption">
+    <div class="screen__caption-eyebrow">G · 失败 / 降级</div>
+    <h2 class="screen__caption-title">AI 暂时无法响应</h2>
+    <p class="screen__caption-note">部分派失败：跳过 + 标记，不阻塞其他派；全部失败：编辑式失败页 + 重试。</p>
+  </div>
+  <div class="frame">
+    <div class="frame__notch"></div>
+    <div class="statusbar">
+      <span>9:42</span>
+      <span class="statusbar__icons">●●●● 5G ▮</span>
+    </div>
+    <div class="body">
+      <div class="modal-hdr">
+        <h2 class="modal-hdr__title">AI 备课 · 王晓芳</h2>
+        <div class="modal-hdr__close">×</div>
+      </div>
+      <div class="hairline"></div>
+      <div class="failure-block">
+        <div class="failure-block__mark"></div>
+        <div class="failure-block__title">AI 暂时无法响应</div>
+        <div class="failure-block__hint">网络可能不稳定，请稍后再试。</div>
+        <div class="failure-block__btns">
+          <div class="btn btn--primary" style="flex:none;min-width:120px">重试</div>
+          <div class="btn btn--ghost" style="flex:none;min-width:120px">取消</div>
+        </div>
+      </div>
+      <div style="margin:120px 28px 0;padding:18px;background:var(--rule-soft);border-radius:12px">
+        <div style="font-size:11px;color:var(--ink-3);letter-spacing:0.14em;text-transform:uppercase;margin-bottom:8px">部分派失败时的状态</div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-2);padding:6px 0">
+          <span style="color:var(--primary)">✓</span> 经典派 <span style="color:var(--ink-4);margin-left:auto">▸</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-3);padding:6px 0">
+          <span style="color:var(--warm)">×</span> 当代派 · <span style="font-style:italic;color:var(--warm);font-family:var(--display);font-size:11px">超时</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-2);padding:6px 0">
+          <span style="color:var(--primary)">✓</span> 康复派 <span style="color:var(--ink-4);margin-left:auto">▸</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-2);padding:6px 0">
+          <span style="color:var(--primary)">✓</span> 健身派 <span style="color:var(--ink-4);margin-left:auto">▸</span>
+        </div>
+        <div style="font-family:var(--display);font-style:italic;font-size:11px;color:var(--warm);margin-top:8px">
+          ⚠ 综合建议基于 3 派意见，仅供参考
+        </div>
+      </div>
+    </div>
+    <div class="frame__home"></div>
+  </div>
+</div>
+
+</div>
+
+<footer class="footer-note">
+  <h3 class="footer-note__title">待访谈验证（PRD § 七）</h3>
+  <ul class="footer-note__list">
+    <li>入口位置 = 会员详情页底部 CTA？还是周视图卡片长按？</li>
+    <li>4 个快速选项有没有覆盖教练真实问询场景？</li>
+    <li>4 派输出默认折叠 vs 展开？</li>
+    <li>"应用到课程"哪些字段必映射？哪些应让教练手动确认？</li>
+    <li>多轮对话状态保留多久？跨日还是跨会话？</li>
+    <li>失败时给降级回答还是直接报错？</li>
+    <li>有没有"通用咨询"需求（不绑会员）？</li>
+  </ul>
+</footer>
+
+</body>
+</html>
