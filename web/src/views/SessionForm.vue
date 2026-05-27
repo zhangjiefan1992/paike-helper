@@ -90,6 +90,60 @@
         </van-field>
       </van-cell-group>
 
+      <!-- 训练内容（V2） -->
+      <van-cell-group inset title="训练内容" v-if="form.trainingItems.length || form.status === 'completed'">
+        <van-field label="">
+          <template #input>
+            <div class="training-items">
+              <div v-for="(item, idx) in form.trainingItems" :key="idx" class="training-item">
+                <span class="training-item__num">{{ idx + 1 }}</span>
+                <input v-model="form.trainingItems[idx]" class="training-item__input" placeholder="动作名称" />
+                <button class="training-item__del" @click="form.trainingItems.splice(idx, 1)" type="button">&times;</button>
+              </div>
+              <button class="training-item__add" @click="form.trainingItems.push('')" type="button">+ 添加动作</button>
+            </div>
+          </template>
+        </van-field>
+      </van-cell-group>
+
+      <!-- 强度（V2） -->
+      <van-cell-group inset title="运动强度" v-if="form.trainingItems.length || form.status === 'completed'">
+        <van-field label="">
+          <template #input>
+            <div class="intensity-row">
+              <input type="range" v-model.number="form.intensity" min="0" max="100" class="intensity-slider" />
+              <span class="intensity-val">{{ form.intensity }}%</span>
+            </div>
+          </template>
+        </van-field>
+      </van-cell-group>
+
+      <!-- 课程总结 & 作业（V2） -->
+      <van-cell-group inset title="课程总结" v-if="form.summary.length || form.homework.length || form.status === 'completed'">
+        <van-field label="总结">
+          <template #input>
+            <div class="list-input">
+              <div v-for="(s, idx) in form.summary" :key="'s'+idx" class="list-input__row">
+                <input v-model="form.summary[idx]" class="list-input__field" placeholder="要点" />
+                <button class="list-input__del" @click="form.summary.splice(idx, 1)" type="button">&times;</button>
+              </div>
+              <button class="list-input__add" @click="form.summary.push('')" type="button">+ 总结要点</button>
+            </div>
+          </template>
+        </van-field>
+        <van-field label="作业">
+          <template #input>
+            <div class="list-input">
+              <div v-for="(h, idx) in form.homework" :key="'h'+idx" class="list-input__row">
+                <input v-model="form.homework[idx]" class="list-input__field" placeholder="家庭作业" />
+                <button class="list-input__del" @click="form.homework.splice(idx, 1)" type="button">&times;</button>
+              </div>
+              <button class="list-input__add" @click="form.homework.push('')" type="button">+ 添加作业</button>
+            </div>
+          </template>
+        </van-field>
+      </van-cell-group>
+
       <!-- 状态 & 备注 -->
       <van-cell-group inset title="状态">
         <van-field label="状态">
@@ -282,7 +336,12 @@ const form = reactive({
   memberId: '', memberIds: [], status: 'scheduled',
   notes: '', focusAreas: [], photos: [], beforePhotos: [], afterPhotos: [],
   summaryText: '',
-  voiceSegments: [], aiDigest: ''
+  voiceSegments: [], aiDigest: '',
+  // V2 fields
+  trainingItems: [],
+  intensity: 50,
+  summary: [],
+  homework: [],
 })
 
 const photoFiles = ref([])
@@ -445,6 +504,15 @@ onMounted(() => {
   form.startTime = route.query.time || findNextEmptySlot(form.date) || '09:00'
   form.duration = config.value.defaultDuration || 60
 
+  // AI 备课结果预填
+  if (route.query.memberId) {
+    form.memberId = route.query.memberId
+  }
+  if (route.query.aiSynthesis) {
+    form.aiDigest = route.query.aiSynthesis
+    parseAiSynthesis(route.query.aiSynthesis)
+  }
+
   // 套用上次的"常用组合"，让会员/课程/地点几乎总是预填好
   const lastCombo = loadLastCombo()
   if (lastCombo) {
@@ -534,6 +602,52 @@ function toggleFocusArea(area) {
   const idx = form.focusAreas.indexOf(area)
   if (idx >= 0) form.focusAreas.splice(idx, 1)
   else form.focusAreas.push(area)
+}
+
+function parseAiSynthesis(text) {
+  if (!text) return
+  const lines = text.split('\n').map(l => l.trim()).filter(Boolean)
+  const items = []
+  const summaryList = []
+  const homeworkList = []
+  let section = ''
+
+  for (const line of lines) {
+    const lower = line.replace(/[#*]/g, '').trim().toLowerCase()
+    if (lower.includes('推荐动作') || lower.includes('训练重点') || lower.includes('训练内容')) {
+      section = 'items'
+      continue
+    }
+    if (lower.includes('建议强度') || lower.includes('运动强度')) {
+      section = 'intensity'
+      const match = line.match(/(\d+)/)
+      if (match) form.intensity = Math.min(100, Math.max(0, parseInt(match[1])))
+      continue
+    }
+    if (lower.includes('课程总结') || lower.includes('总结要点')) {
+      section = 'summary'
+      continue
+    }
+    if (lower.includes('家庭作业') || lower.includes('课后练习') || lower.includes('homework')) {
+      section = 'homework'
+      continue
+    }
+    if (lower.includes('注意事项')) {
+      section = 'notes'
+      continue
+    }
+
+    const cleaned = line.replace(/^[-•·\d.、]+\s*/, '').trim()
+    if (!cleaned) continue
+
+    if (section === 'items') items.push(cleaned)
+    else if (section === 'summary') summaryList.push(cleaned)
+    else if (section === 'homework') homeworkList.push(cleaned)
+  }
+
+  if (items.length) form.trainingItems = items
+  if (summaryList.length) form.summary = summaryList
+  if (homeworkList.length) form.homework = homeworkList
 }
 
 function timeToMin(time) {
@@ -752,5 +866,50 @@ async function onVoiceResult(data) {
 .qn-dialog__actions {
   display: flex; gap: 8px; justify-content: flex-end;
   padding-top: 4px;
+}
+
+/* V2: Training items */
+.training-items { width: 100%; }
+.training-item {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 8px;
+}
+.training-item__num {
+  width: 20px; height: 20px; border-radius: 50%;
+  background: var(--color-primary-light, #e8f5e9); color: var(--color-primary, #4A7C59);
+  font-size: 11px; font-weight: 600; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.training-item__input {
+  flex: 1; border: none; border-bottom: 1px solid var(--border-light, #e5e5e5);
+  padding: 6px 0; font-size: 14px; outline: none; background: transparent; color: var(--text-primary);
+}
+.training-item__input:focus { border-color: var(--color-primary); }
+.training-item__del {
+  background: none; border: none; font-size: 18px; color: #ccc; cursor: pointer; padding: 0 4px;
+}
+.training-item__del:hover { color: #e74c3c; }
+.training-item__add {
+  background: none; border: 1px dashed var(--border-light, #ddd); border-radius: 6px;
+  padding: 6px 12px; font-size: 13px; color: var(--text-tertiary, #999); cursor: pointer; width: 100%;
+}
+
+/* V2: Intensity */
+.intensity-row { display: flex; align-items: center; gap: 12px; width: 100%; }
+.intensity-slider { flex: 1; accent-color: var(--color-primary, #4A7C59); }
+.intensity-val { font-size: 14px; font-weight: 500; color: var(--color-primary); min-width: 36px; }
+
+/* V2: List input (summary / homework) */
+.list-input { width: 100%; }
+.list-input__row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.list-input__field {
+  flex: 1; border: none; border-bottom: 1px solid var(--border-light, #e5e5e5);
+  padding: 6px 0; font-size: 14px; outline: none; background: transparent; color: var(--text-primary);
+}
+.list-input__field:focus { border-color: var(--color-primary); }
+.list-input__del {
+  background: none; border: none; font-size: 18px; color: #ccc; cursor: pointer; padding: 0 4px;
+}
+.list-input__add {
+  background: none; border: 1px dashed var(--border-light, #ddd); border-radius: 6px;
+  padding: 6px 12px; font-size: 13px; color: var(--text-tertiary, #999); cursor: pointer; width: 100%;
 }
 </style>
