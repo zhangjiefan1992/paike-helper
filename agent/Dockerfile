@@ -3,10 +3,15 @@ FROM python:3.11-slim
 WORKDIR /app
 
 COPY pyproject.toml .
-RUN pip install --no-cache-dir -e .
-
 COPY src/ src/
 
-EXPOSE 8100
+RUN pip install --no-cache-dir .
 
-CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8100"]
+COPY knowledge/ knowledge/
+
+ENV KNOWLEDGE_DIR=/app/knowledge
+ENV PORT=9000
+
+EXPOSE 9000
+
+CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "9000", "--timeout-keep-alive", "300"]

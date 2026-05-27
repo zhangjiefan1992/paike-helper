@@ -1,0 +1,33 @@
+edition: 3.0.0
+name: paike-agent
+access: default
+
+vars:
+  region: cn-hangzhou
+
+resources:
+  paike-agent:
+    component: fc3
+    props:
+      region: ${vars.region}
+      functionName: paike-agent
+      runtime: custom-container
+      cpu: 1
+      memorySize: 1024
+      diskSize: 512
+      timeout: 600
+      instanceConcurrency: 10
+      customContainerConfig:
+        image: registry.${vars.region}.aliyuncs.com/paike/agent:latest
+        port: 9000
+        healthCheckConfig:
+          enable: true
+          httpGetUrl: /health
+          initialDelaySeconds: 3
+          periodSeconds: 10
+          timeoutSeconds: 3
+      environmentVariables:
+        DASHSCOPE_API_KEY: ${env.DASHSCOPE_API_KEY}
+        KNOWLEDGE_DIR: /app/knowledge
+        PORT: "9000"
+        LOG_LEVEL: info
