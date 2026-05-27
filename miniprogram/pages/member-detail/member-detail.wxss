@@ -362,6 +362,25 @@
   font-weight: 500;
 }
 
+/* AI Entry */
+.ai-entry {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12rpx;
+  margin: 40rpx 56rpx 0;
+  padding: 24rpx;
+  border: 2rpx dashed var(--rule, #E8E2D8);
+  border-radius: 16rpx;
+  background: transparent;
+}
+.ai-entry__icon { font-size: 28rpx; }
+.ai-entry__text {
+  font-size: 28rpx;
+  font-weight: 500;
+  color: var(--primary, #4A7C59);
+}
+
 .page__tail { height: 60rpx; }
 
 /* === Export modal === */

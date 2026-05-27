@@ -1,0 +1,96 @@
+<view class="page">
+  <!-- 会员概要 -->
+  <view class="brief" wx:if="{{member}}">
+    <text class="brief__name serif">{{member.name}}</text>
+    <text class="brief__meta" wx:if="{{sessionCount}}">{{sessionCount}} 节课</text>
+  </view>
+
+  <!-- 教练提问 -->
+  <view class="input-area">
+    <textarea
+      class="input-area__textarea"
+      value="{{question}}"
+      bindinput="onQuestionInput"
+      placeholder="输入关注的问题（可选），如：她最近腰不舒服，怎么调整？"
+      maxlength="300"
+      disabled="{{loading}}"
+    />
+    <view class="input-area__btn {{loading ? 'input-area__btn--disabled' : ''}}" bindtap="onStartConsult">
+      <text>{{loading ? '分析中...' : '开始备课'}}</text>
+    </view>
+  </view>
+
+  <!-- 加载动画 -->
+  <view class="loading-area" wx:if="{{loading}}">
+    <view class="loading-area__dots">
+      <view class="loading-area__dot"></view>
+      <view class="loading-area__dot"></view>
+      <view class="loading-area__dot"></view>
+    </view>
+    <text class="loading-area__hint">{{loadingHint}}</text>
+  </view>
+
+  <!-- 结果区域 -->
+  <view class="results" wx:if="{{done}}">
+    <!-- 综合建议 -->
+    <view class="section" wx:if="{{judgeText}}">
+      <text class="section__title">综合建议</text>
+      <view class="section__body">
+        <text class="section__text">{{judgeText}}</text>
+      </view>
+    </view>
+
+    <!-- 多流派折叠 -->
+    <view class="section" wx:if="{{schoolList.length}}">
+      <text class="section__title">多流派视角</text>
+      <view
+        class="school {{item.expanded ? 'school--open' : ''}}"
+        wx:for="{{schoolList}}"
+        wx:key="key"
+      >
+        <view class="school__header" bindtap="onToggleSchool" data-key="{{item.key}}">
+          <view class="school__dot" style="background:{{item.color}}"></view>
+          <text class="school__name">{{item.name}}</text>
+          <text class="school__arrow">{{item.expanded ? '▾' : '▸'}}</text>
+        </view>
+        <view class="school__body" wx:if="{{item.expanded && item.text}}">
+          <text class="school__text">{{item.text}}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 操作 -->
+    <view class="actions">
+      <view class="actions__btn" bindtap="onApplyToSession">应用到下次课程</view>
+    </view>
+
+    <!-- 追问 -->
+    <view class="followup" wx:if="{{conversationId}}">
+      <view class="followup__history" wx:if="{{followups.length}}">
+        <view class="followup__item" wx:for="{{followups}}" wx:key="index">
+          <text class="followup__q">{{item.question}}</text>
+          <text class="followup__a">{{item.answer}}</text>
+        </view>
+      </view>
+      <view class="followup__input-row">
+        <input
+          class="followup__field"
+          value="{{followupText}}"
+          bindinput="onFollowupInput"
+          placeholder="继续追问..."
+          confirm-type="send"
+          bindconfirm="onSendFollowup"
+          disabled="{{followupLoading}}"
+        />
+        <view class="followup__send {{followupLoading ? 'followup__send--disabled' : ''}}" bindtap="onSendFollowup">
+          <text>{{followupLoading ? '...' : '发送'}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 免责声明 -->
+  <view class="disclaimer" wx:if="{{done}}">
+    <text>AI 建议仅供参考，请教练审核后采纳</text>
+  </view>
+</view>

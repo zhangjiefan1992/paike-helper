@@ -111,6 +111,16 @@ Page({
       }
     }
 
+    if (options.memberId) {
+      form.memberId = options.memberId
+      const member = members.find(m => m.id === options.memberId)
+      if (member) this.setData({ selectedMemberName: member.name })
+    }
+
+    if (options.aiSynthesis) {
+      form.aiDigest = decodeURIComponent(options.aiSynthesis)
+    }
+
     this.setData({ form, config, members })
     wx.setNavigationBarTitle({ title: '新增课程' })
   },

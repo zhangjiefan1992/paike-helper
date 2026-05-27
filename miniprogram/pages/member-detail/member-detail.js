@@ -242,5 +242,9 @@ Page({
     this.setData({ showExport: false })
   },
 
+  onAiConsult() {
+    wx.navigateTo({ url: '/pages/ai-consult/ai-consult?memberId=' + this.memberId })
+  },
+
   noop() {}
 })

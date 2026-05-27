@@ -137,6 +137,12 @@
     </view>
   </view>
 
+  <!-- AI 备课入口 -->
+  <view class="ai-entry" bindtap="onAiConsult">
+    <text class="ai-entry__icon">💡</text>
+    <text class="ai-entry__text">AI 备课</text>
+  </view>
+
   <view class="page__tail"></view>
 
   <!-- 导出明细弹窗 -->
