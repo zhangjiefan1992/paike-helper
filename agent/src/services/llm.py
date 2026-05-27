@@ -1,13 +1,12 @@
-"""DashScope LLM wrapper — streaming and non-streaming calls."""
+"""DeepSeek LLM wrapper — streaming and non-streaming calls via OpenAI-compatible API."""
 
 from collections.abc import AsyncGenerator
 
-import dashscope
-from dashscope import Generation
+from openai import AsyncOpenAI
 
-from src.config import DASHSCOPE_API_KEY, LLM_MAX_TOKENS, LLM_MODEL, LLM_TEMPERATURE
+from src.config import DEEPSEEK_API_KEY, DEEPSEEK_BASE_URL, LLM_MAX_TOKENS, LLM_MODEL, LLM_TEMPERATURE
 
-dashscope.api_key = DASHSCOPE_API_KEY
+_client = AsyncOpenAI(api_key=DEEPSEEK_API_KEY, base_url=DEEPSEEK_BASE_URL)
 
 
 async def call_llm(
@@ -17,16 +16,14 @@ async def call_llm(
     temperature: float = LLM_TEMPERATURE,
     max_tokens: int = LLM_MAX_TOKENS,
 ) -> str:
-    response = Generation.call(
+    response = await _client.chat.completions.create(
         model=model,
         messages=messages,
         temperature=temperature,
         max_tokens=max_tokens,
-        result_format="message",
+        stream=False,
     )
-    if response.status_code != 200:
-        raise RuntimeError(f"LLM error {response.status_code}: {response.message}")
-    return response.output.choices[0].message.content
+    return response.choices[0].message.content
 
 
 async def stream_llm(
@@ -36,18 +33,14 @@ async def stream_llm(
     temperature: float = LLM_TEMPERATURE,
     max_tokens: int = LLM_MAX_TOKENS,
 ) -> AsyncGenerator[str, None]:
-    responses = Generation.call(
+    stream = await _client.chat.completions.create(
         model=model,
         messages=messages,
         temperature=temperature,
         max_tokens=max_tokens,
-        result_format="message",
         stream=True,
-        incremental_output=True,
     )
-    for response in responses:
-        if response.status_code != 200:
-            raise RuntimeError(f"LLM stream error {response.status_code}: {response.message}")
-        chunk = response.output.choices[0].message.content
-        if chunk:
-            yield chunk
+    async for chunk in stream:
+        delta = chunk.choices[0].delta.content
+        if delta:
+            yield delta

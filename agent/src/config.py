@@ -4,12 +4,13 @@ import os
 
 load_dotenv()
 
-DASHSCOPE_API_KEY = os.getenv("DASHSCOPE_API_KEY", "")
+DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY", "")
+DEEPSEEK_BASE_URL = os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com")
 KNOWLEDGE_DIR = Path(os.getenv("KNOWLEDGE_DIR", "../knowledge/distilled")).resolve()
 PORT = int(os.getenv("PORT", "8100"))
 LOG_LEVEL = os.getenv("LOG_LEVEL", "info")
 
-LLM_MODEL = "qwen-max"
+LLM_MODEL = os.getenv("LLM_MODEL", "deepseek-chat")
 LLM_TEMPERATURE = 0.7
 LLM_MAX_TOKENS = 2000
 

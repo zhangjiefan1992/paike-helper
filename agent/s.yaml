@@ -27,7 +27,7 @@ resources:
           periodSeconds: 10
           timeoutSeconds: 3
       environmentVariables:
-        DASHSCOPE_API_KEY: ${env.DASHSCOPE_API_KEY}
+        DEEPSEEK_API_KEY: ${env.DEEPSEEK_API_KEY}
         KNOWLEDGE_DIR: /app/knowledge
         PORT: "9000"
         LOG_LEVEL: info
