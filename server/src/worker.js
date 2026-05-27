@@ -470,4 +470,65 @@ function buildSummaryPrompt(session, member, history) {
   ].filter(Boolean).join('\n')
 }
 
+// --- Agent Proxy (forwards to Python Agent service on Alibaba Cloud FC) ---
+
+const AGENT_UPSTREAM = 'AGENT_SERVICE_URL' // env var: e.g. https://ai.keleya.org
+
+app.post('/api/v1/agent/consult', async (c) => {
+  const agentUrl = c.env[AGENT_UPSTREAM]
+  if (!agentUrl) {
+    return c.json({ code: 50300, message: 'Agent 服务未配置' }, 503)
+  }
+  const body = await c.req.json()
+  const isStream = body.stream !== false
+
+  try {
+    const upstream = await fetch(`${agentUrl}/api/v1/agent/consult`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': isStream ? 'text/event-stream' : 'application/json' },
+      body: JSON.stringify(body)
+    })
+    if (!upstream.ok) {
+      const errText = await upstream.text().catch(() => '')
+      return c.json({ code: 50301, message: `Agent 上游错误: ${upstream.status}` }, upstream.status)
+    }
+    if (isStream) {
+      return new Response(upstream.body, {
+        headers: {
+          'Content-Type': 'text/event-stream',
+          'Cache-Control': 'no-cache',
+          'Connection': 'keep-alive',
+          'Access-Control-Allow-Origin': '*'
+        }
+      })
+    }
+    const data = await upstream.json()
+    return c.json(data)
+  } catch (err) {
+    return c.json({ code: 50302, message: `Agent 连接失败: ${err.message}` }, 502)
+  }
+})
+
+app.post('/api/v1/agent/followup', async (c) => {
+  const agentUrl = c.env[AGENT_UPSTREAM]
+  if (!agentUrl) {
+    return c.json({ code: 50300, message: 'Agent 服务未配置' }, 503)
+  }
+  const body = await c.req.json()
+  try {
+    const upstream = await fetch(`${agentUrl}/api/v1/agent/followup`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    })
+    if (!upstream.ok) {
+      return c.json({ code: 50301, message: `Agent 上游错误: ${upstream.status}` }, upstream.status)
+    }
+    const data = await upstream.json()
+    return c.json(data)
+  } catch (err) {
+    return c.json({ code: 50302, message: `Agent 连接失败: ${err.message}` }, 502)
+  }
+})
+
 export default app
