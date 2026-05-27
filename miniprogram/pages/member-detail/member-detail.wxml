@@ -137,10 +137,9 @@
     </view>
   </view>
 
-  <!-- AI 备课入口 -->
+  <!-- AI 备课入口（固定底部 CTA） -->
   <view class="ai-entry" bindtap="onAiConsult">
-    <text class="ai-entry__icon">💡</text>
-    <text class="ai-entry__text">AI 备课</text>
+    <text class="ai-entry__text">✦ 用 AI 备课 → 30 秒看清下次</text>
   </view>
 
   <view class="page__tail"></view>

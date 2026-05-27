@@ -1,5 +1,5 @@
 {
-  "navigationBarTitleText": "AI 备课",
+  "navigationStyle": "custom",
   "navigationBarBackgroundColor": "#FAF7F0",
   "navigationBarTextStyle": "black"
 }

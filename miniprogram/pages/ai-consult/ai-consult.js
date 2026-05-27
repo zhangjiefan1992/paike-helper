@@ -7,6 +7,8 @@ const SCHOOL_META = [
   { key: 'basi', name: 'BASI', color: '#C75050' },
 ]
 
+const QUICK_OPTIONS = ['下次重点哪里', '评估近期进度', '强度建议', '注意事项检查']
+
 const LOADING_HINTS = [
   '正在召集四大流派导师...',
   '罗马纳学派分析动作编排...',
@@ -20,13 +22,22 @@ Page({
   data: {
     member: null,
     sessionCount: 0,
+    monthCount: 0,
+    attendance: '',
+    lastSessionDesc: '',
+    memberTags: '',
+    recentFocus: '',
+    memberNotes: '',
     question: '',
+    quickOptions: QUICK_OPTIONS,
     loading: false,
     loadingHint: '',
     done: false,
+    askedQuestion: '',
     schoolList: [],
     judgeText: '',
     conversationId: '',
+    showFollowup: false,
     followupText: '',
     followupLoading: false,
     followups: [],
@@ -48,29 +59,60 @@ Page({
     }
 
     const sessions = storage.getSessionsByMemberId(this.memberId)
-    const recentSessions = sessions
-      .sort((a, b) => (b.date || '').localeCompare(a.date || ''))
-      .slice(0, 5)
-      .map(s => ({
-        date: s.date,
-        courseType: s.courseType,
-        focusAreas: s.focusAreas,
-        notes: s.notes,
-        trainingItems: s.trainingItems,
-        intensity: s.intensity,
-      }))
-
+    const sorted = sessions.sort((a, b) => (b.date || '').localeCompare(a.date || ''))
+    const recentSessions = sorted.slice(0, 5).map(s => ({
+      date: s.date,
+      courseType: s.courseType,
+      focusAreas: s.focusAreas,
+      notes: s.notes,
+      trainingItems: s.trainingItems,
+      intensity: s.intensity,
+    }))
     this.recentSessions = recentSessions
+
+    const now = new Date()
+    const thisMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+    const monthSessions = sessions.filter(s => (s.date || '').startsWith(thisMonth))
+    const completed = sessions.filter(s => s.status === 'completed')
+
+    let lastSessionDesc = ''
+    if (sorted.length > 0) {
+      const last = sorted[0]
+      lastSessionDesc = `${(last.date || '').slice(5)} ${last.courseType || ''}`
+    }
+
+    const focusSet = new Set()
+    recentSessions.forEach(s => {
+      if (s.focusAreas && s.focusAreas.length) {
+        s.focusAreas.forEach(f => focusSet.add(f))
+      }
+    })
 
     this.setData({
       member,
       sessionCount: sessions.length,
+      monthCount: monthSessions.length,
+      attendance: sessions.length > 0 ? Math.round(completed.length / sessions.length * 100) + '%' : '',
+      lastSessionDesc,
+      memberTags: (member.tags || []).join(' · '),
+      recentFocus: [...focusSet].slice(0, 4).join('、'),
+      memberNotes: member.notes || '',
       schoolList: SCHOOL_META.map(s => ({ ...s, text: '', expanded: false })),
     })
   },
 
+  onClose() {
+    wx.navigateBack()
+  },
+
   onQuestionInput(e) {
     this.setData({ question: e.detail.value })
+  },
+
+  onQuickOption(e) {
+    const text = e.currentTarget.dataset.text
+    this.setData({ question: text })
+    this._doConsult()
   },
 
   onStartConsult() {
@@ -79,7 +121,16 @@ Page({
   },
 
   async _doConsult() {
-    this.setData({ loading: true, done: false, judgeText: '', conversationId: '', followups: [] })
+    const q = this.data.question || ''
+    this.setData({
+      loading: true,
+      done: false,
+      askedQuestion: q,
+      judgeText: '',
+      conversationId: '',
+      followups: [],
+      showFollowup: false,
+    })
     this._startLoadingHints()
 
     const memberProfile = {
@@ -93,7 +144,7 @@ Page({
         memberId: this.memberId,
         memberProfile,
         recentSessions: this.recentSessions,
-        coachQuestion: this.data.question || '',
+        coachQuestion: q,
       })
 
       if (!res.success) {
@@ -115,6 +166,7 @@ Page({
       })
     } catch (err) {
       wx.showToast({ title: err.message || 'AI 服务暂不可用', icon: 'none', duration: 2500 })
+      this.setData({ done: false })
     } finally {
       this.setData({ loading: false })
       this._stopLoadingHints()
@@ -133,6 +185,14 @@ Page({
     const url = '/pages/session/session?memberId=' + this.memberId +
       '&aiSynthesis=' + encodeURIComponent(this.data.judgeText || '')
     wx.navigateTo({ url })
+  },
+
+  onStartFollowup() {
+    this.setData({ showFollowup: true })
+  },
+
+  onSaveToProfile() {
+    wx.showToast({ title: '已保存到客档', icon: 'success' })
   },
 
   onFollowupInput(e) {

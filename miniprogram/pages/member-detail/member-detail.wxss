@@ -362,26 +362,34 @@
   font-weight: 500;
 }
 
-/* AI Entry */
+/* AI Entry — fixed bottom CTA */
 .ai-entry {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 12rpx;
-  margin: 40rpx 56rpx 0;
-  padding: 24rpx;
-  border: 2rpx dashed var(--rule, #E8E2D8);
-  border-radius: 16rpx;
-  background: transparent;
+  padding: 28rpx 48rpx calc(28rpx + env(safe-area-inset-bottom));
+  background: var(--paper, #FFFDF8);
+  border-top: 1rpx solid var(--rule, #E8E2D8);
+  z-index: 100;
 }
-.ai-entry__icon { font-size: 28rpx; }
 .ai-entry__text {
+  padding: 24rpx 48rpx;
+  background: var(--ink, #2C2C2C);
+  color: var(--paper, #FFFDF8);
+  border-radius: 999rpx;
   font-size: 28rpx;
   font-weight: 500;
-  color: var(--primary, #4A7C59);
+  letter-spacing: 0.02em;
+}
+.ai-entry__text:active {
+  opacity: 0.85;
 }
 
-.page__tail { height: 60rpx; }
+.page__tail { height: 140rpx; }
 
 /* === Export modal === */
 .export-modal {
