@@ -13,6 +13,7 @@ const routes = [
   { path: '/settings', name: 'settings', component: () => import('../views/SettingsView.vue') },
   { path: '/stats', name: 'stats', component: () => import('../views/StatsView.vue') },
   { path: '/summary/:id', name: 'summary', component: () => import('../views/SummaryView.vue') },
+  { path: '/ai-consult/:memberId', name: 'ai-consult', component: () => import('../views/AiConsult.vue') },
 ]
 
 export default createRouter({

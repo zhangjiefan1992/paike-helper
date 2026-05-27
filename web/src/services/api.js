@@ -75,3 +75,36 @@ export async function parseVoiceSession(audioBlob, context, model) {
   }
   return data.data
 }
+
+// --- Agent API ---
+
+export function agentConsult({ memberId, memberProfile, recentSessions, coachQuestion, stream = true }) {
+  if (!stream) {
+    return request('/api/v1/agent/consult', {
+      member_id: memberId,
+      member_profile: memberProfile,
+      recent_sessions: recentSessions,
+      coach_question: coachQuestion,
+      stream: false
+    })
+  }
+  // For streaming, return the raw Response so caller can read SSE
+  return fetch(`${BASE_URL}/api/v1/agent/consult`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      member_id: memberId,
+      member_profile: memberProfile,
+      recent_sessions: recentSessions,
+      coach_question: coachQuestion,
+      stream: true
+    })
+  })
+}
+
+export function agentFollowup(conversationId, message) {
+  return request('/api/v1/agent/followup', {
+    conversation_id: conversationId,
+    message
+  })
+}

@@ -152,6 +152,17 @@
       </div>
     </section>
 
+    <!-- AI 备课入口 -->
+    <section class="ai-entry">
+      <button class="ai-entry__btn" @click="$router.push('/ai-consult/' + member.id)">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2a7 7 0 0 1 7 7c0 2.5-1.5 4.5-3 6l-1 4H9l-1-4c-1.5-1.5-3-3.5-3-6a7 7 0 0 1 7-7z"/>
+          <line x1="9" y1="22" x2="15" y2="22"/>
+        </svg>
+        AI 备课
+      </button>
+    </section>
+
     <div class="page__tail"></div>
 
     <!-- 导出明细弹窗 -->
@@ -876,6 +887,29 @@ function cloudOpacity(i) { return Math.max(0.35, 1 - i * 0.08) }
   font-weight: 500;
   border-bottom: 1px solid currentColor;
   padding-bottom: 1px;
+}
+
+/* === AI Entry === */
+.ai-entry { padding: 0 20px; margin-top: 20px; }
+.ai-entry__btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  padding: 12px;
+  border: 1px dashed var(--rule);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--primary);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+}
+.ai-entry__btn:active {
+  background: rgba(74, 124, 89, 0.06);
+  border-color: var(--primary);
 }
 
 /* === Tail spacing === */
