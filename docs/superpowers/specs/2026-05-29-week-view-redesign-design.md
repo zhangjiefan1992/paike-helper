@@ -24,15 +24,17 @@
 
 **实现**：会员 ID 哈希 → 取模映射到 8 色调色板。
 
+**8 色命名**：靛蓝、赤红、翠绿、暖橙、雅紫、青碧、玫瑰、深紫。
+
 **三套主题各有独立 8 色调色板**：
 
 | 主题 | 风格 | 卡片背景 | 文字 |
 |------|------|----------|------|
-| 轻盈 airy-tint | 浅色系 | 半透明色块 + 3px 左边框 | 深色文字 |
-| 柔彩 soft-color | 中饱和 | 柔和色块 + 3px 左边框 | 深色文字 |
-| 渐变 candy-gradient | 渐变色 | 微渐变色块 + 3px 左边框 | 深色文字 |
+| 轻盈 airy-tint | 极浅底色 + 3px 彩色左边框 | 如 `#EEF2FF` | 深色如 `#312E81` |
+| 柔彩 soft-color | 中饱和底色 + 3px 左边框 | 如 `#C7D2FE` | 深色如 `#312E81` |
+| 渐变 candy-gradient | 渐变底色 + 3px 左边框 | 如 `linear-gradient(...)` | 白色/深色 |
 
-**可读性保证**：所有主题使用 light tinted background（浅底）+ 深色文字，WCAG AA 对比度达标。
+**可读性保证**：每条色带自带 `text` 字段，轻盈/柔彩使用深色文字，渐变使用白色文字，均满足 WCAG AA 对比度。
 
 ### 4. 信息密度：三档可选
 
@@ -98,36 +100,37 @@
 
 ```js
 // 8 色调色板（每个主题一套）
+// 色名：靛蓝、赤红、翠绿、暖橙、雅紫、青碧、玫瑰、深紫
 const MEMBER_COLORS = {
   'airy-tint': [
-    { bg: '#F0F4FF', border: '#6366F1' },
-    { bg: '#ECFDF5', border: '#10B981' },
-    { bg: '#FFF7ED', border: '#F59E0B' },
-    { bg: '#FCE4EC', border: '#E91E63' },
-    { bg: '#E0F7FA', border: '#00ACC1' },
-    { bg: '#FAF5FF', border: '#A855F7' },
-    { bg: '#FFF9C4', border: '#F9A825' },
-    { bg: '#E8EAF6', border: '#3F51B5' }
+    { bg: '#EEF2FF', border: '#6366F1', text: '#312E81' },  // 靛蓝
+    { bg: '#FEF2F2', border: '#EF4444', text: '#7F1D1D' },  // 赤红
+    { bg: '#ECFDF5', border: '#10B981', text: '#064E3B' },  // 翠绿
+    { bg: '#FFF7ED', border: '#F97316', text: '#7C2D12' },  // 暖橙
+    { bg: '#FDF4FF', border: '#A855F7', text: '#581C87' },  // 雅紫
+    { bg: '#F0FDFA', border: '#14B8A6', text: '#134E4A' },  // 青碧
+    { bg: '#FFF1F2', border: '#FB7185', text: '#881337' },  // 玫瑰
+    { bg: '#F5F3FF', border: '#8B5CF6', text: '#4C1D95' }   // 深紫
   ],
   'soft-color': [
-    { bg: '#BBDEFB', border: '#1976D2' },
-    { bg: '#C8E6C9', border: '#388E3C' },
-    { bg: '#FFE0B2', border: '#F57C00' },
-    { bg: '#F8BBD0', border: '#C2185B' },
-    { bg: '#B2EBF2', border: '#0097A7' },
-    { bg: '#E1BEE7', border: '#7B1FA2' },
-    { bg: '#FFF59D', border: '#FBC02D' },
-    { bg: '#C5CAE9', border: '#303F9F' }
+    { bg: '#C7D2FE', border: '#4F46E5', text: '#312E81' },  // 靛蓝
+    { bg: '#FECACA', border: '#DC2626', text: '#7F1D1D' },  // 赤红
+    { bg: '#A7F3D0', border: '#059669', text: '#064E3B' },  // 翠绿
+    { bg: '#FED7AA', border: '#EA580C', text: '#7C2D12' },  // 暖橙
+    { bg: '#E9D5FF', border: '#9333EA', text: '#581C87' },  // 雅紫
+    { bg: '#99F6E4', border: '#0D9488', text: '#134E4A' },  // 青碧
+    { bg: '#FECDD3', border: '#E11D48', text: '#881337' },  // 玫瑰
+    { bg: '#DDD6FE', border: '#7C3AED', text: '#4C1D95' }   // 深紫
   ],
   'candy-gradient': [
-    { bg: 'linear-gradient(135deg, #667EEA, #764BA2)', border: '#764BA2' },
-    { bg: 'linear-gradient(135deg, #43E97B, #38F9D7)', border: '#38F9D7' },
-    { bg: 'linear-gradient(135deg, #F093FB, #F5576C)', border: '#F5576C' },
-    { bg: 'linear-gradient(135deg, #4FACFE, #00F2FE)', border: '#00F2FE' },
-    { bg: 'linear-gradient(135deg, #FA709A, #FEE140)', border: '#FA709A' },
-    { bg: 'linear-gradient(135deg, #A18CD1, #FBC2EB)', border: '#A18CD1' },
-    { bg: 'linear-gradient(135deg, #FDDB92, #D1FDFF)', border: '#FDDB92' },
-    { bg: 'linear-gradient(135deg, #96FBC4, #F9F586)', border: '#96FBC4' }
+    { bg: 'linear-gradient(135deg, #667EEA, #764BA2)', border: '#764BA2', text: '#FFFFFF' },
+    { bg: 'linear-gradient(135deg, #F093FB, #F5576C)', border: '#F5576C', text: '#FFFFFF' },
+    { bg: 'linear-gradient(135deg, #43E97B, #38F9D7)', border: '#38F9D7', text: '#FFFFFF' },
+    { bg: 'linear-gradient(135deg, #FA709A, #FEE140)', border: '#FA709A', text: '#FFFFFF' },
+    { bg: 'linear-gradient(135deg, #4FACFE, #00F2FE)', border: '#00F2FE', text: '#FFFFFF' },
+    { bg: 'linear-gradient(135deg, #A18CD1, #FBC2EB)', border: '#A18CD1', text: '#FFFFFF' },
+    { bg: 'linear-gradient(135deg, #FDDB92, #D1FDFF)', border: '#FDDB92', text: '#4A4A4A' },
+    { bg: 'linear-gradient(135deg, #96FBC4, #F9F586)', border: '#96FBC4', text: '#4A4A4A' }
   ]
 }
 
@@ -135,11 +138,11 @@ const MEMBER_COLORS = {
 function getMemberColor(memberId, theme) {
   const hash = simpleHash(memberId)
   const palette = MEMBER_COLORS[theme] || MEMBER_COLORS['airy-tint']
-  return palette[hash % 8]  // { bg, border }
+  return palette[hash % 8]  // { bg, border, text }
 }
 ```
 
-左边框颜色为背景色的加深版本（saturation +20%, lightness -30%）。
+每条色带包含 `text` 字段用于卡片文字色，确保 WCAG AA 对比度达标。左边框宽度 3px，颜色取 `border` 值。
 
 ## 组件结构
 
@@ -175,17 +178,44 @@ pages/week/
 详尽:  第1行=startTime  第2行=memberName  第3行=courseAbbr·locationInitial
 ```
 
+## 卡片尺寸
+
+### 极简密度
+
+极简模式下卡片需保持视觉"大气"，不能过于紧凑：
+
+| 属性 | 值 |
+|------|------|
+| min-height | 32px |
+| padding | 5px 4px 5px 6px（左侧留出边框空间） |
+| border-left | 3px solid `border` 色 |
+| border-radius | 4px |
+| 会员名字号 | 10px, font-weight 600 |
+| 时间字号 | 9px, font-weight 500 |
+
+### 标准/详尽密度
+
+| 属性 | 值 |
+|------|------|
+| min-height | 42px |
+| padding | 4px 4px 4px 6px |
+| border-left | 3px solid `border` 色 |
+| border-radius | 4px |
+| 会员名字号 | 13px, font-weight 600 |
+| 时间字号 | 12px, font-weight 500 |
+| 课程·地点字号 | 11px, font-weight 400 |
+
 ## 文字排版
 
 **轻盈 / 柔彩主题**（浅底深字）：
-- 时间：12px, font-weight 500, `#64748B`
-- 会员名：13px, font-weight 600, `#1E293B`（最醒目）
-- 课程·地点：11px, font-weight 400, `#475569`
+- 时间：font-weight 500, 色值取调色板 `text` 字段 opacity 0.7
+- 会员名：font-weight 600, 色值取调色板 `text` 字段（最醒目）
+- 课程·地点：font-weight 400, 色值取调色板 `text` 字段 opacity 0.8
 
 **渐变主题**（彩底白字）：
-- 时间：12px, font-weight 500, `rgba(255,255,255,0.85)`
-- 会员名：13px, font-weight 600, `#FFFFFF`
-- 课程·地点：11px, font-weight 400, `rgba(255,255,255,0.75)`
+- 时间：font-weight 500, `rgba(255,255,255,0.85)`
+- 会员名：font-weight 600, `#FFFFFF`
+- 课程·地点：font-weight 400, `rgba(255,255,255,0.75)`
 
 ## 不做的事
 
