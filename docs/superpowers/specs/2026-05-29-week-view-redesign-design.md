@@ -173,37 +173,59 @@ pages/week/
 
 **显示逻辑**：
 ```
-极简:  第1行=startTime  第2行=memberName
-标准:  第1行=startTime  第2行=memberName  第3行=courseAbbr
-详尽:  第1行=startTime  第2行=memberName  第3行=courseAbbr·locationInitial
+极简:  单行 = startTime + " " + memberName（如 "8:00 周文娟"）
+标准:  第1行=startTime + " " + memberName  第2行=courseAbbr
+详尽:  第1行=startTime + " " + memberName  第2行=courseAbbr·locationInitial
 ```
+
+**文字对齐**：所有密度下卡片内文字一律**左对齐**，与参考图一致。
 
 ## 卡片尺寸
 
+### 整体样式（对齐参考图）
+
+| 属性 | 值 | 说明 |
+|------|------|------|
+| text-align | left | 所有文字左对齐 |
+| border-left | 2px solid `border` 色 | 窄色条，与参考图一致 |
+| border-radius | 3px | 微圆角 |
+| 卡片间距 | 3px (gap) | 紧凑但清晰 |
+
 ### 极简密度
 
-极简模式下卡片需保持视觉"大气"，不能过于紧凑：
+| 属性 | 值 |
+|------|------|
+| 布局 | 单行：时间 + 空格 + 会员名 |
+| min-height | 28px |
+| padding | 5px 4px 5px 6px |
+| 字号 | 时间 9px font-weight 500 / 会员名 10px font-weight 600 |
+| 超长截断 | overflow: hidden; text-overflow: ellipsis; white-space: nowrap |
+
+### 标准密度
 
 | 属性 | 值 |
 |------|------|
-| min-height | 32px |
-| padding | 5px 4px 5px 6px（左侧留出边框空间） |
-| border-left | 3px solid `border` 色 |
-| border-radius | 4px |
-| 会员名字号 | 10px, font-weight 600 |
-| 时间字号 | 9px, font-weight 500 |
-
-### 标准/详尽密度
-
-| 属性 | 值 |
-|------|------|
-| min-height | 42px |
+| 布局 | 第1行：时间 + 空格 + 会员名 / 第2行：课程简写 |
+| min-height | 36px |
 | padding | 4px 4px 4px 6px |
-| border-left | 3px solid `border` 色 |
-| border-radius | 4px |
-| 会员名字号 | 13px, font-weight 600 |
-| 时间字号 | 12px, font-weight 500 |
-| 课程·地点字号 | 11px, font-weight 400 |
+| 字号 | 时间 9px / 会员名 10px font-weight 600 / 课程 9px font-weight 400 |
+
+### 详尽密度
+
+| 属性 | 值 |
+|------|------|
+| 布局 | 第1行：时间 + 空格 + 会员名 / 第2行：课程简写·地点首字 |
+| min-height | 36px |
+| padding | 4px 4px 4px 6px |
+| 字号 | 时间 9px / 会员名 10px font-weight 600 / 课程·地点 9px font-weight 400 |
+
+### 页面背景色（按主题）
+
+| 主题 | 页面背景 | 列区域背景 |
+|------|----------|-----------|
+| 轻盈 airy-tint | `#FFFFFF` | 透明 |
+| 柔彩 soft-color | `#FAF8F5` | 透明 |
+| 渐变 candy-gradient | `#1B1F3B` | 透明 |
 
 ## 文字排版
 
@@ -212,7 +234,7 @@ pages/week/
 - 会员名：font-weight 600, 色值取调色板 `text` 字段（最醒目）
 - 课程·地点：font-weight 400, 色值取调色板 `text` 字段 opacity 0.8
 
-**渐变主题**（彩底白字）：
+**渐变主题**（深底浅字）：
 - 时间：font-weight 500, `rgba(255,255,255,0.85)`
 - 会员名：font-weight 600, `#FFFFFF`
 - 课程·地点：font-weight 400, `rgba(255,255,255,0.75)`
