@@ -1,0 +1,36 @@
+<view class="ai-card">
+  <view class="ai-card__head">
+    <view>
+      <text class="ai-card__eyebrow">课表</text>
+      <text class="ai-card__title">{{rangeLabel || '本周'}}</text>
+    </view>
+    <view class="ai-card__metric">
+      <text class="ai-card__metric-num">{{total}}</text>
+      <text class="ai-card__metric-label">节</text>
+    </view>
+  </view>
+
+  <view wx:if="{{!hasDays}}" class="empty">
+    <text>这一周还没有课程</text>
+  </view>
+
+  <view wx:else class="days">
+    <view wx:for="{{days}}" wx:key="date" class="day">
+      <view class="day__head">
+        <text class="day__name">{{item.weekday}}</text>
+        <text class="day__count">{{item.count}}节</text>
+      </view>
+      <view class="session-list">
+        <view wx:for="{{item.sessions}}" wx:for-item="session" wx:key="id" class="session session--{{session.status}}">
+          <text class="session__time">{{session.startTime}}</text>
+          <view class="session__main">
+            <text class="session__name">{{session.memberName}}</text>
+            <text class="session__meta">{{session.courseType}}{{session.location ? ' · ' + session.location : ''}}</text>
+          </view>
+          <text class="session__status">{{session.statusLabel}}</text>
+        </view>
+        <view wx:if="{{item.hasMore}}" class="more">还有 {{item.moreCount}} 节未显示</view>
+      </view>
+    </view>
+  </view>
+</view>

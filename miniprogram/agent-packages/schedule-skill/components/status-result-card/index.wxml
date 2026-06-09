@@ -1,0 +1,35 @@
+<view class="ai-card">
+  <view class="ai-card__head">
+    <text class="ai-card__title">状态修改</text>
+    <text class="status-pill" wx:if="{{targetStatusLabel}}">{{targetStatusLabel}}</text>
+  </view>
+
+  <view wx:if="{{action === 'updated' && updatedSession}}" class="result result--updated">
+    <text class="result__main">修改完成</text>
+    <text class="result__sub">{{updatedSession.dateLabel}} {{updatedSession.startTime}} {{updatedSession.memberName}}</text>
+    <text class="result__meta">{{updatedSession.courseType}}{{updatedSession.location ? ' · ' + updatedSession.location : ''}}</text>
+  </view>
+
+  <view wx:elif="{{action === 'choose'}}" class="result">
+    <text class="result__main">请选择要修改的课程</text>
+    <text class="result__sub">目标状态：{{targetStatusLabel}}</text>
+    <view class="candidate-list" wx:if="{{hasCandidates}}">
+      <button
+        wx:for="{{candidates}}"
+        wx:key="id"
+        class="candidate"
+        data-id="{{item.id}}"
+        bindtap="onCandidateTap"
+      >
+        <text class="candidate__time">{{item.dateLabel}} {{item.startTime}}</text>
+        <text class="candidate__name">{{item.memberName}}</text>
+        <text class="candidate__meta">{{item.courseType}}{{item.location ? ' · ' + item.location : ''}}</text>
+      </button>
+    </view>
+  </view>
+
+  <view wx:else class="result">
+    <text class="result__main">没有找到匹配课程</text>
+    <text class="result__sub">请补充日期、时间或会员姓名</text>
+  </view>
+</view>

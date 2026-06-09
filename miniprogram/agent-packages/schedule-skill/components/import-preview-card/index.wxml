@@ -1,0 +1,44 @@
+<view class="ai-card">
+  <view class="ai-card__head">
+    <view>
+      <text class="ai-card__eyebrow">待确认</text>
+      <text class="ai-card__title">导入预览</text>
+    </view>
+    <text class="replace" wx:if="{{clearExisting}}">覆盖同日</text>
+  </view>
+
+  <view class="summary">
+    <view class="summary__item">
+      <text class="summary__num">{{importableCount}}</text>
+      <text class="summary__label">可导入</text>
+    </view>
+    <view class="summary__item">
+      <text class="summary__num">{{skippedCount}}</text>
+      <text class="summary__label">跳过</text>
+    </view>
+    <view class="summary__item">
+      <text class="summary__num">{{errorCount}}</text>
+      <text class="summary__label">错误</text>
+    </view>
+  </view>
+
+  <view class="issue" wx:if="{{hasIssues}}">
+    <text>存在跳过或解析错误，请确认可导入课程无误后再写入。</text>
+  </view>
+
+  <view class="session-list">
+    <view wx:for="{{sessions}}" wx:key="id" class="session">
+      <text class="session__time">{{item.date}} {{item.startTime}}</text>
+      <view class="session__main">
+        <text class="session__name">{{item.memberName || '未选会员'}}</text>
+        <text class="session__meta">{{item.courseType}}{{item.location ? ' · ' + item.location : ''}}</text>
+      </view>
+    </view>
+    <view wx:if="{{omittedCount > 0}}" class="more">还有 {{omittedCount}} 节未显示</view>
+  </view>
+
+  <view class="actions">
+    <button class="btn btn--primary" bindtap="onConfirm">确认导入</button>
+    <button class="btn" bindtap="onCancel">取消</button>
+  </view>
+</view>

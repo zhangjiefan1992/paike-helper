@@ -1,0 +1,38 @@
+<view class="ai-card">
+  <view class="ai-card__head">
+    <view>
+      <text class="ai-card__eyebrow">统计</text>
+      <text class="ai-card__title">{{rangeLabel || '本周'}}</text>
+    </view>
+    <text class="diff">较上周 {{summary.diffText}}</text>
+  </view>
+
+  <view class="metrics">
+    <view class="metric metric--main">
+      <text class="metric__num">{{summary.total}}</text>
+      <text class="metric__label">总课数</text>
+    </view>
+    <view class="metric">
+      <text class="metric__num">{{summary.completed}}</text>
+      <text class="metric__label">已上</text>
+    </view>
+    <view class="metric">
+      <text class="metric__num">{{summary.cancelled}}</text>
+      <text class="metric__label">取消</text>
+    </view>
+    <view class="metric">
+      <text class="metric__num">{{summary.noshow}}</text>
+      <text class="metric__label">爽约</text>
+    </view>
+  </view>
+
+  <view class="detail">
+    <text>教学时长 {{summary.totalHoursText}}</text>
+    <text>私教 {{summary.privateCnt}} · 团课 {{summary.groupCnt}}</text>
+    <text>活跃会员 {{summary.activeMemberCount}} 人</text>
+  </view>
+
+  <view wx:if="{{hasCourseTypes}}" class="types">
+    <text wx:for="{{courseTypes}}" wx:key="name" class="type">{{item.name}} {{item.count}}</text>
+  </view>
+</view>
