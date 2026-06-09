@@ -301,7 +301,7 @@
   left: 6rpx;
   right: 6rpx;
   border-radius: 8rpx;
-  padding: 8rpx 7rpx 8rpx;
+  padding: 6rpx 7rpx;
   overflow: hidden;
   box-sizing: border-box;
   border-left: 0 solid transparent;
@@ -336,37 +336,53 @@
 }
 .cp-card__time {
   display: block;
-  font-size: 19rpx;
+  font-size: 18rpx;
   font-weight: 700;
   opacity: 0.9;
-  line-height: 1.05;
+  line-height: 1;
   white-space: nowrap;
   position: relative;
   z-index: 1;
 }
 .cp-card__name {
   display: block;
-  margin-top: 3rpx;
-  font-size: 21rpx;
+  margin-top: 2rpx;
+  font-size: 20rpx;
   font-weight: 800;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  line-height: 1.12;
+  line-height: 1.05;
   position: relative;
   z-index: 1;
 }
 .cp-card__meta {
   display: block;
-  margin-top: 4rpx;
-  font-size: 15rpx;
+  margin-top: 2rpx;
+  font-size: 14rpx;
   opacity: 0.78;
-  line-height: 1.15;
+  line-height: 1;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   position: relative;
   z-index: 1;
+}
+.cp-card--minimal {
+  padding-top: 5rpx;
+  padding-bottom: 5rpx;
+}
+.cp-card--minimal .cp-card__name {
+  margin-top: 1rpx;
+}
+.cp-card--detailed {
+  padding-top: 7rpx;
+  padding-bottom: 7rpx;
+}
+.cp-card--detailed .cp-card__meta {
+  margin-top: 3rpx;
+  font-size: 15rpx;
+  line-height: 1.1;
 }
 /* === Empty Day === */
 .day-empty {
@@ -401,14 +417,7 @@
   box-shadow: 0 -10rpx 28rpx rgba(24, 32, 68, 0.06);
 }
 .toolbar::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 100%;
-  height: 48rpx;
-  background: linear-gradient(to top, rgba(251,252,255,0.96), rgba(251,252,255,0));
-  pointer-events: none;
+  display: none;
 }
 .toolbar__btn {
   flex: 1;

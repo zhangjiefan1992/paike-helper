@@ -111,12 +111,42 @@ function getPeriodIndex(startTime, periods) {
 
 function getDensityConfig(density) {
   if (density === 'minimal') {
-    return { cardH: 54, gap: 6, emptyRowH: 88, rowPad: 12 }
+    return { cardH: 56, gap: 6, emptyRowH: 88, rowPad: 12, minCardH: 50, minGap: 5, minEmptyRowH: 76, minRowPad: 8 }
   }
   if (density === 'detailed') {
-    return { cardH: 76, gap: 8, emptyRowH: 106, rowPad: 14 }
+    return { cardH: 88, gap: 8, emptyRowH: 118, rowPad: 14, minCardH: 60, minGap: 5, minEmptyRowH: 82, minRowPad: 8 }
   }
-  return { cardH: 68, gap: 7, emptyRowH: 98, rowPad: 14 }
+  return { cardH: 74, gap: 7, emptyRowH: 104, rowPad: 14, minCardH: 54, minGap: 5, minEmptyRowH: 78, minRowPad: 8 }
+}
+
+function getCardDisplayMode(density, cardH) {
+  if (density === 'minimal') return 'minimal'
+  if (density === 'detailed') {
+    if (cardH >= 82) return 'detailed'
+    if (cardH >= 66) return 'standard'
+    return 'minimal'
+  }
+  return cardH >= 66 ? 'standard' : 'minimal'
+}
+
+function getCardMetaLabel(card, displayMode) {
+  if (displayMode === 'minimal') return ''
+  const parts = []
+  if (card.line2) parts.push(card.line2)
+  if (displayMode === 'detailed' && card.location) parts.push(card.location)
+  return parts.join(' · ')
+}
+
+function applyCardDensity(cpRows, density, densityConfig) {
+  const displayMode = getCardDisplayMode(density, densityConfig.cardH)
+  cpRows.forEach(row => {
+    row.cells.forEach(cell => {
+      cell.cards.forEach(card => {
+        card.displayMode = displayMode
+        card.metaLabel = getCardMetaLabel(card, displayMode)
+      })
+    })
+  })
 }
 
 function getBoardBodyHeightRpx() {
@@ -304,14 +334,7 @@ Page({
       if (s.memberIds) s.memberIds.forEach(id => memberIds.add(id))
 
       const memberName = member ? member.name : (s.classMode === 'group' ? ((s.memberIds || []).length || '') + '人团课' : '未选会员')
-      const courseAbbr = getCourseAbbr(s.courseType)
-      let line2 = ''
-      if (density === 'standard') line2 = courseAbbr
-      else if (density === 'detailed') line2 = courseAbbr
-
-      const metaParts = []
-      if (line2) metaParts.push(line2)
-      if (density === 'detailed' && s.location) metaParts.push(s.location)
+      const line2 = getCourseAbbr(s.courseType)
 
       const cardStyle = '--card-accent:' + color.border + ';background-color:' + color.bg + ';'
 
@@ -323,11 +346,12 @@ Page({
           memberName,
           line2,
           courseLabel: s.courseType || '课程',
-          metaLabel: metaParts.join(' · '),
+          metaLabel: '',
           location: s.location || '',
           done: s.status === 'completed',
           cardStyle,
           textColor: color.text,
+          displayMode: density,
           cardH: densityConfig.cardH
         }
         dayCards[s.date].push(card)
@@ -349,10 +373,14 @@ Page({
     if (minTotalH > boardBodyH) {
       const scale = clamp(boardBodyH / minTotalH, 0.58, 0.95)
       densityConfig = {
-        cardH: Math.max(44, Math.floor(densityConfig.cardH * scale)),
-        gap: Math.max(4, Math.floor(densityConfig.gap * scale)),
-        emptyRowH: Math.max(66, Math.floor(densityConfig.emptyRowH * scale)),
-        rowPad: Math.max(8, Math.floor(densityConfig.rowPad * scale))
+        cardH: Math.max(densityConfig.minCardH, Math.floor(densityConfig.cardH * scale)),
+        gap: Math.max(densityConfig.minGap, Math.floor(densityConfig.gap * scale)),
+        emptyRowH: Math.max(densityConfig.minEmptyRowH, Math.floor(densityConfig.emptyRowH * scale)),
+        rowPad: Math.max(densityConfig.minRowPad, Math.floor(densityConfig.rowPad * scale)),
+        minCardH: densityConfig.minCardH,
+        minGap: densityConfig.minGap,
+        minEmptyRowH: densityConfig.minEmptyRowH,
+        minRowPad: densityConfig.minRowPad
       }
       minTotalH = updateRowsForDensity(cpRows, densityConfig)
     }
@@ -381,6 +409,7 @@ Page({
         row.rowHeightRpx = row.minHeightRpx + extra
       })
     }
+    applyCardDensity(cpRows, density, densityConfig)
     cpRows.forEach(row => layoutCardsByTime(row, densityConfig))
 
     let completed = 0

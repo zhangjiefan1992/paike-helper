@@ -71,7 +71,7 @@
             <text>＋</text>
           </view>
           <view wx:for="{{cell.cards}}" wx:for-item="card" wx:key="id"
-            class="cp-card {{card.done ? 'cp-card--done' : ''}}"
+            class="cp-card cp-card--{{card.displayMode}} {{card.done ? 'cp-card--done' : ''}}"
             style="top:{{card.topRpx}}rpx;height:{{card.cardH}}rpx;{{card.cardStyle}}"
             catchtap="onCardTap" catchlongpress="onCardLongPress"
             data-id="{{card.id}}">
