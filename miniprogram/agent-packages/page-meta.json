@@ -1,0 +1,32 @@
+{
+  "pages": [
+    {
+      "path": "pages/week/week",
+      "name": "周课表",
+      "description": "查看排课助手的完整周视图课表，支持进入日期和课程详情。"
+    },
+    {
+      "path": "pages/stats/stats",
+      "name": "课程统计",
+      "description": "查看本周或本月课程数量、完成情况、教学时长和会员活跃度。"
+    },
+    {
+      "path": "pages/session/session",
+      "name": "课程表单",
+      "description": "新建或编辑一节课程。",
+      "query": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "课程 id。用于打开已有课程。"
+          },
+          "date": {
+            "type": "string",
+            "description": "课程日期，格式 YYYY-MM-DD。用于新建课程。"
+          }
+        }
+      }
+    }
+  ]
+}
