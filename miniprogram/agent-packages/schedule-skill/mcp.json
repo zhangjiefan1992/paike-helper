@@ -1,0 +1,163 @@
+{
+  "apis": [
+    {
+      "name": "getWeekSchedule",
+      "description": "查询排课助手中的周课表或某一天课表。适用于用户想查看本周、下周、某周或某天课程安排。不用于写入或修改课程。",
+      "_meta": {
+        "ui": {
+          "componentPath": "components/week-schedule-card/index"
+        }
+      },
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "weekStart": {
+            "type": "string",
+            "description": "周起始日期，格式 YYYY-MM-DD。用户未指定日期时不要填写，本接口会默认当前周。"
+          },
+          "date": {
+            "type": "string",
+            "description": "指定查询某一天，格式 YYYY-MM-DD。仅当用户明确问某一天课程时填写。"
+          }
+        }
+      },
+      "outputSchema": {
+        "type": "object"
+      }
+    },
+    {
+      "name": "previewImportSchedule",
+      "description": "把用户粘贴的多行课表文本解析成待导入课程预览。只生成预览，不写入课程。用户明确确认预览后才能调用 commitImportSchedule。",
+      "_meta": {
+        "ui": {
+          "componentPath": "components/import-preview-card/index"
+        }
+      },
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string",
+            "description": "用户提供的课表文本，通常每行一节课，例如 6.11 10:00 普拉提 张三 A教室。禁止自行编造课表文本。"
+          },
+          "clearExisting": {
+            "type": "boolean",
+            "description": "是否在正式导入时清理受影响日期的已有课程。用户没有明确要求覆盖、替换或清空时填写 false。"
+          }
+        },
+        "required": [
+          "text"
+        ]
+      },
+      "outputSchema": {
+        "type": "object"
+      }
+    },
+    {
+      "name": "commitImportSchedule",
+      "description": "确认写入上一轮 previewImportSchedule 生成的课表预览。只有用户确认导入时调用。不要凭空生成 previewToken。",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "previewToken": {
+            "type": "string",
+            "description": "来自 previewImportSchedule 返回的 previewToken 原值。上下文没有真实 token 时，应先调用 previewImportSchedule。"
+          }
+        },
+        "required": [
+          "previewToken"
+        ]
+      },
+      "outputSchema": {
+        "type": "object"
+      }
+    },
+    {
+      "name": "updateSessionStatus",
+      "description": "修改一节课程的状态。适用于用户要求标记已上、取消、爽约或恢复待上。信息不足或匹配多节课时，本接口返回候选而不写入。",
+      "_meta": {
+        "ui": {
+          "componentPath": "components/status-result-card/index"
+        }
+      },
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "sessionId": {
+            "type": "string",
+            "description": "课程唯一 id，优先取自 getWeekSchedule 或候选卡片返回的真实 id。不要从自然语言推断或编造。"
+          },
+          "date": {
+            "type": "string",
+            "description": "课程日期，格式 YYYY-MM-DD。用户只说今天、明天、周几时，按当前日期推算后填写。"
+          },
+          "startTime": {
+            "type": "string",
+            "description": "课程开始时间，格式 HH:mm。用户明确说了时间时填写。"
+          },
+          "memberName": {
+            "type": "string",
+            "description": "会员姓名，取自用户原话或上游接口返回的会员名。"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "scheduled",
+              "completed",
+              "cancelled",
+              "noshow"
+            ],
+            "description": "目标状态。已上、完成、上完用 completed；取消、请假用 cancelled；爽约、没来用 noshow；恢复、待上、已约用 scheduled。"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "outputSchema": {
+        "type": "object"
+      }
+    },
+    {
+      "name": "getWeekStats",
+      "description": "查询排课助手中的本周或指定周课程统计。适用于用户询问本周课数、完成数、教学时长、私教团课分布和活跃会员。",
+      "_meta": {
+        "ui": {
+          "componentPath": "components/week-stats-card/index"
+        }
+      },
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "weekStart": {
+            "type": "string",
+            "description": "周起始日期，格式 YYYY-MM-DD。用户未指定日期时不要填写，本接口会默认当前周。"
+          }
+        }
+      },
+      "outputSchema": {
+        "type": "object"
+      }
+    }
+  ],
+  "components": [
+    {
+      "path": "components/week-schedule-card/index",
+      "relatedPage": "/pages/week/week"
+    },
+    {
+      "path": "components/import-preview-card/index",
+      "relatedPage": "/pages/week/week",
+      "expirable": true,
+      "expiredText": "这次导入预览已过期"
+    },
+    {
+      "path": "components/status-result-card/index",
+      "relatedPage": "/pages/week/week"
+    },
+    {
+      "path": "components/week-stats-card/index",
+      "relatedPage": "/pages/stats/stats"
+    }
+  ]
+}
