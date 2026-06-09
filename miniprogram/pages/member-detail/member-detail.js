@@ -246,5 +246,12 @@ Page({
     wx.navigateTo({ url: '/pages/ai-consult/ai-consult?memberId=' + this.memberId })
   },
 
+  onShareAppMessage() {
+    return {
+      title: '排课助手 · 轻松管理你的私教课程',
+      path: '/pages/week/week',
+    }
+  },
+
   noop() {}
 })

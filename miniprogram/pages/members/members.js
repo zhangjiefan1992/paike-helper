@@ -1,4 +1,5 @@
 const storage = require('../../utils/storage')
+const themeUtil = require('../../utils/theme')
 
 const MEDICAL_KEYWORDS = ['膝伤', '腰痛', '颈椎', '肩颈', '孕期', '经期', '受伤', '不适', '术后', '高血压', '低血压', '腰伤', '腰间盘']
 const ACCENT_PALETTE = ['#4A7C59', '#A8B8A0', '#C2A882', '#B8A898', '#9EABA2']
@@ -40,6 +41,7 @@ Page({
   },
 
   onShow() {
+    themeUtil.applyAppTheme(storage.getConfig())
     this.loadMembers()
   },
 
@@ -144,5 +146,12 @@ Page({
 
   onAddMember() {
     wx.navigateTo({ url: '/pages/member-edit/member-edit' })
-  }
+  },
+
+  onShareAppMessage() {
+    return {
+      title: '排课助手 · 轻松管理你的私教课程',
+      path: '/pages/week/week',
+    }
+  },
 })

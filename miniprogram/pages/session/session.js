@@ -43,7 +43,10 @@ Page({
     memberIdMap: {},
     focusAreaMap: {},
     quickNote: { show: false, tags: [], text: '' },
-    QUICK_NOTE_TAGS: ['进步明显', '配合很好', '状态一般', '需要注意', '动作改善', '体力欠佳']
+    QUICK_NOTE_TAGS: ['进步明显', '配合很好', '状态一般', '需要注意', '动作改善', '体力欠佳'],
+    timeHours: (() => { const a = []; for (let h = 6; h <= 22; h++) a.push(String(h).padStart(2, '0')); return a })(),
+    timeMinutes: ['00', '15', '30', '45'],
+    timeIndex: [3, 0],
   },
 
   onLoad(options) {
@@ -77,6 +80,7 @@ Page({
           selectedMemberName: member ? member.name : '',
           memberIdMap,
           focusAreaMap,
+          timeIndex: this._timeToIndex(session.startTime),
           updatedAtLabel
         })
         wx.setNavigationBarTitle({ title: '编辑课程' })
@@ -121,7 +125,7 @@ Page({
       form.aiDigest = decodeURIComponent(options.aiSynthesis)
     }
 
-    this.setData({ form, config, members })
+    this.setData({ form, config, members, timeIndex: this._timeToIndex(startTime) })
     wx.setNavigationBarTitle({ title: '新增课程' })
   },
 
@@ -177,7 +181,24 @@ Page({
   },
 
   onTimeChange(e) {
-    this.setData({ 'form.startTime': e.detail.value })
+    const idx = e.detail.value
+    const h = this.data.timeHours[idx[0]]
+    const m = this.data.timeMinutes[idx[1]]
+    this.setData({ 'form.startTime': h + ':' + m, timeIndex: idx })
+  },
+
+  onTimeColumnChange(e) {
+    const idx = [...this.data.timeIndex]
+    idx[e.detail.column] = e.detail.value
+    this.setData({ timeIndex: idx })
+  },
+
+  _timeToIndex(timeStr) {
+    if (!timeStr) return [3, 0]
+    const [h, m] = timeStr.split(':').map(Number)
+    const hIdx = Math.max(0, h - 6)
+    const mIdx = Math.max(0, Math.min(3, Math.round(m / 15)))
+    return [Math.min(hIdx, 16), mIdx >= 4 ? 3 : mIdx]
   },
 
   onDurationTap(e) {
@@ -490,7 +511,10 @@ Page({
     const updates = {}
 
     if (data.date) updates['form.date'] = data.date
-    if (data.startTime) updates['form.startTime'] = data.startTime
+    if (data.startTime) {
+      updates['form.startTime'] = data.startTime
+      updates.timeIndex = this._timeToIndex(data.startTime)
+    }
     if (data.duration) updates['form.duration'] = data.duration
     if (data.courseType) updates['form.courseType'] = data.courseType
     if (data.classMode) updates['form.classMode'] = data.classMode

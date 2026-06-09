@@ -14,7 +14,7 @@
       <picker mode="date" value="{{form.date}}" bindchange="onDateChange">
         <view class="picker-btn">{{form.date || '选择日期'}}</view>
       </picker>
-      <picker mode="time" value="{{form.startTime}}" bindchange="onTimeChange">
+      <picker mode="multiSelector" range="{{[timeHours, timeMinutes]}}" value="{{timeIndex}}" bindchange="onTimeChange" bindcolumnchange="onTimeColumnChange">
         <view class="picker-btn">{{form.startTime || '选择时间'}}</view>
       </picker>
     </view>

@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>周视图 V2 — 自适应时间轴</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif;
+  background: #f0f0f0;
+  padding: 24px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 32px;
+  justify-content: center;
+}
+h1 { width: 100%; text-align: center; font-size: 20px; color: #333; margin-bottom: 8px; }
+p.desc { width: 100%; text-align: center; font-size: 13px; color: #666; margin-bottom: 16px; max-width: 700px; margin-left: auto; margin-right: auto; }
+
+.phone {
+  width: 375px;
+  height: 667px;
+  border-radius: 40px;
+  overflow: hidden;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.15);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+.phone-label {
+  text-align: center;
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+/* === Header === */
+.header {
+  height: 88px;
+  padding: 28px 16px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+.header-title { font-size: 20px; font-weight: 400; color: #fff; }
+.header-btn { font-size: 11px; color: rgba(255,255,255,0.85); border: 1px solid rgba(255,255,255,0.3); padding: 3px 8px; border-radius: 4px; }
+.header-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 6px;
+  border-top: 1px solid rgba(255,255,255,0.12);
+}
+.header-seg { display: flex; gap: 2px; }
+.header-seg span { font-size: 11px; color: rgba(255,255,255,0.5); padding: 3px 10px; border-radius: 6px; }
+.header-seg span.active { background: rgba(255,255,255,0.2); color: #fff; font-weight: 600; }
+.header-arrows { font-size: 14px; color: rgba(255,255,255,0.7); }
+
+/* === Day header === */
+.day-header {
+  display: grid;
+  grid-template-columns: 28px repeat(7, 1fr);
+  height: 40px;
+  align-items: center;
+}
+.day-header-corner { }
+.day-header-cell { text-align: center; padding: 4px 0; }
+.day-header-cell .weekday { display: block; font-size: 10px; opacity: 0.7; color: #fff; }
+.day-header-cell .daynum { display: block; font-size: 9px; opacity: 0.45; color: #fff; margin-top: 1px; }
+.day-header-cell.today { background: rgba(255,255,255,0.08); border-radius: 4px; }
+.day-header-cell.today .weekday { opacity: 1; font-weight: 600; }
+.day-header-cell.today .daynum { opacity: 0.85; }
+
+/* === Grid body === */
+.grid-body {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 28px repeat(7, 1fr);
+  position: relative;
+  overflow: hidden;
+}
+.time-axis {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+.time-label {
+  position: absolute;
+  left: 0;
+  width: 28px;
+  font-size: 9px;
+  color: #999;
+  text-align: center;
+  transform: translateY(-50%);
+}
+.day-column {
+  position: relative;
+  border-left: 1px solid var(--grid-border);
+}
+.hour-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--grid-line);
+}
+.card {
+  position: absolute;
+  left: 2px;
+  right: 2px;
+  border-radius: 3px;
+  padding: 2px 3px;
+  overflow: hidden;
+  border-left: 2px solid transparent;
+}
+.card-name {
+  display: block;
+  font-size: 10px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.3;
+}
+.card-time {
+  display: block;
+  font-size: 8px;
+  opacity: 0.7;
+  line-height: 1.2;
+}
+.card-done { opacity: 0.45; }
+
+/* Conflict: side by side */
+.card.col-0-of-2 { right: 50%; }
+.card.col-1-of-2 { left: calc(50% + 1px); }
+.card.col-0-of-3 { right: 66.7%; }
+.card.col-1-of-3 { left: 33.3%; right: 33.3%; }
+.card.col-2-of-3 { left: 66.7%; }
+
+/* === Toolbar === */
+.toolbar {
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 24px;
+  border-top: 1px solid var(--grid-border);
+}
+.toolbar-btn {
+  flex: 1;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  border-radius: 18px;
+  letter-spacing: 0.5px;
+}
+
+/* === Tabbar === */
+.tabbar {
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  border-top: 1px solid var(--grid-border);
+  font-size: 9px;
+  color: #999;
+}
+.tabbar-item { text-align: center; }
+.tabbar-item.active { color: var(--tab-active); }
+.tabbar-icon { font-size: 18px; margin-bottom: 2px; }
+
+/* ========== Theme: soft-color (warm) ========== */
+.theme-warm {
+  --hdr-bg: #704F5A;
+  --grid-head-bg: #7A5862;
+  --paper: #FAF8F5;
+  --grid-border: #E8E4DE;
+  --grid-line: #F0ECE6;
+  --grid-today: #FFF8F0;
+  --ink: #1F1D1A;
+  --ink-2: #4A4640;
+  --ink-3: #8A8478;
+  --tab-active: #704F5A;
+}
+.theme-warm .header { background: var(--hdr-bg); }
+.theme-warm .day-header { background: var(--grid-head-bg); }
+.theme-warm .grid-body { background: var(--paper); }
+.theme-warm .toolbar { background: var(--paper); }
+.theme-warm .tabbar { background: var(--paper); }
+.theme-warm .toolbar-btn.ghost { border: 1px solid var(--ink-3); color: var(--ink-2); }
+.theme-warm .toolbar-btn.primary { background: var(--ink); color: var(--paper); }
+
+/* Warm card palette (pastel) */
+.theme-warm .card-c1 { background: #FDE8E4; border-left-color: #E88B7A; color: #8B3A2E; }
+.theme-warm .card-c2 { background: #E4F0E8; border-left-color: #7BAF8A; color: #2E5E3A; }
+.theme-warm .card-c3 { background: #FFF3E0; border-left-color: #E8B86A; color: #6B4E1A; }
+.theme-warm .card-c4 { background: #E8E4F4; border-left-color: #9B8EC4; color: #3E2E6B; }
+.theme-warm .card-c5 { background: #E0F0F4; border-left-color: #6BAFC4; color: #1A4E5E; }
+
+/* ========== Theme: class-plan (cool) ========== */
+.theme-cool {
+  --hdr-bg: #1E2352;
+  --grid-head-bg: #252B5E;
+  --paper: #FFFFFF;
+  --grid-border: #E8E8EE;
+  --grid-line: #F0F0F5;
+  --grid-today: #F0F5FF;
+  --ink: #1E2352;
+  --ink-2: #4A5070;
+  --ink-3: #8088A8;
+  --tab-active: #1E2352;
+}
+.theme-cool .header { background: var(--hdr-bg); }
+.theme-cool .day-header { background: var(--grid-head-bg); }
+.theme-cool .grid-body { background: var(--paper); }
+.theme-cool .toolbar { background: var(--paper); }
+.theme-cool .tabbar { background: var(--paper); }
+.theme-cool .toolbar-btn.ghost { border: 1px solid var(--ink-3); color: var(--ink-2); }
+.theme-cool .toolbar-btn.primary { background: var(--ink); color: var(--paper); }
+
+/* Cool card palette (vivid solid) */
+.theme-cool .card-c1 { background: #4A7C59; border-left-color: #2E5E3A; color: #fff; }
+.theme-cool .card-c2 { background: #5B6BAA; border-left-color: #3A4A8A; color: #fff; }
+.theme-cool .card-c3 { background: #C4785A; border-left-color: #9B5A3A; color: #fff; }
+.theme-cool .card-c4 { background: #7A6B9A; border-left-color: #5A4A7A; color: #fff; }
+.theme-cool .card-c5 { background: #5A9AAA; border-left-color: #3A7A8A; color: #fff; }
+
+/* Note section */
+.notes {
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 24px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+.notes h2 { font-size: 16px; margin-bottom: 12px; color: #333; }
+.notes ul { padding-left: 20px; font-size: 13px; color: #555; line-height: 2; }
+.notes .highlight { color: #C4785A; font-weight: 600; }
+.notes table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 12px; }
+.notes td, .notes th { border: 1px solid #e0e0e0; padding: 6px 10px; text-align: center; }
+.notes th { background: #f5f5f5; font-weight: 500; }
+</style>
+</head>
+<body>
+
+<h1>周视图 V2 — 自适应时间轴</h1>
+<p class="desc">
+  核心改进：时间范围根据实际课程自适应（不再展示整天16小时空白），卡片获得足够高度显示内容。<br>
+  下方展示同一周数据在两种主题下的效果。时间范围 09:00-20:30（由课程数据决定）。
+</p>
+
+<!-- ============ WARM THEME ============ -->
+<div>
+  <div class="phone-label">soft-color 暖色主题</div>
+  <div class="phone theme-warm" id="phone-warm"></div>
+</div>
+
+<!-- ============ COOL THEME ============ -->
+<div>
+  <div class="phone-label">class-plan 冷色主题</div>
+  <div class="phone theme-cool" id="phone-cool"></div>
+</div>
+
+<!-- ============ NOTES ============ -->
+<div class="notes">
+  <h2>设计说明</h2>
+  <ul>
+    <li><span class="highlight">自适应时间范围</span>：只展示有课时段（最早课开始前30分 ~ 最晚课结束后30分），不浪费空间在空白时段</li>
+    <li><span class="highlight">一屏展示</span>：无需滚动，所有课程在一屏内完整展示</li>
+    <li><span class="highlight">时长可辨</span>：90分钟卡片明显高于60分钟，60分钟高于45分钟</li>
+    <li><span class="highlight">内容完整</span>：每张卡片展示会员名 + 时间（空间不足时只显示名字）</li>
+    <li><span class="highlight">冲突并排</span>：同时段重叠课程并排缩窄显示，互不遮挡</li>
+    <li>左侧时间轴只标注整点，宽度仅28px，最大化课程展示区域</li>
+    <li>三种密度设置控制默认展示范围（有课时自适应会覆盖）：
+      <ul>
+        <li>宽松(relaxed): 09:00-18:00 — 适合只上白班的老师</li>
+        <li>标准(standard): 08:00-21:00 — 多数场景</li>
+        <li>紧凑(compact): 07:00-22:00 — 早晚都有课</li>
+      </ul>
+    </li>
+  </ul>
+
+  <h2>卡片高度对照（本示例 09:00-20:30 范围）</h2>
+  <table>
+    <tr><th>课程时长</th><th>卡片高度(px)</th><th>内容展示</th></tr>
+    <tr><td>45 min</td><td>~29px</td><td>名字（单行）</td></tr>
+    <tr><td>60 min</td><td>~38px</td><td>名字 + 时间</td></tr>
+    <tr><td>90 min</td><td>~58px</td><td>名字 + 时间（宽裕）</td></tr>
+    <tr><td>120 min</td><td>~77px</td><td>名字 + 时间 + 额外信息</td></tr>
+  </table>
+
+  <h2>当实际课程范围更窄时（如 10:00-17:00，7h）</h2>
+  <table>
+    <tr><th>课程时长</th><th>卡片高度(px)</th><th>内容展示</th></tr>
+    <tr><td>45 min</td><td>~47px</td><td>名字 + 时间</td></tr>
+    <tr><td>60 min</td><td>~63px</td><td>名字 + 时间（宽裕）</td></tr>
+    <tr><td>90 min</td><td>~95px</td><td>名字 + 时间 + 备注</td></tr>
+  </table>
+</div>
+
+<script>
+// Sample course data for the week
+const courses = [
+  // Monday
+  { day: 0, start: '09:00', duration: 60, name: '周文娟', color: 1 },
+  { day: 0, start: '10:30', duration: 45, name: '李明', color: 2 },
+  { day: 0, start: '14:00', duration: 60, name: '张伟', color: 3 },
+  { day: 0, start: '19:00', duration: 90, name: '王芳', color: 4 },
+  // Tuesday
+  { day: 1, start: '09:30', duration: 60, name: '陈静', color: 5 },
+  { day: 1, start: '14:00', duration: 60, name: '赵敏', color: 1 },
+  { day: 1, start: '19:30', duration: 60, name: '刘洋', color: 2 },
+  // Wednesday
+  { day: 2, start: '10:00', duration: 60, name: '周文娟', color: 1 },
+  { day: 2, start: '10:00', duration: 45, name: '孙丽', color: 3 }, // conflict!
+  { day: 2, start: '15:00', duration: 90, name: '李明', color: 2 },
+  // Thursday
+  { day: 3, start: '09:00', duration: 60, name: '张伟', color: 3 },
+  { day: 3, start: '11:00', duration: 60, name: '王芳', color: 4 },
+  { day: 3, start: '16:00', duration: 60, name: '陈静', color: 5 },
+  { day: 3, start: '19:00', duration: 60, name: '赵敏', color: 1 },
+  // Friday
+  { day: 4, start: '10:00', duration: 90, name: '周文娟', color: 1 },
+  { day: 4, start: '14:30', duration: 60, name: '刘洋', color: 2 },
+  { day: 4, start: '18:00', duration: 60, name: '孙丽', color: 3 },
+  // Saturday
+  { day: 5, start: '09:00', duration: 60, name: '李明', color: 2 },
+  { day: 5, start: '10:30', duration: 60, name: '张伟', color: 3 },
+  { day: 5, start: '10:30', duration: 60, name: '王芳', color: 4 }, // conflict!
+  { day: 5, start: '14:00', duration: 90, name: '周文娟', color: 1 },
+  // Sunday
+  { day: 6, start: '10:00', duration: 60, name: '赵敏', color: 1 },
+  { day: 6, start: '15:00', duration: 45, name: '陈静', color: 5 },
+];
+
+const weekdays = ['一', '二', '三', '四', '五', '六', '日'];
+const dates = ['2', '3', '4', '5', '6', '7', '8'];
+const todayIdx = 2; // Wednesday
+
+function parseTime(t) {
+  const [h, m] = t.split(':').map(Number);
+  return h * 60 + m;
+}
+
+function buildPhone(container, themeClass) {
+  // Calculate adaptive time range from courses
+  let minTime = Infinity, maxTime = -Infinity;
+  courses.forEach(c => {
+    const s = parseTime(c.start);
+    const e = s + c.duration;
+    if (s < minTime) minTime = s;
+    if (e > maxTime) maxTime = e;
+  });
+  // Add 30min padding, round to hour
+  const rangeStart = Math.floor((minTime - 30) / 60) * 60; // 08:30 → 08:00
+  const rangeEnd = Math.ceil((maxTime + 30) / 60) * 60;    // 20:30+30 → 21:00
+  const totalMinutes = rangeEnd - rangeStart;
+
+  // Available height for grid
+  const headerH = 88;
+  const dayHeaderH = 40;
+  const toolbarH = 52;
+  const tabbarH = 50;
+  const gridH = 667 - headerH - dayHeaderH - toolbarH - tabbarH; // = 437px
+
+  const pxPerMin = gridH / totalMinutes;
+
+  // Build HTML
+  let html = '';
+
+  // Header
+  html += `<div class="header">
+    <div class="header-top">
+      <span class="header-title">6月第1周</span>
+      <span class="header-btn">今天</span>
+    </div>
+    <div class="header-nav">
+      <div class="header-seg">
+        <span class="active">周</span>
+        <span>月</span>
+      </div>
+      <span style="font-size:11px;color:rgba(255,255,255,0.6)">本周 ${courses.length} 节</span>
+      <span class="header-arrows">‹ ›</span>
+    </div>
+  </div>`;
+
+  // Day header
+  html += `<div class="day-header">
+    <div class="day-header-corner"></div>`;
+  weekdays.forEach((w, i) => {
+    const cls = i === todayIdx ? ' today' : '';
+    html += `<div class="day-header-cell${cls}">
+      <span class="weekday">${w}</span>
+      <span class="daynum">${dates[i]}</span>
+    </div>`;
+  });
+  html += `</div>`;
+
+  // Grid body
+  html += `<div class="grid-body" style="height:${gridH}px">`;
+
+  // Time axis (left column)
+  html += `<div class="time-axis" style="position:relative">`;
+  for (let min = rangeStart; min <= rangeEnd; min += 60) {
+    const top = (min - rangeStart) * pxPerMin;
+    const h = Math.floor(min / 60);
+    if (h > Math.floor(rangeStart / 60) && h < Math.floor(rangeEnd / 60)) {
+      html += `<div class="time-label" style="top:${top}px">${h}</div>`;
+    }
+  }
+  html += `</div>`;
+
+  // Day columns
+  for (let d = 0; d < 7; d++) {
+    const isToday = d === todayIdx;
+    html += `<div class="day-column" style="position:relative;${isToday ? 'background:var(--grid-today)' : ''}">`;
+
+    // Hour lines
+    for (let min = rangeStart; min <= rangeEnd; min += 60) {
+      const top = (min - rangeStart) * pxPerMin;
+      if (min > rangeStart && min < rangeEnd) {
+        html += `<div class="hour-line" style="top:${top}px;background:var(--grid-line)"></div>`;
+      }
+    }
+
+    // Get courses for this day
+    const dayCourses = courses.filter(c => c.day === d);
+
+    // Detect conflicts (overlapping courses)
+    const groups = [];
+    const sorted = [...dayCourses].sort((a, b) => parseTime(a.start) - parseTime(b.start));
+    sorted.forEach(c => {
+      const cStart = parseTime(c.start);
+      const cEnd = cStart + c.duration;
+      let placed = false;
+      for (const g of groups) {
+        if (cStart < g.end) {
+          g.items.push(c);
+          g.end = Math.max(g.end, cEnd);
+          placed = true;
+          break;
+        }
+      }
+      if (!placed) groups.push({ items: [c], end: cEnd });
+    });
+
+    // Render cards
+    groups.forEach(g => {
+      const cols = g.items.length;
+      g.items.forEach((c, idx) => {
+        const startMin = parseTime(c.start);
+        const top = (startMin - rangeStart) * pxPerMin;
+        const height = c.duration * pxPerMin;
+        const showTime = height >= 34;
+
+        let colClass = '';
+        if (cols === 2) colClass = `col-${idx}-of-2`;
+        else if (cols >= 3) colClass = `col-${idx}-of-3`;
+
+        html += `<div class="card card-c${c.color} ${colClass}" style="top:${top}px;height:${height}px">
+          <span class="card-name">${c.name}</span>
+          ${showTime ? `<span class="card-time">${c.start}</span>` : ''}
+        </div>`;
+      });
+    });
+
+    html += `</div>`;
+  }
+  html += `</div>`;
+
+  // Toolbar
+  html += `<div class="toolbar">
+    <div class="toolbar-btn ghost">导入课表</div>
+    <div class="toolbar-btn primary">+ 新增</div>
+  </div>`;
+
+  // Tabbar
+  html += `<div class="tabbar">
+    <div class="tabbar-item active"><div class="tabbar-icon">📅</div>课表</div>
+    <div class="tabbar-item"><div class="tabbar-icon">👤</div>会员</div>
+    <div class="tabbar-item"><div class="tabbar-icon">⚙</div>设置</div>
+  </div>`;
+
+  container.innerHTML = html;
+}
+
+buildPhone(document.getElementById('phone-warm'));
+buildPhone(document.getElementById('phone-cool'));
+</script>
+</body>
+</html>

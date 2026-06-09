@@ -2,6 +2,7 @@ const storage = require('../../utils/storage')
 const dateUtil = require('../../utils/dateUtil')
 const textImportExport = require('../../utils/textImportExport')
 const cloudBackup = require('../../utils/cloudBackup')
+const themeUtil = require('../../utils/theme')
 
 function fmtBackupTime(ts) {
   if (!ts) return '从未备份'
@@ -27,20 +28,32 @@ Page({
     textExportContent: '',
     textImportContent: '',
     themeOptions: [
-      { name: '柔彩', value: 'soft-color', preview: '#E8EDFF' },
-      { name: '渐变', value: 'candy-gradient', preview: 'linear-gradient(135deg, #667EEA, #764BA2)' },
-      { name: '轻盈', value: 'airy-tint', preview: '#F0F4FF' }
+      { name: '静练', value: 'soft-color', preview: '#211B17' },
+      { name: '课表', value: 'class-plan', preview: '#1E2352' }
     ],
-    currentTheme: 'airy-tint',
+    currentTheme: 'soft-color',
+    densityOptions: [
+      { name: '极简', value: 'minimal', desc: '时间 + 会员' },
+      { name: '标准', value: 'standard', desc: '时间 + 会员 + 课程' },
+      { name: '详尽', value: 'detailed', desc: '时间 + 会员 + 课程·地点' }
+    ],
+    currentDensity: 'standard',
     backupTimeLabel: '从未备份',
     backupHasCloud: false,
     backingUp: false,
-    restoring: false
+    restoring: false,
+    feedbackText: '',
+    feedbackSubmitting: false
   },
 
   onShow() {
     const config = storage.getConfig()
-    this.setData({ config, currentTheme: config.weekTheme || 'airy-tint' })
+    const currentTheme = themeUtil.applyAppTheme(config)
+    this.setData({
+      config,
+      currentTheme,
+      currentDensity: config.weekDensity || 'standard'
+    })
     this._refreshBackupInfo()
   },
 
@@ -110,9 +123,13 @@ Page({
               icon: 'success'
             })
             wx.vibrateShort({ type: 'medium' })
-            // 刷新当前 config
             const config = storage.getConfig()
-            this.setData({ config, currentTheme: config.weekTheme || 'airy-tint' })
+            const currentTheme = themeUtil.applyAppTheme(config)
+            this.setData({
+              config,
+              currentTheme,
+              currentDensity: config.weekDensity || 'standard'
+            })
           } else {
             wx.showModal({
               title: '恢复失败',
@@ -245,9 +262,19 @@ Page({
     const config = this.data.config
     config.weekTheme = value
     storage.saveConfig(config)
+    themeUtil.applyAppTheme(config)
     this.setData({ config, currentTheme: value })
     wx.vibrateShort({ type: 'light' })
     wx.showToast({ title: '主题已切换', icon: 'success' })
+  },
+
+  onDensitySelect(e) {
+    const value = e.currentTarget.dataset.value
+    const config = this.data.config
+    config.weekDensity = value
+    storage.saveConfig(config)
+    this.setData({ config, currentDensity: value })
+    wx.vibrateShort({ type: 'light' })
   },
 
   onGoStats() {
@@ -380,5 +407,45 @@ Page({
     } else {
       wx.showToast({ title: result.message, icon: 'success' })
     }
-  }
+  },
+
+  // === 意见反馈 ===
+
+  onFeedbackInput(e) {
+    this.setData({ feedbackText: e.detail.value })
+  },
+
+  async onSubmitFeedback() {
+    const text = (this.data.feedbackText || '').trim()
+    if (!text) {
+      wx.showToast({ title: '请输入反馈内容', icon: 'none' })
+      return
+    }
+    if (this.data.feedbackSubmitting) return
+    this.setData({ feedbackSubmitting: true })
+    try {
+      const res = await wx.cloud.callFunction({
+        name: 'submitFeedback',
+        data: { content: text, systemInfo: wx.getDeviceInfo() }
+      })
+      if (res.result && res.result.success) {
+        this.setData({ feedbackText: '' })
+        wx.showToast({ title: '感谢反馈 ✓', icon: 'success' })
+        wx.vibrateShort({ type: 'light' })
+      } else {
+        wx.showToast({ title: '提交失败，请稍后重试', icon: 'none' })
+      }
+    } catch (err) {
+      wx.showToast({ title: '提交失败，请稍后重试', icon: 'none' })
+    } finally {
+      this.setData({ feedbackSubmitting: false })
+    }
+  },
+
+  onShareAppMessage() {
+    return {
+      title: '排课助手 · 轻松管理你的私教课程',
+      path: '/pages/week/week',
+    }
+  },
 })

@@ -33,6 +33,23 @@ const themes = {
   }
 }
 
+const appThemeTokens = {
+  'soft-color': {
+    backgroundColor: '#F5F1EA',
+    tabBarBackground: '#FFFDF8',
+    tabBarColor: '#9A8E82',
+    tabBarSelectedColor: '#211B17',
+    tabBarBorderStyle: 'white'
+  },
+  'class-plan': {
+    backgroundColor: '#F7F8FC',
+    tabBarBackground: '#FBFCFF',
+    tabBarColor: '#A8B0C7',
+    tabBarSelectedColor: '#182044',
+    tabBarBorderStyle: 'white'
+  }
+}
+
 function getTheme(name) {
   return themes[name] || themes['studio-calm']
 }
@@ -41,4 +58,41 @@ function getCurrentThemeName() {
   return 'studio-calm'
 }
 
-module.exports = { getTheme, getCurrentThemeName, themes }
+function getWeekThemeName(config) {
+  const name = config && (config.weekTheme || config.theme)
+  return appThemeTokens[name] ? name : 'soft-color'
+}
+
+function getAppThemeTokens(name) {
+  return appThemeTokens[name] || appThemeTokens['soft-color']
+}
+
+function applyAppTheme(config) {
+  const name = getWeekThemeName(config)
+  const t = getAppThemeTokens(name)
+
+  wx.setBackgroundColor && wx.setBackgroundColor({
+    backgroundColor: t.backgroundColor,
+    backgroundColorTop: t.backgroundColor,
+    backgroundColorBottom: t.backgroundColor
+  })
+
+  wx.setTabBarStyle({
+    color: t.tabBarColor,
+    selectedColor: t.tabBarSelectedColor,
+    backgroundColor: t.tabBarBackground,
+    borderStyle: t.tabBarBorderStyle
+  })
+
+  return name
+}
+
+module.exports = {
+  getTheme,
+  getCurrentThemeName,
+  getWeekThemeName,
+  getAppThemeTokens,
+  applyAppTheme,
+  themes,
+  appThemeTokens
+}

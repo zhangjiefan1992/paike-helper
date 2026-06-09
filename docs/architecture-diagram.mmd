@@ -1,0 +1,56 @@
+graph TB
+    subgraph Client["用户设备"]
+        MP["微信小程序<br/>原生 WXML/JS"]
+        H5["H5 Web App<br/>Vue3 + Vant 4<br/>keleya.org"]
+    end
+
+    subgraph CloudFunc["微信云函数"]
+        CF1["aiConsult"]
+        CF2["aiFollowup"]
+        CF3["parseVoiceSession"]
+    end
+
+    subgraph Gateway["Cloudflare Worker · paike-api"]
+        R1["/api/v1/ai/* → DeepSeek 直调"]
+        R2["/api/v1/agent/* → Agent FC 代理"]
+    end
+
+    subgraph AgentFC["阿里云 FC 3.0 · cn-hangzhou<br/>paike-agent (Docker)"]
+        API["FastAPI · Python 3.11"]
+        subgraph Schools["4 流派 Agent (并行)"]
+            S1["罗马纳"]
+            S2["斯多特"]
+            S3["北极星"]
+            S4["BASI"]
+        end
+        Judge["裁判 Agent<br/>综合 + 结构化输出"]
+        Knowledge["知识层<br/>/app/knowledge/distilled/<br/>4 × wiki.md"]
+    end
+
+    LLM["DeepSeek V4<br/>deepseek-chat<br/>api.deepseek.com"]
+
+    MP -->|"wx.cloud.callFunction"| CF1
+    MP -->|"wx.cloud.callFunction"| CF2
+    MP -->|"wx.cloud.callFunction"| CF3
+    H5 -->|"fetch /api/v1/*"| Gateway
+
+    CF1 -->|"AGENT_SERVICE_URL"| Gateway
+    CF2 -->|"AGENT_SERVICE_URL"| Gateway
+
+    R2 -->|"proxy"| API
+    API --> Schools
+    Schools --> Judge
+    Knowledge -.->|"prompt context"| Schools
+    Judge -->|"OpenAI-compatible API"| LLM
+    S1 -->|"OpenAI-compatible API"| LLM
+    S2 -->|"OpenAI-compatible API"| LLM
+    S3 -->|"OpenAI-compatible API"| LLM
+    S4 -->|"OpenAI-compatible API"| LLM
+    R1 -->|"直调"| LLM
+
+    style Client fill:#f9f7f1,stroke:#2c2c2c
+    style CloudFunc fill:#e8f5e9,stroke:#388e3c
+    style Gateway fill:#e3f2fd,stroke:#1976d2
+    style AgentFC fill:#fff3e0,stroke:#f57c00
+    style Schools fill:#fff8e1,stroke:#fbc02d
+    style LLM fill:#fce4ec,stroke:#c62828

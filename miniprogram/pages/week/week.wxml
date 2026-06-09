@@ -4,14 +4,23 @@
   <!-- Header -->
   <view class="hdr">
     <view class="hdr__top">
-      <text class="hdr__title serif">{{todayLabel}}</text>
+      <text class="hdr__title serif" bindlongpress="onWeekLongPress">{{rangeLabel}}</text>
       <view class="hdr__today" bindtap="goToday">今天</view>
     </view>
     <view class="hdr__nav">
-      <text class="hdr__range serif" bindlongpress="onWeekLongPress">{{rangeLabel}}</text>
+      <view class="hdr__nav-left">
+        <view class="seg">
+          <view class="seg__item {{currentView === 'week' ? 'seg__item--active' : ''}}"
+            bindtap="onSwitchView" data-view="week">周</view>
+          <view class="seg__item {{currentView === 'month' ? 'seg__item--active' : ''}}"
+            bindtap="onSwitchView" data-view="month">月</view>
+        </view>
+        <text class="hdr__stats" wx:if="{{currentView === 'week' && !isEmpty}}">{{stats.total}}节 · 已完成{{stats.completed}}</text>
+        <text class="hdr__stats" wx:if="{{currentView === 'month' && !monthIsEmpty}}">{{monthStats.total}}节 · 已完成{{monthStats.completed}}</text>
+      </view>
       <view class="hdr__arrows">
-        <view class="hdr__arrow" bindtap="onPrevWeek">‹</view>
-        <view class="hdr__arrow" bindtap="onNextWeek">›</view>
+        <view class="hdr__arrow" bindtap="onPrev">‹</view>
+        <view class="hdr__arrow" bindtap="onNext">›</view>
       </view>
     </view>
   </view>
@@ -20,23 +29,8 @@
   <view class="swipe-wrap {{swipeAnimating ? 'swipe-wrap--animating' : ''}}"
     style="{{swipeTransform}}">
 
-  <!-- Summary -->
-  <view class="summary" wx:if="{{!isEmpty}}">
-    <view class="summary__item">
-      <text class="summary__num serif">{{stats.total}}</text>
-      <text class="summary__lbl">本周</text>
-    </view>
-    <view class="summary__div"></view>
-    <view class="summary__item">
-      <text class="summary__num serif">{{stats.completed}}</text>
-      <text class="summary__lbl">已完成</text>
-    </view>
-    <view class="summary__div"></view>
-    <view class="summary__item">
-      <text class="summary__num serif">{{stats.memberCount}}</text>
-      <text class="summary__lbl">位会员</text>
-    </view>
-  </view>
+  <!-- ===== 周视图 ===== -->
+  <block wx:if="{{currentView === 'week'}}">
 
   <!-- Empty state -->
   <view class="empty" wx:if="{{isEmpty}}">
@@ -50,57 +44,79 @@
     <text class="empty__alt" bindtap="onAddSession">或新增单节课程</text>
   </view>
 
-  <!-- Week Grid -->
-  <scroll-view
-    class="grid"
-    scroll-x
-    enhanced
-    show-scrollbar="{{false}}"
-    wx:else
-    scroll-into-view="{{scrollTarget}}"
-  >
-    <view class="grid__inner">
-      <view
-        wx:for="{{weekDays}}" wx:key="date"
-        class="day {{item.isToday ? 'day--today' : ''}}"
-        id="day-{{item.date}}"
-      >
-        <view class="day__head" bindtap="onDayTap" data-date="{{item.date}}">
-          <text class="day__name">{{item.weekday}}</text>
-          <text class="day__num serif">{{item.dayNum}}</text>
-          <text class="day__count serif" wx:if="{{dayCards[item.date].length}}">{{dayCards[item.date].length}}节</text>
-        </view>
-        <view class="day__body">
-          <view
-            wx:for="{{dayCards[item.date]}}" wx:for-item="card" wx:key="id"
-            class="card card--{{card.category}} {{card.done ? 'card--done' : ''}}"
-            style="{{card.cardStyle}}"
-            catchtap="onCardTap" catchlongpress="onCardLongPress" data-id="{{card.id}}"
-          >
-            <view class="card__head">
-              <view class="card__dot" style="background: {{card.dotColor}}"></view>
-              <text class="card__time serif">{{card.startTime}}</text>
-            </view>
-            <text class="card__type serif">{{card.courseType}}</text>
-            <text class="card__member" wx:if="{{card.displayName}}">{{card.displayName}}</text>
-            <text class="card__loc" wx:if="{{card.location}}">{{card.location}}</text>
-            <text class="card__status card__status--completed" wx:if="{{card.done}}">已完成</text>
-          </view>
+  <!-- 竞品式时段课表 -->
+  <view class="cp-grid" wx:if="{{!isEmpty}}">
+    <view class="cp-grid__head">
+      <view class="cp-grid__time-head"></view>
+      <view wx:for="{{weekDays}}" wx:key="date"
+        class="cp-grid__day-head {{item.isToday ? 'cp-grid__day-head--today' : ''}}"
+        bindtap="onDayTap" data-date="{{item.date}}">
+        <text class="cp-grid__weekday">{{item.weekday}}</text>
+        <text class="cp-grid__daynum serif">{{item.dayNum}}</text>
+      </view>
+    </view>
 
-          <!-- Empty day -->
-          <view wx:if="{{!dayCards[item.date].length}}" class="day-empty"
-            bindtap="onCellTap" data-date="{{item.date}}">
-            <view class="day-empty__mark"></view>
+    <view class="cp-grid__body">
+      <view wx:for="{{cpRows}}" wx:for-item="row" wx:key="key"
+        class="cp-row {{row.hasCourse ? 'cp-row--busy' : 'cp-row--empty'}}"
+        style="height:{{row.rowHeightRpx}}rpx">
+        <view class="cp-row__period">
+          <text class="cp-row__label serif">{{row.label}}</text>
+          <text class="cp-row__range">{{row.range}}</text>
+        </view>
+        <view wx:for="{{row.cells}}" wx:for-item="cell" wx:key="date"
+          class="cp-cell {{cell.isToday ? 'cp-cell--today' : ''}}"
+          bindtap="onCellTap" data-date="{{cell.date}}" data-time="{{cell.seedTime}}">
+          <view class="cp-cell__empty" wx:if="{{cell.cards.length === 0}}">
+            <text>＋</text>
+          </view>
+          <view wx:for="{{cell.cards}}" wx:for-item="card" wx:key="id"
+            class="cp-card {{card.done ? 'cp-card--done' : ''}}"
+            style="top:{{card.topRpx}}rpx;height:{{card.cardH}}rpx;{{card.cardStyle}}"
+            catchtap="onCardTap" catchlongpress="onCardLongPress"
+            data-id="{{card.id}}">
+            <text class="cp-card__time" style="color:{{card.textColor}}">{{card.startTime}}</text>
+            <text class="cp-card__name" style="color:{{card.textColor}}">{{card.memberName}}</text>
+            <text class="cp-card__meta" wx:if="{{card.metaLabel}}" style="color:{{card.textColor}}">{{card.metaLabel}}</text>
           </view>
         </view>
       </view>
     </view>
-  </scroll-view>
+  </view>
+  </block>
+
+  <!-- ===== 月视图 ===== -->
+  <block wx:if="{{currentView === 'month'}}">
+  <view class="month-grid">
+    <view class="month-grid__head">
+      <view class="month-grid__weekday">一</view>
+      <view class="month-grid__weekday">二</view>
+      <view class="month-grid__weekday">三</view>
+      <view class="month-grid__weekday">四</view>
+      <view class="month-grid__weekday">五</view>
+      <view class="month-grid__weekday">六</view>
+      <view class="month-grid__weekday">日</view>
+    </view>
+    <view class="month-grid__body">
+      <view wx:for="{{monthDays}}" wx:key="date"
+        class="month-cell {{item.isToday ? 'month-cell--today' : ''}} {{item.isOutside ? 'month-cell--outside' : ''}}"
+        bindtap="onMonthCellTap" data-date="{{item.date}}">
+        <text class="month-cell__day {{item.isToday ? 'month-cell__day--today' : ''}} serif">{{item.day}}</text>
+        <view class="month-dots" wx:if="{{item.dots.length > 0}}">
+          <view wx:for="{{item.dots}}" wx:for-item="dot" wx:key="bg"
+            class="month-dot" style="background:{{dot.bg}}"></view>
+        </view>
+        <text class="month-count" wx:if="{{item.count > 3}}">{{item.count}}节</text>
+      </view>
+    </view>
+  </view>
+  </block>
   </view><!-- end swipe-wrap -->
 
-  <!-- 底部工具栏 -->
-  <view class="toolbar">
+  <!-- 底部工具栏（空状态时隐藏，避免与空状态CTA重复） -->
+  <view class="toolbar" wx:if="{{!(currentView === 'week' && isEmpty) && !(currentView === 'month' && monthIsEmpty)}}">
     <view class="toolbar__btn toolbar__btn--ghost" bindtap="onTextImport">
+      <text class="toolbar__icon">⇧</text>
       <text>批量导入</text>
     </view>
     <view class="toolbar__btn toolbar__btn--primary" bindtap="onAddSession">

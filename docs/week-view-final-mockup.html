@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>周视图方案总览 — 2主题 x 3密度</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: #f5f5f5;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+  padding: 40px 24px 80px;
+  color: #333;
+}
+
+h1 {
+  text-align: center;
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  color: #1a1a1a;
+}
+
+.subtitle {
+  text-align: center;
+  font-size: 14px;
+  color: #888;
+  margin-bottom: 40px;
+}
+
+.grid-container {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 32px 24px;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+@media (max-width: 860px) {
+  .grid-container {
+    grid-template-columns: 1fr;
+    max-width: 420px;
+  }
+}
+
+.frame-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.frame-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #666;
+  margin-bottom: 10px;
+  letter-spacing: 0.3px;
+}
+
+.phone-frame {
+  width: 375px;
+  height: 700px;
+  border-radius: 20px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.08);
+  overflow: hidden;
+  position: relative;
+  background: #fff;
+}
+
+/* Header */
+.frame-header {
+  height: 90px;
+  padding: 12px 16px 10px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.header-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.header-date {
+  font-size: 18px;
+  font-weight: 600;
+  color: #fff;
+  font-family: Georgia, "Times New Roman", serif;
+}
+
+.header-today-btn {
+  font-size: 11px;
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.6);
+  border-radius: 12px;
+  padding: 3px 10px;
+  background: transparent;
+}
+
+.header-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.header-toggle {
+  display: flex;
+  border: 1px solid rgba(255,255,255,0.4);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.toggle-item {
+  font-size: 10px;
+  color: rgba(255,255,255,0.7);
+  padding: 3px 8px;
+}
+
+.toggle-item.active {
+  background: rgba(255,255,255,0.2);
+  color: #fff;
+}
+
+.header-stats {
+  font-size: 11px;
+  color: rgba(255,255,255,0.8);
+}
+
+.header-arrows {
+  font-size: 14px;
+  color: rgba(255,255,255,0.7);
+  letter-spacing: 8px;
+}
+
+/* Day header */
+.day-header {
+  height: 44px;
+  display: flex;
+}
+
+.day-header-spacer {
+  width: 28px;
+  flex-shrink: 0;
+}
+
+.day-header-cell {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+
+.day-header-cell .weekday {
+  font-size: 11px;
+  color: rgba(255,255,255,0.7);
+}
+
+.day-header-cell .date-num {
+  font-size: 10px;
+  color: rgba(255,255,255,0.45);
+}
+
+.day-header-cell.today .weekday {
+  color: rgba(255,255,255,0.95);
+  font-weight: 600;
+}
+
+.day-header-cell.today .date-num {
+  color: rgba(255,255,255,0.7);
+}
+
+/* Grid area */
+.grid-area {
+  position: relative;
+  height: 460px;
+  display: flex;
+  overflow: hidden;
+}
+
+.time-column {
+  width: 28px;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.time-label {
+  position: absolute;
+  width: 100%;
+  text-align: center;
+  font-size: 9px;
+  transform: translateY(-50%);
+  color: rgba(255,255,255,0.85);
+  font-weight: 500;
+}
+
+.day-columns {
+  flex: 1;
+  display: flex;
+  position: relative;
+}
+
+.day-col {
+  flex: 1;
+  position: relative;
+  border-left: 1px solid var(--grid-line);
+}
+
+.day-col:first-child {
+  border-left: none;
+}
+
+.hour-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--grid-line);
+}
+
+/* Course cards */
+.course-card {
+  position: absolute;
+  left: 2px;
+  right: 2px;
+  border-radius: 4px;
+  border-left: 2px solid;
+  padding: 2px 3px;
+  overflow: hidden;
+  font-size: 10px;
+  line-height: 1.3;
+}
+
+.course-card .card-name {
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.course-card .card-time {
+  font-size: 8px;
+  opacity: 0.8;
+  white-space: nowrap;
+}
+
+.course-card .card-type {
+  font-size: 8px;
+  opacity: 0.7;
+  white-space: nowrap;
+}
+
+/* Overlap cards */
+.course-card.overlap-left {
+  right: 50%;
+}
+
+.course-card.overlap-right {
+  left: calc(50% + 1px);
+}
+
+/* Bottom toolbar */
+.bottom-toolbar {
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 0 20px;
+  border-top: 1px solid #eee;
+}
+
+.btn-import {
+  font-size: 12px;
+  padding: 8px 16px;
+  border-radius: 18px;
+  border: 1px solid #999;
+  background: transparent;
+  color: #555;
+}
+
+.btn-new {
+  font-size: 12px;
+  padding: 8px 18px;
+  border-radius: 18px;
+  border: none;
+  background: #2c2c2c;
+  color: #fff;
+  font-weight: 500;
+}
+
+/* TabBar */
+.tab-bar {
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  border-top: 1px solid #e5e5e5;
+  background: #fff;
+}
+
+.tab-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  font-size: 10px;
+  color: #999;
+}
+
+.tab-item.active {
+  color: #333;
+  font-weight: 600;
+}
+
+.tab-icon {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  background: currentColor;
+  opacity: 0.3;
+}
+
+.tab-item.active .tab-icon {
+  opacity: 0.6;
+}
+
+/* Summary section */
+.summary {
+  max-width: 900px;
+  margin: 48px auto 0;
+  background: #fff;
+  border-radius: 12px;
+  padding: 24px 28px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+}
+
+.summary h3 {
+  font-size: 16px;
+  margin-bottom: 12px;
+  color: #1a1a1a;
+}
+
+.summary p {
+  font-size: 13px;
+  color: #555;
+  line-height: 1.8;
+  margin-bottom: 6px;
+}
+
+.summary code {
+  background: #f0f0f0;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: #c0392b;
+}
+</style>
+</head>
+<body>
+
+<h1>周视图方案总览 — 2主题 x 3密度</h1>
+<p class="subtitle">每帧 375x700px 模拟真实 iPhone 可用区域 | 周一至周日 6月2日-6月8日</p>
+
+<div class="grid-container" id="grid"></div>
+
+<div class="summary">
+  <h3>结论与推荐</h3>
+  <p><strong>推荐：</strong>standard 密度 + 用户设置中已有切换入口 (<code>weekDensity</code>)</p>
+  <p><strong>实现要点：</strong>去掉 4 时段桶 &rarr; 连续时间轴，<code>rpxPerMinute = availH / totalMinutes</code></p>
+  <p><strong>密度切换：</strong>仅改变 timeRange 起止值，grid 高度恒定 460px，pxPerMin 自适应</p>
+  <p><strong>重叠处理：</strong>同 day 同时段卡片 side-by-side 平分宽度，无上下错位</p>
+</div>
+
+<script>
+// === Configuration ===
+const themes = {
+  'soft-color': {
+    label: '暖色 soft-color',
+    headerBg: '#704F5A',
+    dayHeaderBg: '#7A5862',
+    pageBg: '#FAF8F5',
+    gridLine: '#E8E4DE',
+    todayBg: '#FFF8F0',
+    timeLabelBg: '#5F4A43',
+    cards: [
+      { bg: '#C7D2FE', border: '#4F46E5', text: '#312E81' },
+      { bg: '#FECACA', border: '#DC2626', text: '#7F1D1D' },
+      { bg: '#A7F3D0', border: '#059669', text: '#064E3B' },
+      { bg: '#FED7AA', border: '#EA580C', text: '#7C2D12' },
+      { bg: '#E9D5FF', border: '#9333EA', text: '#581C87' },
+    ]
+  },
+  'class-plan': {
+    label: '冷色 class-plan',
+    headerBg: '#1E2352',
+    dayHeaderBg: '#252B5E',
+    pageBg: '#FFFFFF',
+    gridLine: '#E8E8EE',
+    todayBg: '#F0F5FF',
+    timeLabelBg: '#2A3070',
+    cards: [
+      { bg: '#FF4081', border: '#FF4081', text: '#FFFFFF' },
+      { bg: '#F0C040', border: '#F0C040', text: '#4A3800' },
+      { bg: '#26C6DA', border: '#26C6DA', text: '#003D47' },
+      { bg: '#EF5350', border: '#EF5350', text: '#FFFFFF' },
+      { bg: '#42A5F5', border: '#42A5F5', text: '#FFFFFF' },
+    ]
+  }
+};
+
+const densities = {
+  compact:  { label: '紧凑 compact',  startHour: 6,  endHour: 22, pxPerMin: 460/960 },
+  standard: { label: '标准 standard', startHour: 8,  endHour: 21, pxPerMin: 460/780 },
+  relaxed:  { label: '宽松 relaxed',  startHour: 8,  endHour: 18, pxPerMin: 460/600 },
+};
+
+const weekdays = ['周一','周二','周三','周四','周五','周六','周日'];
+const dates = [2,3,4,5,6,7,8];
+const todayIndex = 2; // Wednesday = index 2
+
+// Sample courses: [dayIndex(0=Mon), startHour, startMin, durationMin, name, colorIndex]
+const courses = [
+  [0, 9, 0, 60, '周文娟', 0],
+  [0, 14, 0, 90, '李明', 1],
+  [1, 10, 0, 60, '张三', 2],
+  [2, 9, 30, 45, '王芳', 3],
+  [3, 11, 0, 60, '陈伟', 4],
+  [4, 9, 0, 60, '小张', 1],
+  [4, 9, 0, 60, '刘洋', 0], // overlaps with 小张
+  [5, 16, 0, 90, '赵六', 2],
+];
+
+function formatTime(h, m) {
+  return String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0');
+}
+
+function getHourLabels(density) {
+  const d = densities[density];
+  if (density === 'compact') {
+    const labels = [];
+    for (let h = d.startHour; h <= d.endHour; h += 2) labels.push(h);
+    return labels;
+  }
+  const labels = [];
+  for (let h = d.startHour; h <= d.endHour; h++) labels.push(h);
+  return labels;
+}
+
+function buildFrame(themeKey, densityKey) {
+  const theme = themes[themeKey];
+  const density = densities[densityKey];
+  const gridH = 460;
+  const totalMin = (density.endHour - density.startHour) * 60;
+  const pxPerMin = gridH / totalMin;
+  const hourLabels = getHourLabels(densityKey);
+
+  let html = '';
+
+  // Header
+  html += `<div class="frame-header" style="background:${theme.headerBg}">`;
+  html += `<div class="header-top">`;
+  html += `<span class="header-date">6月2日 – 6月8日</span>`;
+  html += `<span class="header-today-btn">今天</span>`;
+  html += `</div>`;
+  html += `<div class="header-bottom">`;
+  html += `<div class="header-toggle"><span class="toggle-item active">周</span><span class="toggle-item">月</span></div>`;
+  html += `<span class="header-stats">5节 · 已完成2</span>`;
+  html += `<span class="header-arrows">&#8249; &#8250;</span>`;
+  html += `</div>`;
+  html += `</div>`;
+
+  // Day header
+  html += `<div class="day-header" style="background:${theme.dayHeaderBg}">`;
+  html += `<div class="day-header-spacer" style="background:${theme.dayHeaderBg}"></div>`;
+  for (let i = 0; i < 7; i++) {
+    const cls = i === todayIndex ? 'day-header-cell today' : 'day-header-cell';
+    const bg = i === todayIndex ? `background:rgba(255,255,255,0.08)` : '';
+    html += `<div class="${cls}" style="${bg}">`;
+    html += `<span class="weekday">${weekdays[i]}</span>`;
+    html += `<span class="date-num">${dates[i]}</span>`;
+    html += `</div>`;
+  }
+  html += `</div>`;
+
+  // Grid area
+  html += `<div class="grid-area" style="background:${theme.pageBg};--grid-line:${theme.gridLine}">`;
+
+  // Time column
+  html += `<div class="time-column" style="background:${theme.timeLabelBg}">`;
+  for (const h of hourLabels) {
+    const top = (h - density.startHour) * 60 * pxPerMin;
+    html += `<span class="time-label" style="top:${top}px">${h}</span>`;
+  }
+  html += `</div>`;
+
+  // Day columns
+  html += `<div class="day-columns">`;
+
+  // Hour lines (rendered once, spanning full width)
+  for (const h of hourLabels) {
+    const top = (h - density.startHour) * 60 * pxPerMin;
+    html += `<div class="hour-line" style="top:${top}px"></div>`;
+  }
+
+  for (let col = 0; col < 7; col++) {
+    const todayStyle = col === todayIndex ? `background:${theme.todayBg}` : '';
+    html += `<div class="day-col" style="${todayStyle}">`;
+
+    // Find courses for this day
+    const dayCourses = courses.filter(c => c[0] === col);
+
+    // Detect overlaps (simple: same start time)
+    const startMap = {};
+    dayCourses.forEach(c => {
+      const key = c[1] * 60 + c[2];
+      if (!startMap[key]) startMap[key] = [];
+      startMap[key].push(c);
+    });
+
+    dayCourses.forEach(c => {
+      const startMin = c[1] * 60 + c[2];
+      const rangeStartMin = density.startHour * 60;
+      const top = (startMin - rangeStartMin) * pxPerMin;
+      const height = c[3] * pxPerMin;
+
+      if (top + height < 0 || top > gridH) return; // completely outside
+
+      const cardColor = theme.cards[c[5]];
+      const overlapKey = c[1] * 60 + c[2];
+      const siblings = startMap[overlapKey];
+      let overlapClass = '';
+      if (siblings && siblings.length > 1) {
+        const idx = siblings.indexOf(c);
+        overlapClass = idx === 0 ? 'overlap-left' : 'overlap-right';
+      }
+
+      // Card content depends on density
+      let content = `<span class="card-name">${c[4]}</span>`;
+      if (densityKey === 'standard' || densityKey === 'relaxed') {
+        const endH = Math.floor((startMin + c[3]) / 60);
+        const endM = (startMin + c[3]) % 60;
+        content += `<span class="card-time">${formatTime(c[1], c[2])}-${formatTime(endH, endM)}</span>`;
+      }
+      if (densityKey === 'relaxed') {
+        content += `<span class="card-type">私教1v1</span>`;
+      }
+
+      html += `<div class="course-card ${overlapClass}" style="top:${Math.max(0, top)}px;height:${Math.min(height, gridH - Math.max(0, top))}px;background:${cardColor.bg};border-left-color:${cardColor.border};color:${cardColor.text}">${content}</div>`;
+    });
+
+    html += `</div>`;
+  }
+
+  html += `</div>`; // day-columns
+  html += `</div>`; // grid-area
+
+  // Bottom toolbar
+  html += `<div class="bottom-toolbar" style="background:${theme.pageBg}">`;
+  html += `<button class="btn-import">批量导入</button>`;
+  html += `<button class="btn-new">+ 新建</button>`;
+  html += `</div>`;
+
+  // TabBar
+  html += `<div class="tab-bar">`;
+  html += `<div class="tab-item active"><div class="tab-icon"></div><span>排课</span></div>`;
+  html += `<div class="tab-item"><div class="tab-icon"></div><span>会员</span></div>`;
+  html += `<div class="tab-item"><div class="tab-icon"></div><span>设置</span></div>`;
+  html += `</div>`;
+
+  return html;
+}
+
+// Render all 6 frames
+const container = document.getElementById('grid');
+const order = [
+  ['soft-color', 'compact'],
+  ['class-plan', 'compact'],
+  ['soft-color', 'standard'],
+  ['class-plan', 'standard'],
+  ['soft-color', 'relaxed'],
+  ['class-plan', 'relaxed'],
+];
+
+order.forEach(([themeKey, densityKey]) => {
+  const wrapper = document.createElement('div');
+  wrapper.className = 'frame-wrapper';
+
+  const label = document.createElement('div');
+  label.className = 'frame-label';
+  label.textContent = `${themes[themeKey].label} · ${densities[densityKey].label}`;
+  wrapper.appendChild(label);
+
+  const frame = document.createElement('div');
+  frame.className = 'phone-frame';
+  frame.innerHTML = buildFrame(themeKey, densityKey);
+  wrapper.appendChild(frame);
+
+  container.appendChild(wrapper);
+});
+</script>
+</body>
+</html>

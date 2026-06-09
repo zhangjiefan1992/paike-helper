@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>周视图 - 排课助手</title>
+<style>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", sans-serif;
+  background: #FFFFFF;
+  max-width: 375px;
+  margin: 0 auto;
+  overflow-x: hidden;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* === HEADER === */
+.header {
+  background: #1E2352;
+  color: #FFFFFF;
+  padding: 12px 12px 0;
+  flex-shrink: 0;
+}
+
+.header-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.date-range {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-today {
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.5);
+  color: #FFFFFF;
+  background: transparent;
+}
+
+.view-toggle {
+  display: flex;
+  background: rgba(255,255,255,0.15);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.view-toggle span {
+  font-size: 11px;
+  padding: 3px 10px;
+  color: rgba(255,255,255,0.7);
+}
+
+.view-toggle span.active {
+  background: rgba(255,255,255,0.25);
+  color: #FFFFFF;
+  border-radius: 10px;
+}
+
+.header-stats {
+  font-size: 12px;
+  color: rgba(255,255,255,0.7);
+  padding-bottom: 10px;
+}
+
+/* === DAY HEADER ROW === */
+.day-header-row {
+  display: flex;
+  border-bottom: 1px solid #E8E8EE;
+  flex-shrink: 0;
+  background: #FAFBFC;
+}
+
+.time-gutter-header {
+  width: 32px;
+  flex-shrink: 0;
+}
+
+.day-headers {
+  display: flex;
+  flex: 1;
+}
+
+.day-header {
+  flex: 1;
+  text-align: center;
+  padding: 6px 0;
+}
+
+.day-header .weekday {
+  font-size: 10px;
+  color: #999;
+  margin-bottom: 2px;
+}
+
+.day-header .date-num {
+  font-size: 13px;
+  font-weight: 600;
+  color: #333;
+  width: 24px;
+  height: 24px;
+  line-height: 24px;
+  margin: 0 auto;
+  border-radius: 50%;
+}
+
+.day-header.today .date-num {
+  background: #1E2352;
+  color: #FFFFFF;
+}
+
+.day-header.today .weekday {
+  color: #1E2352;
+  font-weight: 500;
+}
+
+/* === GRID BODY === */
+.grid-container {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  position: relative;
+}
+
+.grid-body {
+  display: flex;
+  position: relative;
+  height: 650px; /* 13 hours * 50px */
+}
+
+.time-gutter {
+  width: 32px;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.time-label {
+  position: absolute;
+  left: 0;
+  width: 32px;
+  text-align: center;
+  font-size: 10px;
+  color: #AAAAAA;
+  transform: translateY(-6px);
+}
+
+.day-columns {
+  display: flex;
+  flex: 1;
+  position: relative;
+}
+
+.day-column {
+  flex: 1;
+  position: relative;
+  border-left: 1px solid #F0F0F5;
+}
+
+.day-column.today {
+  background: #F0F5FF;
+}
+
+/* Hour grid lines */
+.hour-line {
+  position: absolute;
+  left: 32px;
+  right: 0;
+  height: 1px;
+  background: #E8E8EE;
+}
+
+/* Half-hour lines (lighter) */
+.half-hour-line {
+  position: absolute;
+  left: 32px;
+  right: 0;
+  height: 1px;
+  background: #F3F3F8;
+}
+
+/* === SESSION CARDS === */
+.session-card {
+  position: absolute;
+  border-radius: 4px;
+  padding: 3px 4px;
+  overflow: hidden;
+  font-size: 10px;
+  line-height: 1.3;
+  border-left: 3px solid;
+  cursor: pointer;
+}
+
+.session-card .card-name {
+  font-weight: 600;
+  font-size: 11px;
+  color: #333;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.session-card .card-time {
+  font-size: 9px;
+  color: #666;
+  margin-top: 1px;
+}
+
+/* Card color variants */
+.card-pink {
+  background: #FEE8E7;
+  border-left-color: #F28B82;
+}
+
+.card-blue {
+  background: #E3F2FD;
+  border-left-color: #64B5F6;
+}
+
+.card-green {
+  background: #E8F5E9;
+  border-left-color: #81C995;
+}
+
+.card-purple {
+  background: #F3E5F5;
+  border-left-color: #BA68C8;
+}
+
+.card-orange {
+  background: #FFF3E0;
+  border-left-color: #FFB74D;
+}
+
+/* === BOTTOM FAB === */
+.fab {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #1E2352;
+  color: #FFF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  box-shadow: 0 3px 8px rgba(30,35,82,0.3);
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-top">
+    <span class="date-range">6月2日 – 6月8日</span>
+    <div class="header-actions">
+      <span class="btn-today">今天</span>
+      <div class="view-toggle">
+        <span class="active">周</span>
+        <span>月</span>
+      </div>
+    </div>
+  </div>
+  <div class="header-stats">5节 · 已完成2</div>
+</div>
+
+<!-- DAY HEADER ROW -->
+<div class="day-header-row">
+  <div class="time-gutter-header"></div>
+  <div class="day-headers">
+    <div class="day-header">
+      <div class="weekday">周一</div>
+      <div class="date-num">2</div>
+    </div>
+    <div class="day-header">
+      <div class="weekday">周二</div>
+      <div class="date-num">3</div>
+    </div>
+    <div class="day-header today">
+      <div class="weekday">周三</div>
+      <div class="date-num">4</div>
+    </div>
+    <div class="day-header">
+      <div class="weekday">周四</div>
+      <div class="date-num">5</div>
+    </div>
+    <div class="day-header">
+      <div class="weekday">周五</div>
+      <div class="date-num">6</div>
+    </div>
+    <div class="day-header">
+      <div class="weekday">周六</div>
+      <div class="date-num">7</div>
+    </div>
+    <div class="day-header">
+      <div class="weekday">周日</div>
+      <div class="date-num">8</div>
+    </div>
+  </div>
+</div>
+
+<!-- GRID BODY -->
+<div class="grid-container">
+  <!-- Hour lines (positioned absolute, behind everything) -->
+  <!-- 13 hours: 8,9,10,...,21. Each hour = 50px -->
+  <div class="hour-line" style="top: 0px;"></div>
+  <div class="half-hour-line" style="top: 25px;"></div>
+  <div class="hour-line" style="top: 50px;"></div>
+  <div class="half-hour-line" style="top: 75px;"></div>
+  <div class="hour-line" style="top: 100px;"></div>
+  <div class="half-hour-line" style="top: 125px;"></div>
+  <div class="hour-line" style="top: 150px;"></div>
+  <div class="half-hour-line" style="top: 175px;"></div>
+  <div class="hour-line" style="top: 200px;"></div>
+  <div class="half-hour-line" style="top: 225px;"></div>
+  <div class="hour-line" style="top: 250px;"></div>
+  <div class="half-hour-line" style="top: 275px;"></div>
+  <div class="hour-line" style="top: 300px;"></div>
+  <div class="half-hour-line" style="top: 325px;"></div>
+  <div class="hour-line" style="top: 350px;"></div>
+  <div class="half-hour-line" style="top: 375px;"></div>
+  <div class="hour-line" style="top: 400px;"></div>
+  <div class="half-hour-line" style="top: 425px;"></div>
+  <div class="hour-line" style="top: 450px;"></div>
+  <div class="half-hour-line" style="top: 475px;"></div>
+  <div class="hour-line" style="top: 500px;"></div>
+  <div class="half-hour-line" style="top: 525px;"></div>
+  <div class="hour-line" style="top: 550px;"></div>
+  <div class="half-hour-line" style="top: 575px;"></div>
+  <div class="hour-line" style="top: 600px;"></div>
+  <div class="half-hour-line" style="top: 625px;"></div>
+  <div class="hour-line" style="top: 650px;"></div>
+
+  <div class="grid-body">
+    <!-- Time gutter with hour labels -->
+    <div class="time-gutter">
+      <!-- top offset: (hour - 8) * 50 -->
+      <div class="time-label" style="top: 0px;">8</div>
+      <div class="time-label" style="top: 50px;">9</div>
+      <div class="time-label" style="top: 100px;">10</div>
+      <div class="time-label" style="top: 150px;">11</div>
+      <div class="time-label" style="top: 200px;">12</div>
+      <div class="time-label" style="top: 250px;">13</div>
+      <div class="time-label" style="top: 300px;">14</div>
+      <div class="time-label" style="top: 350px;">15</div>
+      <div class="time-label" style="top: 400px;">16</div>
+      <div class="time-label" style="top: 450px;">17</div>
+      <div class="time-label" style="top: 500px;">18</div>
+      <div class="time-label" style="top: 550px;">19</div>
+      <div class="time-label" style="top: 600px;">20</div>
+      <div class="time-label" style="top: 650px;">21</div>
+    </div>
+
+    <!-- Day columns -->
+    <div class="day-columns">
+      <!-- Monday (6/2) -->
+      <div class="day-column">
+        <!-- 09:00, 60min, 周文娟, pink -->
+        <!-- top: (9-8)*50 = 50px, height: 60*(50/60) = 50px -->
+        <div class="session-card card-pink" style="top: 50px; left: 2px; right: 2px; height: 50px;">
+          <div class="card-name">周文娟</div>
+          <div class="card-time">09:00</div>
+        </div>
+        <!-- 14:00, 90min, 李明, blue -->
+        <!-- top: (14-8)*50 = 300px, height: 90*(50/60) = 75px -->
+        <div class="session-card card-blue" style="top: 300px; left: 2px; right: 2px; height: 75px;">
+          <div class="card-name">李明</div>
+          <div class="card-time">14:00</div>
+        </div>
+      </div>
+
+      <!-- Tuesday (6/3) -->
+      <div class="day-column">
+        <!-- 10:00, 60min, 张三, green -->
+        <!-- top: (10-8)*50 = 100px, height: 50px -->
+        <div class="session-card card-green" style="top: 100px; left: 2px; right: 2px; height: 50px;">
+          <div class="card-name">张三</div>
+          <div class="card-time">10:00</div>
+        </div>
+      </div>
+
+      <!-- Wednesday (6/4) — TODAY -->
+      <div class="day-column today">
+        <!-- 09:30, 45min, 王芳, purple -->
+        <!-- top: (9.5-8)*50 = 75px, height: 45*(50/60) = 37.5px -->
+        <div class="session-card card-purple" style="top: 75px; left: 2px; right: 2px; height: 37px;">
+          <div class="card-name">王芳</div>
+          <div class="card-time">09:30</div>
+        </div>
+        <!-- 10:30, 60min, 陈伟, orange -->
+        <!-- top: (10.5-8)*50 = 125px, height: 50px -->
+        <div class="session-card card-orange" style="top: 125px; left: 2px; right: 2px; height: 50px;">
+          <div class="card-name">陈伟</div>
+          <div class="card-time">10:30</div>
+        </div>
+      </div>
+
+      <!-- Thursday (6/5) -->
+      <div class="day-column">
+      </div>
+
+      <!-- Friday (6/6) — OVERLAPPING CARDS -->
+      <div class="day-column">
+        <!-- 09:00, 60min, 小张, blue — left half -->
+        <!-- top: 50px, height: 50px -->
+        <div class="session-card card-blue" style="top: 50px; left: 1px; width: calc(50% - 2px); height: 50px;">
+          <div class="card-name">小张</div>
+          <div class="card-time">09:00</div>
+        </div>
+        <!-- 09:00, 60min, 刘洋, pink — right half -->
+        <div class="session-card card-pink" style="top: 50px; left: calc(50% + 1px); width: calc(50% - 2px); height: 50px;">
+          <div class="card-name">刘洋</div>
+          <div class="card-time">09:00</div>
+        </div>
+      </div>
+
+      <!-- Saturday (6/7) -->
+      <div class="day-column">
+        <!-- 16:00, 90min, 赵六, green -->
+        <!-- top: (16-8)*50 = 400px, height: 75px -->
+        <div class="session-card card-green" style="top: 400px; left: 2px; right: 2px; height: 75px;">
+          <div class="card-name">赵六</div>
+          <div class="card-time">16:00</div>
+        </div>
+      </div>
+
+      <!-- Sunday (6/8) -->
+      <div class="day-column">
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FAB Button -->
+<div class="fab">+</div>
+
+</body>
+</html>

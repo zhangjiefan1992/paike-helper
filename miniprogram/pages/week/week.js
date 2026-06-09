@@ -1,68 +1,223 @@
 const storage = require('../../utils/storage')
 const dateUtil = require('../../utils/dateUtil')
 const textImportExport = require('../../utils/textImportExport')
+const themeUtil = require('../../utils/theme')
 
-const CATEGORY_MAP = {
-  '普拉提': 'pilates',
-  '瑜伽': 'yoga',
-  '体能训练': 'fitness',
-  '拉伸放松': 'fitness',
-}
-
-const THEME_CONFIGS = {
-  'soft-color': {
-    pilates: { bg: '#E8EDFF', border: 'transparent', dot: '#3B52A5', typeColor: '#3B52A5' },
-    yoga: { bg: '#FFF0E6', border: 'transparent', dot: '#B85C1F', typeColor: '#B85C1F' },
-    fitness: { bg: '#E6F9F0', border: 'transparent', dot: '#1A7A4C', typeColor: '#1A7A4C' },
-    group: { bg: '#F3E8FF', border: 'transparent', dot: '#7C3AED', typeColor: '#7C3AED' },
-    isGradient: false,
-  },
-  'candy-gradient': {
-    pilates: { bg: 'linear-gradient(135deg, #667EEA, #764BA2)', border: 'transparent', dot: 'rgba(255,255,255,0.8)', typeColor: '#fff' },
-    yoga: { bg: 'linear-gradient(135deg, #F093FB, #F5576C)', border: 'transparent', dot: 'rgba(255,255,255,0.8)', typeColor: '#fff' },
-    fitness: { bg: 'linear-gradient(135deg, #4FACFE, #00F2FE)', border: 'transparent', dot: 'rgba(255,255,255,0.8)', typeColor: '#fff' },
-    group: { bg: 'linear-gradient(135deg, #43E97B, #38F9D7)', border: 'transparent', dot: 'rgba(255,255,255,0.8)', typeColor: '#fff' },
-    isGradient: true,
-  },
-  'airy-tint': {
-    pilates: { bg: '#F0F4FF', border: '#C7D2FE', dot: '#6366F1', typeColor: '#1E293B' },
-    yoga: { bg: '#FFF7ED', border: '#FED7AA', dot: '#F59E0B', typeColor: '#1E293B' },
-    fitness: { bg: '#ECFDF5', border: '#A7F3D0', dot: '#10B981', typeColor: '#1E293B' },
-    group: { bg: '#FAF5FF', border: '#E9D5FF', dot: '#A855F7', typeColor: '#1E293B' },
-    isGradient: false,
-  },
+const MEMBER_COLORS = {
+  'soft-color': [
+    { bg: '#C85F3F', border: '#8F3A25', text: '#FFFFFF' },
+    { bg: '#6F8A63', border: '#4E6844', text: '#FFFFFF' },
+    { bg: '#D6A53A', border: '#9E7420', text: '#2B2118' },
+    { bg: '#8B5E4A', border: '#5E3F31', text: '#FFFFFF' },
+    { bg: '#7E4E5F', border: '#5A3241', text: '#FFFFFF' },
+    { bg: '#527A75', border: '#365A56', text: '#FFFFFF' },
+    { bg: '#D9B08C', border: '#A87956', text: '#2F2118' },
+    { bg: '#A93D4F', border: '#762636', text: '#FFFFFF' }
+  ],
+  'class-plan': [
+    { bg: '#2F9AF5', border: '#1478D4', text: '#FFFFFF' },
+    { bg: '#39A65A', border: '#1F7D3B', text: '#FFFFFF' },
+    { bg: '#F5C037', border: '#D29413', text: '#1B2544' },
+    { bg: '#15B5C6', border: '#07899A', text: '#FFFFFF' },
+    { bg: '#8D48DD', border: '#6E2DBB', text: '#FFFFFF' },
+    { bg: '#FF8A1F', border: '#D96500', text: '#27180A' },
+    { bg: '#F05A7A', border: '#C83B5A', text: '#FFFFFF' },
+    { bg: '#6078EA', border: '#3D55C6', text: '#FFFFFF' }
+  ]
 }
 
 const WEEKDAYS = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
 
-function getCategory(courseType) {
-  if (!courseType) return 'pilates'
-  if (courseType.includes('团课')) return 'group'
-  for (const [key, val] of Object.entries(CATEGORY_MAP)) {
-    if (courseType.includes(key)) return val
+function simpleHash(str) {
+  let h = 0
+  for (let i = 0; i < str.length; i++) {
+    h = ((h << 5) - h + str.charCodeAt(i)) | 0
   }
-  return 'pilates'
+  return Math.abs(h)
 }
 
-function buildCardStyle(themeConfig, category) {
-  const tc = themeConfig[category] || themeConfig.pilates
-  let style = 'background: ' + tc.bg + ';'
-  if (tc.border && tc.border !== 'transparent') {
-    style += ' border-color: ' + tc.border + ';'
+function getMemberColor(memberId, theme) {
+  const palette = MEMBER_COLORS[theme] || MEMBER_COLORS['soft-color']
+  return palette[simpleHash(memberId || '') % 8]
+}
+
+function getCourseAbbr(courseType) {
+  if (!courseType) return ''
+  const isGroup = courseType.includes('团')
+  const suffix = isGroup ? '团' : '私'
+  const name = courseType.replace(/私教|团课|课程/g, '')
+  return (name.length >= 2 ? name.slice(0, 1) : name) + suffix
+}
+
+const TIME_PERIODS = [
+  { key: 'morning', label: '上午', range: '07:00-12:00', startMin: 7 * 60, endMin: 12 * 60, seedTime: '09:00', weight: 5 },
+  { key: 'noon', label: '中午', range: '12:00-14:00', startMin: 12 * 60, endMin: 14 * 60, seedTime: '12:00', weight: 2 },
+  { key: 'afternoon', label: '下午', range: '14:00-18:00', startMin: 14 * 60, endMin: 18 * 60, seedTime: '15:00', weight: 4 },
+  { key: 'evening', label: '晚上', range: '18:00-22:00', startMin: 18 * 60, endMin: 22 * 60, seedTime: '19:00', weight: 4 }
+]
+
+function parseTimeToMin(timeStr) {
+  if (!timeStr || !timeStr.includes(':')) return 480
+  const [h, m] = timeStr.split(':').map(Number)
+  if (isNaN(h) || isNaN(m)) return 480
+  return h * 60 + (m || 0)
+}
+
+function formatHourRange(startMin, endMin) {
+  const startH = Math.floor(startMin / 60)
+  const endH = Math.ceil(endMin / 60)
+  return String(startH).padStart(2, '0') + ':00-' + String(endH).padStart(2, '0') + ':00'
+}
+
+function getDynamicPeriods(sessions) {
+  let morningStart = TIME_PERIODS[0].startMin
+  let eveningEnd = TIME_PERIODS[3].endMin
+
+  sessions.forEach(s => {
+    if (s.status === 'cancelled') return
+    const startMin = parseTimeToMin(s.startTime)
+    const endMin = startMin + (s.duration || 60)
+    if (startMin < morningStart) {
+      morningStart = Math.max(0, Math.floor(startMin / 60) * 60)
+    }
+    if (endMin > eveningEnd) {
+      eveningEnd = Math.min(24 * 60, Math.ceil(endMin / 60) * 60)
+    }
+  })
+
+  return TIME_PERIODS.map(period => {
+    const p = Object.assign({}, period)
+    if (p.key === 'morning') {
+      p.startMin = morningStart
+      p.range = formatHourRange(p.startMin, p.endMin)
+      p.weight = Math.max(2, (p.endMin - p.startMin) / 60)
+      p.seedTime = p.startMin <= 6 * 60 ? '06:00' : '09:00'
+    } else if (p.key === 'evening') {
+      p.endMin = eveningEnd
+      p.range = formatHourRange(p.startMin, p.endMin)
+      p.weight = Math.max(2, (p.endMin - p.startMin) / 60)
+    }
+    return p
+  })
+}
+
+function getPeriodIndex(startTime, periods) {
+  const min = parseTimeToMin(startTime)
+  const list = periods || TIME_PERIODS
+  const idx = list.findIndex(p => min >= p.startMin && min < p.endMin)
+  if (idx >= 0) return idx
+  return min < list[0].startMin ? 0 : list.length - 1
+}
+
+function getDensityConfig(density) {
+  if (density === 'minimal') {
+    return { cardH: 54, gap: 6, emptyRowH: 88, rowPad: 12 }
   }
-  return style
+  if (density === 'detailed') {
+    return { cardH: 76, gap: 8, emptyRowH: 106, rowPad: 14 }
+  }
+  return { cardH: 68, gap: 7, emptyRowH: 98, rowPad: 14 }
+}
+
+function getBoardBodyHeightRpx() {
+  const wInfo = wx.getWindowInfo()
+  const rpxRatio = 750 / wInfo.windowWidth
+  const safeBottom = wInfo.safeArea ? (wInfo.screenHeight - wInfo.safeArea.bottom) * rpxRatio : 0
+  const headerH = 178
+  const gridHeadH = 76
+  const toolbarH = 150 + safeBottom
+  return Math.max(360, Math.round(wInfo.windowHeight * rpxRatio - headerH - gridHeadH - toolbarH))
+}
+
+function clamp(num, min, max) {
+  return Math.max(min, Math.min(max, num))
+}
+
+function layoutCardsByTime(row, densityConfig) {
+  const period = row.period
+  if (!period) return
+
+  const pad = densityConfig.rowPad
+  const cardH = densityConfig.cardH
+  const gap = densityConfig.gap
+  const maxTop = Math.max(pad, row.rowHeightRpx - pad - cardH)
+  const availableTop = Math.max(1, maxTop - pad)
+  const periodDuration = Math.max(1, period.endMin - period.startMin)
+
+  row.cells.forEach(cell => {
+    if (!cell.cards.length) return
+
+    cell.cards.forEach(card => {
+      const startMin = clamp(parseTimeToMin(card.startTime), period.startMin, period.endMin)
+      const ratio = (startMin - period.startMin) / periodDuration
+      card.topRpx = Math.round(pad + ratio * availableTop)
+    })
+
+    cell.cards.sort((a, b) => {
+      if (a.topRpx === b.topRpx) return a.startTime.localeCompare(b.startTime)
+      return a.topRpx - b.topRpx
+    })
+
+    for (let i = 1; i < cell.cards.length; i++) {
+      const prev = cell.cards[i - 1]
+      const current = cell.cards[i]
+      current.topRpx = Math.max(current.topRpx, prev.topRpx + cardH + gap)
+    }
+
+    const last = cell.cards[cell.cards.length - 1]
+    if (last.topRpx > maxTop) {
+      const overflow = last.topRpx - maxTop
+      cell.cards.forEach(card => {
+        card.topRpx = card.topRpx - overflow
+      })
+    }
+
+    const first = cell.cards[0]
+    const lastAfterShift = cell.cards[cell.cards.length - 1]
+    if (first.topRpx < pad || lastAfterShift.topRpx > maxTop) {
+      cell.cards.forEach((card, idx) => {
+        card.topRpx = pad + idx * (cardH + gap)
+      })
+    }
+  })
+}
+
+function updateRowsForDensity(cpRows, densityConfig) {
+  cpRows.forEach(row => {
+    let maxCards = 0
+    row.cells.forEach(cell => {
+      cell.cards.sort((a, b) => a.startTime.localeCompare(b.startTime))
+      cell.cards.forEach(card => { card.cardH = densityConfig.cardH })
+      maxCards = Math.max(maxCards, cell.cards.length)
+    })
+    if (maxCards === 0) {
+      row.minHeightRpx = densityConfig.emptyRowH
+    } else {
+      row.minHeightRpx = Math.max(
+        densityConfig.emptyRowH,
+        densityConfig.rowPad * 2 + maxCards * densityConfig.cardH + (maxCards - 1) * densityConfig.gap
+      )
+    }
+  })
+  return cpRows.reduce((sum, row) => sum + row.minHeightRpx, 0)
 }
 
 Page({
   data: {
+    currentView: 'week',
     currentTheme: 'airy-tint',
+    weekDensity: 'standard',
     weekDays: [],
     dayCards: {},
+    cpRows: [],
     stats: { total: 0, completed: 0, memberCount: 0 },
     isEmpty: true,
     todayLabel: '',
     rangeLabel: '',
-    scrollTarget: '',
+    monthDays: [],
+    monthStats: { total: 0, completed: 0, memberCount: 0 },
+    monthLabel: '',
+    monthIsEmpty: true,
     swipeTransform: '',
     swipeAnimating: false,
     showImportModal: false,
@@ -77,21 +232,31 @@ Page({
   },
 
   onShow() {
-    this.loadTheme()
-    this.loadWeek(this._currentDate || new Date())
+    this.loadConfig()
+    this._reload()
   },
 
   onPullDownRefresh() {
-    this.loadTheme()
-    this.loadWeek(this._currentDate || new Date())
+    this.loadConfig()
+    this._reload()
     wx.stopPullDownRefresh()
   },
 
-  loadTheme() {
-    const config = storage.getConfig()
-    if (config.weekTheme && THEME_CONFIGS[config.weekTheme]) {
-      this.setData({ currentTheme: config.weekTheme })
+  _reload() {
+    const d = this._currentDate || new Date()
+    if (this.data.currentView === 'month') {
+      this.loadMonth(d)
+    } else {
+      this.loadWeek(d)
     }
+  },
+
+  loadConfig() {
+    const config = storage.getConfig()
+    const savedTheme = themeUtil.applyAppTheme(config)
+    const theme = savedTheme && MEMBER_COLORS[savedTheme] ? savedTheme : 'soft-color'
+    const density = config.weekDensity || 'standard'
+    this.setData({ currentTheme: theme, weekDensity: density })
   },
 
   loadWeek(date) {
@@ -101,41 +266,122 @@ Page({
     const memberMap = {}
     members.forEach(m => { memberMap[m.id] = m })
 
-    const themeConfig = THEME_CONFIGS[this.data.currentTheme] || THEME_CONFIGS['airy-tint']
+    const theme = this.data.currentTheme
+    const density = this.data.weekDensity
+    let densityConfig = getDensityConfig(density)
     const memberIds = new Set()
+    const periods = getDynamicPeriods(sessions)
 
     const dayCards = {}
     week.days.forEach(d => { dayCards[d.date] = [] })
 
+    const cpRows = periods.map(period => ({
+      key: period.key,
+      label: period.label,
+      range: period.range,
+      seedTime: period.seedTime,
+      weight: period.weight,
+      period,
+      rowHeightRpx: densityConfig.emptyRowH,
+      minHeightRpx: densityConfig.emptyRowH,
+      hasCourse: false,
+      cells: week.days.map(d => ({
+        date: d.date,
+        periodKey: period.key,
+        seedTime: period.seedTime,
+        isToday: d.isToday,
+        cards: []
+      }))
+    }))
+
     sessions.forEach(s => {
       if (s.status === 'cancelled') return
       const member = memberMap[s.memberId]
-      const category = getCategory(s.courseType)
-      const tc = themeConfig[category] || themeConfig.pilates
+      const colorSeed = s.memberId || (s.memberIds || []).join('-') || s.courseType || s.id
+      const color = getMemberColor(colorSeed, theme)
 
       if (s.memberId) memberIds.add(s.memberId)
       if (s.memberIds) s.memberIds.forEach(id => memberIds.add(id))
 
+      const memberName = member ? member.name : (s.classMode === 'group' ? ((s.memberIds || []).length || '') + '人团课' : '未选会员')
+      const courseAbbr = getCourseAbbr(s.courseType)
+      let line2 = ''
+      if (density === 'standard') line2 = courseAbbr
+      else if (density === 'detailed') line2 = courseAbbr
+
+      const metaParts = []
+      if (line2) metaParts.push(line2)
+      if (density === 'detailed' && s.location) metaParts.push(s.location)
+
+      const cardStyle = '--card-accent:' + color.border + ';background-color:' + color.bg + ';'
+
       if (dayCards[s.date]) {
-        dayCards[s.date].push({
+        const card = {
           id: s.id,
           startTime: s.startTime,
-          duration: s.duration || 60,
-          courseType: s.courseType || '课程',
-          displayName: member ? member.name : (s.classMode === 'group' ? (s.memberIds ? s.memberIds.length + '人' : '') : ''),
+          duration: s.duration,
+          memberName,
+          line2,
+          courseLabel: s.courseType || '课程',
+          metaLabel: metaParts.join(' · '),
           location: s.location || '',
-          status: s.status || 'scheduled',
-          category,
-          dotColor: tc.dot,
           done: s.status === 'completed',
-          cardStyle: buildCardStyle(themeConfig, category),
-        })
+          cardStyle,
+          textColor: color.text,
+          cardH: densityConfig.cardH
+        }
+        dayCards[s.date].push(card)
+
+        const periodIndex = getPeriodIndex(s.startTime, periods)
+        const dayIndex = week.days.findIndex(d => d.date === s.date)
+        if (dayIndex >= 0) {
+          cpRows[periodIndex].hasCourse = true
+          cpRows[periodIndex].cells[dayIndex].cards.push(card)
+        }
       }
     })
 
     Object.values(dayCards).forEach(arr => {
       arr.sort((a, b) => a.startTime.localeCompare(b.startTime))
     })
+    const boardBodyH = getBoardBodyHeightRpx()
+    let minTotalH = updateRowsForDensity(cpRows, densityConfig)
+    if (minTotalH > boardBodyH) {
+      const scale = clamp(boardBodyH / minTotalH, 0.58, 0.95)
+      densityConfig = {
+        cardH: Math.max(44, Math.floor(densityConfig.cardH * scale)),
+        gap: Math.max(4, Math.floor(densityConfig.gap * scale)),
+        emptyRowH: Math.max(66, Math.floor(densityConfig.emptyRowH * scale)),
+        rowPad: Math.max(8, Math.floor(densityConfig.rowPad * scale))
+      }
+      minTotalH = updateRowsForDensity(cpRows, densityConfig)
+    }
+
+    if (minTotalH > boardBodyH) {
+      const scale = boardBodyH / minTotalH
+      let usedH = 0
+      cpRows.forEach((row, idx) => {
+        const h = idx === cpRows.length - 1
+          ? boardBodyH - usedH
+          : Math.max(58, Math.floor(row.minHeightRpx * scale))
+        usedH += h
+        row.rowHeightRpx = h
+      })
+    } else if (minTotalH === boardBodyH) {
+      cpRows.forEach(row => { row.rowHeightRpx = row.minHeightRpx })
+    } else {
+      const extraH = boardBodyH - minTotalH
+      const weightTotal = cpRows.reduce((sum, row) => sum + row.weight, 0)
+      let usedExtra = 0
+      cpRows.forEach((row, idx) => {
+        const extra = idx === cpRows.length - 1
+          ? extraH - usedExtra
+          : Math.round(extraH * row.weight / weightTotal)
+        usedExtra += extra
+        row.rowHeightRpx = row.minHeightRpx + extra
+      })
+    }
+    cpRows.forEach(row => layoutCardsByTime(row, densityConfig))
 
     let completed = 0
     sessions.forEach(s => { if (s.status === 'completed') completed++ })
@@ -145,28 +391,136 @@ Page({
     const s = week.days[0], e = week.days[6]
     const rangeLabel = parseInt(s.date.slice(5, 7)) + '月' + s.dayNum + '日 – ' + parseInt(e.date.slice(5, 7)) + '月' + e.dayNum + '日'
 
-    const todayStr = dateUtil.toDateStr(now)
-    let scrollTarget = ''
-    week.days.forEach(d => {
-      if (d.date === todayStr) scrollTarget = 'day-' + d.date
-    })
-
     this._currentDate = date
     this._weekDays = week.days
     this.setData({
       weekDays: week.days,
       dayCards,
+      cpRows,
       stats: { total: sessions.length, completed, memberCount: memberIds.size },
       isEmpty: sessions.length === 0,
       todayLabel,
       rangeLabel,
-      scrollTarget,
     })
   },
 
   goToday() {
     this._currentDate = new Date()
-    this.loadWeek(this._currentDate)
+    this._reload()
+  },
+
+  onToggleEarly() {
+    this._reload()
+  },
+
+  onSwitchView(e) {
+    const view = e.currentTarget.dataset.view
+    if (view === this.data.currentView) return
+    this.setData({ currentView: view })
+    wx.vibrateShort({ type: 'light' })
+    this._reload()
+  },
+
+  // === 月视图 ===
+
+  loadMonth(date) {
+    const d = new Date(date)
+    const year = d.getFullYear()
+    const month = d.getMonth()
+    const firstDay = new Date(year, month, 1)
+    const lastDay = new Date(year, month + 1, 0)
+    const daysInMonth = lastDay.getDate()
+
+    const startDow = (firstDay.getDay() + 6) % 7
+    const todayStr = dateUtil.toDateStr(new Date())
+
+    const range = dateUtil.getMonthRange(date)
+    const sessions = storage.getSessionsByDateRange(range.start, range.end)
+    const theme = this.data.currentTheme
+
+    const dayCounts = {}
+    const dayColors = {}
+    const memberIds = new Set()
+    let completed = 0
+    sessions.forEach(s => {
+      if (s.status === 'cancelled') return
+      const dayNum = parseInt(s.date.slice(8, 10), 10)
+      dayCounts[dayNum] = (dayCounts[dayNum] || 0) + 1
+      if (!dayColors[dayNum]) dayColors[dayNum] = []
+      if (dayColors[dayNum].length < 3) {
+        const c = getMemberColor(s.memberId, theme)
+        dayColors[dayNum].push(c.bg)
+      }
+      if (s.memberId) memberIds.add(s.memberId)
+      if (s.memberIds) s.memberIds.forEach(id => memberIds.add(id))
+      if (s.status === 'completed') completed++
+    })
+
+    const monthDays = []
+
+    const prevMonth = new Date(year, month, 0)
+    const prevDays = prevMonth.getDate()
+    for (let i = startDow - 1; i >= 0; i--) {
+      const day = prevDays - i
+      const pd = new Date(year, month - 1, day)
+      monthDays.push({ day, date: dateUtil.toDateStr(pd), isToday: false, isOutside: true, dots: [], count: 0 })
+    }
+
+    for (let day = 1; day <= daysInMonth; day++) {
+      const dateStr = dateUtil.toDateStr(new Date(year, month, day))
+      const count = dayCounts[day] || 0
+      const dots = (dayColors[day] || []).map(bg => ({ bg }))
+      monthDays.push({ day, date: dateStr, isToday: dateStr === todayStr, isOutside: false, dots, count })
+    }
+
+    const totalCells = startDow + daysInMonth
+    const remaining = (7 - (totalCells % 7)) % 7
+    for (let day = 1; day <= remaining; day++) {
+      const nd = new Date(year, month + 1, day)
+      monthDays.push({ day, date: dateUtil.toDateStr(nd), isToday: false, isOutside: true, dots: [], count: 0 })
+    }
+
+    const monthLabel = year + '年' + (month + 1) + '月'
+    const now = new Date()
+    const todayLabel = (now.getMonth() + 1) + '月' + now.getDate() + '日'
+
+    this._currentDate = date
+    this.setData({
+      monthDays,
+      monthLabel,
+      monthIsEmpty: sessions.length === 0,
+      monthStats: { total: sessions.length, completed, memberCount: memberIds.size },
+      rangeLabel: monthLabel,
+      todayLabel,
+    })
+  },
+
+  onPrevMonth() {
+    const d = new Date(this._currentDate)
+    d.setMonth(d.getMonth() - 1, 1)
+    this.loadMonth(d)
+  },
+
+  onNextMonth() {
+    const d = new Date(this._currentDate)
+    d.setMonth(d.getMonth() + 1, 1)
+    this.loadMonth(d)
+  },
+
+  onMonthCellTap(e) {
+    const date = e.currentTarget.dataset.date
+    if (!date) return
+    wx.navigateTo({ url: '/pages/day/day?date=' + date })
+  },
+
+  onPrev() {
+    if (this.data.currentView === 'month') this.onPrevMonth()
+    else this.onPrevWeek()
+  },
+
+  onNext() {
+    if (this.data.currentView === 'month') this.onNextMonth()
+    else this.onNextWeek()
   },
 
   onPrevWeek() {
@@ -188,7 +542,9 @@ Page({
 
   onCellTap(e) {
     const date = e.currentTarget.dataset.date
-    wx.navigateTo({ url: '/pages/session/session?date=' + date })
+    const time = e.currentTarget.dataset.time
+    const query = time ? ('?date=' + date + '&time=' + time) : ('?date=' + date)
+    wx.navigateTo({ url: '/pages/session/session' + query })
   },
 
   onCardTap(e) {
@@ -237,7 +593,7 @@ Page({
           wx.navigateTo({ url: '/pages/session/session?id=' + id })
           return
         }
-        this.loadWeek(this._currentDate || new Date())
+        this._reload()
       }
     })
   },
@@ -315,7 +671,7 @@ Page({
       })
 
       setTimeout(() => {
-        if (dir > 0) { this.onNextWeek() } else { this.onPrevWeek() }
+        if (dir > 0) { this.onNext() } else { this.onPrev() }
         this.setData({
           swipeAnimating: false,
           swipeTransform: 'transform: translateX(' + (-flyTo * 0.3) + 'px)'
@@ -355,7 +711,7 @@ Page({
                 days.forEach(d => { storage.deleteSessionsByDate(d.date) })
                 wx.vibrateShort({ type: 'medium' })
                 wx.showToast({ title: '已清除', icon: 'success' })
-                this.loadWeek(this._currentDate || new Date())
+                this._reload()
               }
             }
           })
@@ -495,6 +851,19 @@ Page({
     this.setData({ showImportModal: false })
     wx.vibrateShort({ type: 'medium' })
     wx.showToast({ title: '成功导入 ' + selected.length + ' 节', icon: 'success' })
-    this.loadWeek(this._currentDate || new Date())
+    this._reload()
+  },
+
+  onShareAppMessage() {
+    return {
+      title: '排课助手 · 轻松管理你的私教课程',
+      path: '/pages/week/week',
+    }
+  },
+
+  onShareTimeline() {
+    return {
+      title: '排课助手 · 轻松管理你的私教课程',
+    }
   },
 })

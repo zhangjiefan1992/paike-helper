@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>周视图信息密度方案对比</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+  background: #f5f5f7;
+  color: #1d1d1f;
+  padding: 40px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.page-title {
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  text-align: center;
+}
+.page-subtitle {
+  font-size: 14px;
+  color: #6e6e73;
+  margin-bottom: 40px;
+  text-align: center;
+}
+.variant-section {
+  margin-bottom: 40px;
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.variant-label {
+  width: 100%;
+  background: #fff;
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin-bottom: 16px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+.variant-label h2 {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.variant-label p {
+  font-size: 13px;
+  color: #6e6e73;
+}
+.phone-frame {
+  width: 375px;
+  background: #fff;
+  border-radius: 24px;
+  overflow: hidden;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.05);
+  position: relative;
+}
+/* Header */
+.week-header {
+  background: #1E2352;
+  color: #fff;
+  padding: 12px 16px 10px;
+}
+.week-header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.week-header-title {
+  font-size: 15px;
+  font-weight: 600;
+}
+.week-header-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.btn-today {
+  background: rgba(255,255,255,0.15);
+  border: 1px solid rgba(255,255,255,0.3);
+  color: #fff;
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 4px;
+}
+.toggle-view {
+  background: rgba(255,255,255,0.1);
+  border-radius: 4px;
+  display: flex;
+  font-size: 11px;
+}
+.toggle-view span {
+  padding: 3px 8px;
+  border-radius: 3px;
+}
+.toggle-view .active {
+  background: rgba(255,255,255,0.25);
+}
+/* Day headers */
+.day-headers {
+  display: flex;
+  border-bottom: 1px solid #e5e5ea;
+  background: #fafafa;
+}
+.day-header-spacer {
+  width: 32px;
+  flex-shrink: 0;
+}
+.day-header {
+  flex: 1;
+  text-align: center;
+  padding: 6px 0;
+  font-size: 10px;
+  color: #8e8e93;
+  line-height: 1.3;
+}
+.day-header .day-name {
+  display: block;
+}
+.day-header .day-num {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: #1d1d1f;
+  margin-top: 2px;
+}
+.day-header.today .day-num {
+  background: #1E2352;
+  color: #fff;
+  width: 20px;
+  height: 20px;
+  line-height: 20px;
+  border-radius: 50%;
+  display: inline-block;
+}
+/* Grid */
+.grid-container {
+  display: flex;
+  position: relative;
+  overflow: hidden;
+}
+.time-axis {
+  width: 32px;
+  flex-shrink: 0;
+  position: relative;
+}
+.time-label {
+  position: absolute;
+  left: 2px;
+  font-size: 9px;
+  color: #8e8e93;
+  transform: translateY(-50%);
+  width: 28px;
+  text-align: right;
+  padding-right: 4px;
+}
+.grid-body {
+  flex: 1;
+  position: relative;
+}
+.grid-columns {
+  display: flex;
+  height: 100%;
+}
+.grid-col {
+  flex: 1;
+  border-right: 1px solid #f0f0f0;
+  position: relative;
+}
+.grid-col:last-child { border-right: none; }
+.grid-col.today-col {
+  background: rgba(30,35,82,0.03);
+}
+.hour-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: #f0f0f0;
+}
+/* Cards */
+.session-card {
+  position: absolute;
+  border-radius: 4px;
+  padding: 2px 3px;
+  overflow: hidden;
+  cursor: default;
+  border-left: 3px solid;
+}
+.card-name {
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.card-time {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.card-type {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* Card colors */
+.card-pink { background: #FCE4EC; border-left-color: #E91E63; color: #880E4F; }
+.card-blue { background: #E3F2FD; border-left-color: #1976D2; color: #0D47A1; }
+.card-green { background: #E8F5E9; border-left-color: #388E3C; color: #1B5E20; }
+.card-purple { background: #F3E5F5; border-left-color: #7B1FA2; color: #4A148C; }
+.card-orange { background: #FFF3E0; border-left-color: #F57C00; color: #E65100; }
+/* Truncated indicator */
+.truncated-indicator {
+  position: absolute;
+  bottom: 0;
+  left: 32px;
+  right: 0;
+  height: 24px;
+  background: linear-gradient(to bottom, transparent, rgba(255,255,255,0.95));
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 4px;
+  font-size: 10px;
+  color: #8e8e93;
+}
+/* Comparison table */
+.compare-table-wrapper {
+  width: 100%;
+  max-width: 420px;
+  margin-top: 20px;
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+.compare-table-wrapper h3 {
+  font-size: 16px;
+  margin-bottom: 12px;
+}
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.compare-table th, .compare-table td {
+  padding: 8px 6px;
+  border-bottom: 1px solid #f0f0f0;
+  text-align: center;
+}
+.compare-table th {
+  background: #fafafa;
+  font-weight: 600;
+  font-size: 11px;
+  color: #6e6e73;
+}
+.compare-table th:first-child, .compare-table td:first-child {
+  text-align: left;
+  font-weight: 500;
+}
+.compare-table .recommended {
+  background: #f0f7ff;
+}
+.compare-table .recommended-header {
+  background: #e3f0ff;
+  color: #1976D2;
+  font-weight: 700;
+}
+</style>
+</head>
+<body>
+
+<h1 class="page-title">周视图信息密度方案对比</h1>
+<p class="page-subtitle">三种时间范围下的卡片高度与信息承载量差异</p>
+
+<!-- Variant A: Compact -->
+<div class="variant-section">
+  <div class="variant-label">
+    <h2>方案A：紧凑 (06:00–22:00, 全天)</h2>
+    <p>卡片较矮，仅显示姓名，适合课程多的日子</p>
+  </div>
+  <div class="phone-frame">
+    <div class="week-header">
+      <div class="week-header-top">
+        <span class="week-header-title">6月2日 – 6月8日</span>
+        <div class="week-header-actions">
+          <span class="btn-today">今天</span>
+          <div class="toggle-view"><span class="active">周</span><span>月</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="day-headers">
+      <div class="day-header-spacer"></div>
+      <div class="day-header"><span class="day-name">周一</span><span class="day-num">2</span></div>
+      <div class="day-header"><span class="day-name">周二</span><span class="day-num">3</span></div>
+      <div class="day-header today"><span class="day-name">周三</span><span class="day-num">4</span></div>
+      <div class="day-header"><span class="day-name">周四</span><span class="day-num">5</span></div>
+      <div class="day-header"><span class="day-name">周五</span><span class="day-num">6</span></div>
+      <div class="day-header"><span class="day-name">周六</span><span class="day-num">7</span></div>
+      <div class="day-header"><span class="day-name">周日</span><span class="day-num">8</span></div>
+    </div>
+    <div class="grid-container" style="height:650px;">
+      <div class="time-axis" id="timeAxisA"></div>
+      <div class="grid-body" id="gridBodyA">
+        <div class="grid-columns">
+          <div class="grid-col"></div>
+          <div class="grid-col"></div>
+          <div class="grid-col today-col"></div>
+          <div class="grid-col"></div>
+          <div class="grid-col"></div>
+          <div class="grid-col"></div>
+          <div class="grid-col"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Variant B: Standard -->
+<div class="variant-section">
+  <div class="variant-label">
+    <h2>方案B：标准 (08:00–21:00) ⭐ 推荐</h2>
+    <p>姓名+时间，比例适中，适合日常3-8节课</p>
+  </div>
+  <div class="phone-frame">
+    <div class="week-header">
+      <div class="week-header-top">
+        <span class="week-header-title">6月2日 – 6月8日</span>
+        <div class="week-header-actions">
+          <span class="btn-today">今天</span>
+          <div class="toggle-view"><span class="active">周</span><span>月</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="day-headers">
+      <div class="day-header-spacer"></div>
+      <div class="day-header"><span class="day-name">周一</span><span class="day-num">2</span></div>
+      <div class="day-header"><span class="day-name">周二</span><span class="day-num">3</span></div>
+      <div class="day-header today"><span class="day-name">周三</span><span class="day-num">4</span></div>
+      <div class="day-header"><span class="day-name">周四</span><span class="day-num">5</span></div>
+      <div class="day-header"><span class="day-name">周五</span><span class="day-num">6</span></div>
+      <div class="day-header"><span class="day-name">周六</span><span class="day-num">7</span></div>
+      <div class="day-header"><span class="day-name">周日</span><span class="day-num">8</span></div>
+    </div>
+    <div class="grid-container" style="height:650px;">
+      <div class="time-axis" id="timeAxisB"></div>
+      <div class="grid-body" id="gridBodyB">
+        <div class="grid-columns">
+          <div class="grid-col"></div>
+          <div class="grid-col"></div>
+          <div class="grid-col today-col"></div>
+          <div class="grid-col"></div>
+          <div class="grid-col"></div>
+          <div class="grid-col"></div>
+          <div class="grid-col"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Variant C: Relaxed -->
+<div class="variant-section">
+  <div class="variant-label">
+    <h2>方案C：宽松 (08:00–18:00)</h2>
+    <p>卡片更大可显示更多信息，但16:00后的课被截断</p>
+  </div>
+  <div class="phone-frame">
+    <div class="week-header">
+      <div class="week-header-top">
+        <span class="week-header-title">6月2日 – 6月8日</span>
+        <div class="week-header-actions">
+          <span class="btn-today">今天</span>
+          <div class="toggle-view"><span class="active">周</span><span>月</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="day-headers">
+      <div class="day-header-spacer"></div>
+      <div class="day-header"><span class="day-name">周一</span><span class="day-num">2</span></div>
+      <div class="day-header"><span class="day-name">周二</span><span class="day-num">3</span></div>
+      <div class="day-header today"><span class="day-name">周三</span><span class="day-num">4</span></div>
+      <div class="day-header"><span class="day-name">周四</span><span class="day-num">5</span></div>
+      <div class="day-header"><span class="day-name">周五</span><span class="day-num">6</span></div>
+      <div class="day-header"><span class="day-name">周六</span><span class="day-num">7</span></div>
+      <div class="day-header"><span class="day-name">周日</span><span class="day-num">8</span></div>
+    </div>
+    <div class="grid-container" style="height:650px;overflow:hidden;">
+      <div class="time-axis" id="timeAxisC"></div>
+      <div class="grid-body" id="gridBodyC">
+        <div class="grid-columns">
+          <div class="grid-col"></div>
+          <div class="grid-col"></div>
+          <div class="grid-col today-col"></div>
+          <div class="grid-col"></div>
+          <div class="grid-col"></div>
+          <div class="grid-col"></div>
+          <div class="grid-col"></div>
+        </div>
+      </div>
+      <div class="truncated-indicator">16:00后课程被截断 ...</div>
+    </div>
+  </div>
+</div>
+
+<!-- Comparison table -->
+<div class="compare-table-wrapper">
+  <h3>方案对比</h3>
+  <table class="compare-table">
+    <thead>
+      <tr>
+        <th></th>
+        <th>紧凑</th>
+        <th class="recommended-header">标准 ⭐</th>
+        <th>宽松</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>时间范围</td>
+        <td>06:00–22:00</td>
+        <td class="recommended">08:00–21:00</td>
+        <td>08:00–18:00</td>
+      </tr>
+      <tr>
+        <td>总时长</td>
+        <td>16小时</td>
+        <td class="recommended">13小时</td>
+        <td>10小时</td>
+      </tr>
+      <tr>
+        <td>px/min</td>
+        <td>0.677</td>
+        <td class="recommended">0.833</td>
+        <td>1.083</td>
+      </tr>
+      <tr>
+        <td>60分钟卡高</td>
+        <td>41px</td>
+        <td class="recommended">50px</td>
+        <td>65px</td>
+      </tr>
+      <tr>
+        <td>90分钟卡高</td>
+        <td>61px</td>
+        <td class="recommended">75px</td>
+        <td>97px</td>
+      </tr>
+      <tr>
+        <td>卡片内容</td>
+        <td>仅姓名</td>
+        <td class="recommended">姓名+时间</td>
+        <td>姓名+时间+类型</td>
+      </tr>
+      <tr>
+        <td>适合场景</td>
+        <td>课多/全天</td>
+        <td class="recommended">日常使用</td>
+        <td>课少/上午为主</td>
+      </tr>
+      <tr>
+        <td>缺点</td>
+        <td>信息太少<br>难辨识</td>
+        <td class="recommended">—</td>
+        <td>晚课截断<br>覆盖不全</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<script>
+// Session data
+const sessions = [
+  { day: 0, startHour: 9, startMin: 0, duration: 60, name: '周文娟', color: 'pink', type: '私教·普拉提' },
+  { day: 0, startHour: 14, startMin: 0, duration: 90, name: '李明', color: 'blue', type: '私教·瑜伽' },
+  { day: 1, startHour: 10, startMin: 0, duration: 60, name: '张三', color: 'green', type: '私教·力量' },
+  { day: 2, startHour: 9, startMin: 30, duration: 45, name: '王芳', color: 'purple', type: '私教·普拉提' },
+  { day: 3, startHour: 11, startMin: 0, duration: 60, name: '陈伟', color: 'orange', type: '私教·瑜伽' },
+  { day: 4, startHour: 9, startMin: 0, duration: 60, name: '小张', color: 'blue', type: '私教·力量', overlap: 0 },
+  { day: 4, startHour: 9, startMin: 0, duration: 60, name: '刘洋', color: 'pink', type: '私教·普拉提', overlap: 1 },
+  { day: 5, startHour: 16, startMin: 0, duration: 90, name: '赵六', color: 'green', type: '私教·瑜伽' },
+];
+
+const variants = [
+  { id: 'A', startHour: 6, endHour: 22, gridHeight: 650, labelStep: 2, showTime: false, showType: false, nameSize: 10 },
+  { id: 'B', startHour: 8, endHour: 21, gridHeight: 650, labelStep: 1, showTime: true, showType: false, nameSize: 11 },
+  { id: 'C', startHour: 8, endHour: 18, gridHeight: 650, labelStep: 1, showTime: true, showType: true, nameSize: 11 },
+];
+
+variants.forEach(v => {
+  const totalMinutes = (v.endHour - v.startHour) * 60;
+  const ppm = v.gridHeight / totalMinutes;
+  const timeAxis = document.getElementById('timeAxis' + v.id);
+  const gridBody = document.getElementById('gridBody' + v.id);
+
+  // Render time labels
+  for (let h = v.startHour; h <= v.endHour; h++) {
+    if ((h - v.startHour) % v.labelStep !== 0) continue;
+    const top = (h - v.startHour) * 60 * ppm;
+    const label = document.createElement('div');
+    label.className = 'time-label';
+    label.style.top = top + 'px';
+    label.textContent = h + ':00';
+    timeAxis.appendChild(label);
+  }
+
+  // Render hour lines
+  for (let h = v.startHour; h <= v.endHour; h++) {
+    const top = (h - v.startHour) * 60 * ppm;
+    const line = document.createElement('div');
+    line.className = 'hour-line';
+    line.style.top = top + 'px';
+    gridBody.appendChild(line);
+  }
+
+  // Render session cards
+  sessions.forEach(s => {
+    const startMinFromTop = (s.startHour - v.startHour) * 60 + s.startMin;
+    const top = startMinFromTop * ppm;
+    const height = s.duration * ppm;
+
+    // Skip if completely out of range
+    if (startMinFromTop + s.duration <= 0) return;
+    if (startMinFromTop >= totalMinutes) return;
+
+    const card = document.createElement('div');
+    card.className = 'session-card card-' + s.color;
+
+    // Position within column
+    const colWidth = 100 / 7; // percentage
+    let left = s.day * colWidth;
+    let width = colWidth;
+
+    if (s.overlap !== undefined) {
+      width = colWidth / 2;
+      left = s.day * colWidth + s.overlap * (colWidth / 2);
+    }
+
+    card.style.top = Math.max(0, top) + 'px';
+    card.style.height = height + 'px';
+    card.style.left = left + '%';
+    card.style.width = 'calc(' + width + '% - 2px)';
+    card.style.marginLeft = '1px';
+
+    // Content
+    let html = '<div class="card-name" style="font-size:' + v.nameSize + 'px">' + s.name + '</div>';
+    if (v.showTime) {
+      const timeStr = s.startHour + ':' + (s.startMin === 0 ? '00' : s.startMin);
+      html += '<div class="card-time" style="font-size:9px;opacity:0.7">' + timeStr + '</div>';
+    }
+    if (v.showType) {
+      html += '<div class="card-type" style="font-size:9px;opacity:0.6">' + s.type + '</div>';
+    }
+    card.innerHTML = html;
+
+    // For variant C, if card goes below grid, clip it visually
+    if (v.id === 'C' && top + height > v.gridHeight) {
+      card.style.height = Math.max(0, v.gridHeight - top) + 'px';
+      card.style.overflow = 'hidden';
+    }
+
+    gridBody.appendChild(card);
+  });
+});
+</script>
+
+</body>
+</html>

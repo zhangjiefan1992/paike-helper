@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>排课助手 UI 改进示意</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: #1a1a1a; color: #fff; font-family: -apple-system, 'PingFang SC', sans-serif; padding: 20px; }
+h1 { text-align: center; font-size: 24px; margin: 20px 0 10px; font-weight: 300; }
+h2 { text-align: center; font-size: 16px; margin: 30px 0 16px; color: #aaa; font-weight: 400; letter-spacing: 2px; }
+.compare { display: flex; gap: 24px; justify-content: center; flex-wrap: wrap; margin-bottom: 40px; }
+.compare-item { text-align: center; }
+.compare-item .label { font-size: 13px; color: #888; margin-bottom: 8px; letter-spacing: 1px; }
+.phone { width: 375px; border-radius: 40px; overflow: hidden; border: 3px solid #333; background: #000; position: relative; }
+.phone-inner { border-radius: 37px; overflow: hidden; }
+.status-bar { height: 44px; background: inherit; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; font-size: 12px; }
+.badge { background: #e74c3c; color: #fff; font-size: 10px; padding: 1px 6px; border-radius: 4px; margin-left: 4px; }
+.divider { height: 1px; background: #333; margin: 30px auto; width: 200px; }
+.note { text-align: center; font-size: 13px; color: #F59E0B; margin: -8px 0 20px; }
+.section-note { background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.3); border-radius: 8px; padding: 12px 16px; margin: 0 auto 30px; max-width: 780px; font-size: 13px; color: #F59E0B; line-height: 1.6; }
+
+/* ========== MOCK PHONE SCREENS ========== */
+
+/* --- Soft-color theme --- */
+.sc-hdr { background: #704F5A; padding: 20px 28px 12px; color: #fff; }
+.sc-hdr-old .sc-title { font-size: 32px; font-weight: 400; }
+.sc-hdr-new .sc-title { font-size: 18px; font-weight: 400; opacity: 0.7; }
+.sc-hdr-new .sc-range { font-size: 22px; font-weight: 500; margin-top: 2px; }
+.sc-today { font-size: 12px; opacity: 0.85; padding: 6px 12px; border: 1px solid rgba(255,255,255,0.3); border-radius: 20px; }
+.sc-top { display: flex; justify-content: space-between; align-items: center; }
+.sc-nav { display: flex; align-items: center; justify-content: space-between; margin-top: 12px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.12); }
+.sc-nav-left { display: flex; align-items: center; gap: 12px; }
+.seg { display: flex; background: rgba(255,255,255,0.1); border-radius: 6px; overflow: hidden; font-size: 12px; }
+.seg span { padding: 5px 16px; color: rgba(255,255,255,0.5); }
+.seg span.active { background: rgba(255,255,255,0.2); color: #fff; font-weight: 600; }
+.sc-range-old { font-size: 13px; color: rgba(255,255,255,0.65); }
+.arrows { display: flex; gap: 2px; }
+.arrows span { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border-radius: 50%; color: rgba(255,255,255,0.7); font-size: 16px; }
+
+/* Summary */
+.summary { display: flex; align-items: center; padding: 10px 28px 16px; gap: 20px; background: #704F5A; color: #fff; }
+.summary-cp { background: #1E2352; }
+.summary-item { display: flex; align-items: baseline; gap: 8px; }
+.summary-num { font-size: 24px; font-weight: 400; }
+.summary-lbl { font-size: 11px; color: rgba(255,255,255,0.65); letter-spacing: 1px; }
+.summary-div { width: 1px; height: 16px; background: rgba(255,255,255,0.2); }
+
+/* Grid */
+.grid { background: #FAF8F5; }
+.grid-cp { background: #fff; }
+.grid-head { display: grid; grid-template-columns: 40px repeat(7, 1fr); font-size: 10px; }
+.grid-head-sc { background: #7A5862; color: rgba(255,255,255,0.7); }
+.grid-head-cp { background: #252B5E; color: rgba(255,255,255,0.7); }
+.grid-corner { background: inherit; }
+.grid-col { text-align: center; padding: 7px 0 5px; }
+.grid-col .wd { display: block; font-size: 10px; }
+.grid-col .dn { display: block; font-size: 9px; opacity: 0.5; margin-top: 1px; }
+.grid-row { display: grid; grid-template-columns: 40px repeat(7, 1fr); border-top: 1px solid #E8E4DE; min-height: 80px; }
+.grid-row-cp { border-color: #E8E8EE; }
+.grid-period { display: flex; align-items: center; justify-content: center; font-size: 10px; color: rgba(255,255,255,0.85); }
+.grid-period-sc { background: #5F4A43; }
+.grid-period-cp { background: #2A3070; }
+.grid-cell { border-left: 1px solid #E8E4DE; padding: 3px 2px; display: flex; flex-direction: column; gap: 2px; background: #FAF8F5; }
+.grid-cell-cp { border-color: #E8E8EE; background: #fff; }
+.grid-cell-empty { position: relative; }
+.grid-cell-empty-new::after { content: '+'; position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); font-size: 14px; color: #ccc; opacity: 0; }
+.grid-cell-empty-new:hover::after { opacity: 1; }
+
+/* Cards - OLD soft-color */
+.card { border-radius: 3px; padding: 4px; overflow: hidden; font-size: 9px; line-height: 1.3; }
+.card-time { font-weight: 500; font-size: 8px; }
+.card-name { font-weight: 600; font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.card-line2 { font-size: 8px; opacity: 0.85; }
+/* New card styles */
+.card-new .card-name { font-size: 11px; font-weight: 700; }
+.card-new .card-time { font-size: 9px; }
+.card-new .card-line2 { font-size: 9px; }
+
+/* Toolbar */
+.toolbar { display: flex; gap: 8px; padding: 12px 28px; background: linear-gradient(to bottom, transparent, #FAF8F5 30%); position: relative; }
+.toolbar-cp { background: linear-gradient(to bottom, transparent, #fff 30%); }
+.toolbar-btn { flex: 1; display: flex; align-items: center; justify-content: center; gap: 4px; height: 44px; font-size: 14px; border-radius: 999px; letter-spacing: 1px; }
+.toolbar-ghost { background: #FAF8F5; color: #4A4640; border: 1px solid #8A8478; }
+.toolbar-ghost-cp { background: #fff; color: #4A5070; border: 1px solid #8088A8; }
+.toolbar-primary { background: #1F1D1A; color: #FAF8F5; }
+.toolbar-primary-cp { background: #1E2352; color: #fff; }
+
+/* TabBar */
+.tabbar { display: flex; justify-content: space-around; align-items: center; height: 50px; border-top: 1px solid #eee; background: #FAF8F5; font-size: 10px; color: #999; }
+.tabbar-cp { background: #fff; }
+.tabbar-item { text-align: center; }
+.tabbar-item.active { color: #1F1D1A; }
+.tabbar-item-cp.active { color: #1E2352; }
+
+/* Empty state */
+.empty { text-align: center; padding: 60px 32px 40px; background: #FAF8F5; }
+.empty-cp { background: #fff; }
+.empty-mark { width: 40px; height: 1px; background: #B0A99C; opacity: 0.5; margin: 0 auto 28px; }
+.empty-title { font-size: 24px; font-weight: 300; color: #1F1D1A; margin-bottom: 8px; }
+.empty-hint { font-style: italic; font-weight: 300; font-size: 13px; color: #8A8478; margin-bottom: 28px; }
+.empty-cta { display: inline-flex; align-items: center; gap: 8px; padding: 12px 24px; background: #1F1D1A; color: #FAF8F5; font-size: 13px; border-radius: 999px; }
+.empty-alt { margin-top: 14px; font-size: 12px; color: #8A8478; text-decoration: underline; }
+
+/* ========== SETTINGS ========== */
+.settings-page { background: #FAF8F5; padding: 20px; font-size: 13px; color: #1F1D1A; }
+.settings-section { background: #fff; border-radius: 12px; padding: 16px; margin-bottom: 12px; }
+.settings-section-title { font-size: 11px; color: #8A8478; letter-spacing: 2px; margin-bottom: 10px; font-weight: 500; }
+.settings-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #F0ECE6; }
+.settings-row:last-child { border-bottom: none; }
+.settings-row-label { font-size: 14px; }
+.settings-row-value { font-size: 13px; color: #8A8478; }
+.settings-tags { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+.settings-tag { background: #F0ECE6; padding: 4px 12px; border-radius: 20px; font-size: 12px; color: #4A4640; }
+
+/* Theme preview cards */
+.theme-preview { display: flex; gap: 12px; margin: 8px 0; }
+.theme-card { flex: 1; border-radius: 10px; overflow: hidden; border: 2px solid transparent; cursor: pointer; }
+.theme-card.active { border-color: #1F1D1A; }
+.theme-card-header { height: 24px; }
+.theme-card-body { height: 40px; padding: 4px; display: flex; gap: 2px; }
+.theme-card-label { text-align: center; font-size: 10px; padding: 4px 0; color: #8A8478; }
+.theme-mini-card { width: 14px; height: 10px; border-radius: 2px; }
+
+/* ========== MEMBER LIST ========== */
+.member-page { background: #FAF8F5; padding: 20px; }
+.member-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 16px; }
+.member-title { font-size: 28px; font-weight: 300; color: #1F1D1A; }
+.member-count { font-size: 14px; color: #8A8478; margin-left: 8px; }
+.member-search { background: #F0ECE6; border: none; width: 100%; padding: 10px 16px; border-radius: 8px; font-size: 13px; color: #4A4640; margin-bottom: 16px; }
+.member-group-title { font-size: 11px; color: #8A8478; margin: 16px 0 8px; letter-spacing: 1px; }
+.member-item { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid #F0ECE6; }
+.member-avatar { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 500; color: #fff; flex-shrink: 0; }
+.member-info { flex: 1; }
+.member-name { font-size: 16px; font-weight: 500; color: #1F1D1A; }
+.member-meta { font-size: 12px; color: #8A8478; margin-top: 2px; }
+.member-right { text-align: right; }
+.member-date { font-size: 11px; color: #B0A99C; }
+.member-sessions { font-size: 12px; color: #8A8478; }
+.member-item-old { display: flex; align-items: center; gap: 0; padding: 14px 0; border-bottom: 1px solid #F0ECE6; }
+.member-bar { width: 3px; height: 36px; border-radius: 2px; margin-right: 12px; flex-shrink: 0; }
+.member-info-old { flex: 1; }
+</style>
+</head>
+<body>
+
+<h1>排课助手 · UI 改进对比示意</h1>
+<p style="text-align:center;font-size:13px;color:#666;margin-bottom:30px;">左侧为当前效果，右侧为建议改进</p>
+
+<!-- ============================================================ -->
+<h2>1. 课表主题卡片对比度修复 <span class="badge">P0</span></h2>
+<div class="section-note">问题：黄色/橙色背景 + 白色文字对比度仅 1.8:1，WCAG AA 要求 4.5:1。<br>方案：亮色卡片改用深色文字。</div>
+
+<div class="compare">
+  <div class="compare-item">
+    <div class="label">当前 · 课表主题卡片</div>
+    <div style="display:flex;gap:8px;justify-content:center;">
+      <div class="card" style="background:#FF4081;color:#fff;width:80px;padding:8px;">
+        <span class="card-time">10:00</span>
+        <span class="card-name" style="display:block">王小菲</span>
+        <span class="card-line2">私</span>
+      </div>
+      <div class="card" style="background:#F0C040;color:#fff;width:80px;padding:8px;">
+        <span class="card-time">14:30</span>
+        <span class="card-name" style="display:block">佳丽</span>
+        <span class="card-line2">私</span>
+      </div>
+      <div class="card" style="background:#FFA726;color:#fff;width:80px;padding:8px;">
+        <span class="card-time">15:00</span>
+        <span class="card-name" style="display:block">孙佳美</span>
+        <span class="card-line2">私</span>
+      </div>
+      <div class="card" style="background:#66BB6A;color:#fff;width:80px;padding:8px;">
+        <span class="card-time">12:00</span>
+        <span class="card-name" style="display:block">朱昀蕾</span>
+        <span class="card-line2">私</span>
+      </div>
+    </div>
+    <p style="font-size:11px;color:#e74c3c;margin-top:8px;">黄色 1.8:1 / 橙色 2.1:1 / 绿色 2.4:1</p>
+  </div>
+  <div class="compare-item">
+    <div class="label">改进 · 亮色底改深色字</div>
+    <div style="display:flex;gap:8px;justify-content:center;">
+      <div class="card" style="background:#FF4081;color:#fff;width:80px;padding:8px;">
+        <span class="card-time">10:00</span>
+        <span class="card-name" style="display:block">王小菲</span>
+        <span class="card-line2">私</span>
+      </div>
+      <div class="card" style="background:#F0C040;color:#5D4200;width:80px;padding:8px;">
+        <span class="card-time" style="color:#5D4200">14:30</span>
+        <span class="card-name" style="display:block;color:#5D4200">佳丽</span>
+        <span class="card-line2" style="color:#7A5800">私</span>
+      </div>
+      <div class="card" style="background:#FFA726;color:#5C3300;width:80px;padding:8px;">
+        <span class="card-time" style="color:#5C3300">15:00</span>
+        <span class="card-name" style="display:block;color:#5C3300">孙佳美</span>
+        <span class="card-line2" style="color:#7A4400">私</span>
+      </div>
+      <div class="card" style="background:#66BB6A;color:#1B4D1E;width:80px;padding:8px;">
+        <span class="card-time" style="color:#1B4D1E">12:00</span>
+        <span class="card-name" style="display:block;color:#1B4D1E">朱昀蕾</span>
+        <span class="card-line2" style="color:#2D6630">私</span>
+      </div>
+    </div>
+    <p style="font-size:11px;color:#2ecc71;margin-top:8px;">全部 ≥ 5.5:1 ✓ WCAG AA 通过</p>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<h2>2. 周视图头部减重 <span class="badge">P1</span></h2>
+<div class="section-note">问题：大号日期"6月1日"占据视觉中心，但用户更关心的是"这周有什么课"。<br>方案：今日日期缩小变为上下文信息，周范围放大成为标题。</div>
+
+<div class="compare">
+  <div class="compare-item">
+    <div class="label">当前 · 头部（柔彩主题）</div>
+    <div class="phone" style="width:375px;">
+      <div class="phone-inner">
+        <!-- Old header -->
+        <div class="sc-hdr sc-hdr-old">
+          <div class="sc-top">
+            <div class="sc-title">6月1日</div>
+            <div style="font-size:12px;opacity:0.85;padding:6px 8px;">今天</div>
+          </div>
+          <div class="sc-nav">
+            <div class="sc-nav-left">
+              <div class="seg"><span class="active">周</span><span>月</span></div>
+              <span class="sc-range-old">6月1日 – 6月7日</span>
+            </div>
+            <div class="arrows"><span>‹</span><span>›</span></div>
+          </div>
+        </div>
+        <div class="summary">
+          <div class="summary-item"><span class="summary-num">20</span><span class="summary-lbl">本周</span></div>
+          <div class="summary-div"></div>
+          <div class="summary-item"><span class="summary-num">0</span><span class="summary-lbl">已完成</span></div>
+          <div class="summary-div"></div>
+          <div class="summary-item"><span class="summary-num">12</span><span class="summary-lbl">位会员</span></div>
+        </div>
+        <div style="height:40px;background:#FAF8F5;"></div>
+      </div>
+    </div>
+    <p style="font-size:11px;color:#e74c3c;margin-top:8px;">头部区域高度 ~160px，日期喧宾夺主</p>
+  </div>
+
+  <div class="compare-item">
+    <div class="label">改进 · 头部紧凑化</div>
+    <div class="phone" style="width:375px;">
+      <div class="phone-inner">
+        <!-- New header -->
+        <div class="sc-hdr sc-hdr-new">
+          <div class="sc-top">
+            <div>
+              <div class="sc-title">今天 6月1日 周日</div>
+              <div class="sc-range">6月1日 – 6月7日</div>
+            </div>
+            <div class="sc-today">今天</div>
+          </div>
+          <div class="sc-nav" style="margin-top:8px;padding-top:8px;">
+            <div class="sc-nav-left">
+              <div class="seg"><span class="active">周</span><span>月</span></div>
+              <div style="display:flex;gap:4px;">
+                <div class="summary-item" style="gap:4px;"><span style="font-size:16px;font-weight:500;">20</span><span class="summary-lbl">课</span></div>
+                <div class="summary-div" style="height:12px;"></div>
+                <div class="summary-item" style="gap:4px;"><span style="font-size:16px;font-weight:500;">12</span><span class="summary-lbl">人</span></div>
+              </div>
+            </div>
+            <div class="arrows"><span>‹</span><span>›</span></div>
+          </div>
+        </div>
+        <div style="height:80px;background:#FAF8F5;display:flex;align-items:center;justify-content:center;color:#B0A99C;font-size:12px;">↑ 节省约 50px，课程网格上移 ↑</div>
+      </div>
+    </div>
+    <p style="font-size:11px;color:#2ecc71;margin-top:8px;">周范围成为主角，统计嵌入导航行</p>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<h2>3. 空状态优化 <span class="badge">P1</span></h2>
+<div class="section-note">问题：空状态中央有"批量导入"按钮，底部工具栏又有相同按钮——重复。<br>方案：空状态时隐藏底部工具栏，让中央 CTA 成为唯一入口。</div>
+
+<div class="compare">
+  <div class="compare-item">
+    <div class="label">当前 · 按钮重复</div>
+    <div class="phone" style="width:320px;">
+      <div class="phone-inner">
+        <div class="sc-hdr" style="padding:16px 20px 10px;">
+          <div style="font-size:20px;">6月1日</div>
+        </div>
+        <div class="empty" style="padding:40px 24px 20px;">
+          <div class="empty-mark"></div>
+          <div class="empty-title" style="font-size:20px;">这周尚是空白</div>
+          <div class="empty-hint">把整周课表粘进来，AI 自动整理</div>
+          <div class="empty-cta" style="font-size:12px;padding:10px 20px;">批量导入 →</div>
+          <div class="empty-alt">或新增单节课程</div>
+        </div>
+        <div class="toolbar" style="padding:10px 20px;">
+          <div class="toolbar-btn toolbar-ghost" style="font-size:12px;height:36px;border-color:#ccc;color:#999;">批量导入</div>
+          <div class="toolbar-btn toolbar-primary" style="font-size:12px;height:36px;">+ 新建</div>
+        </div>
+        <div style="height:8px;background:#FAF8F5;border-top:1px dashed #e74c3c;"></div>
+        <p style="font-size:10px;color:#e74c3c;text-align:center;background:#FAF8F5;padding:4px;">↑ 重复的"批量导入" ↑</p>
+      </div>
+    </div>
+  </div>
+  <div class="compare-item">
+    <div class="label">改进 · 空状态隐藏工具栏</div>
+    <div class="phone" style="width:320px;">
+      <div class="phone-inner">
+        <div class="sc-hdr" style="padding:16px 20px 10px;">
+          <div style="font-size:20px;">6月1日</div>
+        </div>
+        <div class="empty" style="padding:50px 24px 30px;">
+          <div class="empty-mark"></div>
+          <div class="empty-title" style="font-size:20px;">这周尚是空白</div>
+          <div class="empty-hint">把整周课表粘进来，AI 自动整理</div>
+          <div class="empty-cta" style="font-size:12px;padding:10px 20px;">批量导入 →</div>
+          <div class="empty-alt">或新增单节课程</div>
+        </div>
+        <div style="height:40px;background:#FAF8F5;display:flex;align-items:center;justify-content:center;">
+          <span style="font-size:10px;color:#2ecc71;">✓ 底部工具栏隐藏，界面更干净</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<h2>4. 会员列表增加头像 <span class="badge">P1</span></h2>
+<div class="section-note">问题：当前只有左侧色条，缺乏人物辨识度。<br>方案：加入首字母圆形头像 + 补充剩余课时信息。</div>
+
+<div class="compare">
+  <div class="compare-item">
+    <div class="label">当前 · 色条样式</div>
+    <div class="phone" style="width:340px;">
+      <div class="phone-inner">
+        <div class="member-page" style="min-height:300px;">
+          <div class="member-header">
+            <div><span class="member-title" style="font-size:24px;">会员</span><span class="member-count">32 位</span></div>
+            <span style="font-size:13px;color:#1F1D1A;">+ 新建</span>
+          </div>
+          <div class="member-group-title">更早 31</div>
+          <div class="member-item-old">
+            <div class="member-bar" style="background:#4F46E5;"></div>
+            <div class="member-info-old">
+              <div class="member-name" style="font-size:15px;">吴蓝艳</div>
+              <div class="member-meta">15 节累计</div>
+            </div>
+            <div class="member-date">4月30日</div>
+          </div>
+          <div class="member-item-old">
+            <div class="member-bar" style="background:#DC2626;"></div>
+            <div class="member-info-old">
+              <div class="member-name" style="font-size:15px;">周文娟</div>
+              <div class="member-meta">11 节累计</div>
+            </div>
+            <div class="member-date">4月30日</div>
+          </div>
+          <div class="member-item-old">
+            <div class="member-bar" style="background:#059669;"></div>
+            <div class="member-info-old">
+              <div class="member-name" style="font-size:15px;">孙佳美</div>
+              <div class="member-meta">5 节累计</div>
+            </div>
+            <div class="member-date">4月30日</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="compare-item">
+    <div class="label">改进 · 首字母头像 + 更多信息</div>
+    <div class="phone" style="width:340px;">
+      <div class="phone-inner">
+        <div class="member-page" style="min-height:300px;">
+          <div class="member-header">
+            <div><span class="member-title" style="font-size:24px;">会员</span><span class="member-count">32 位</span></div>
+            <span style="font-size:13px;color:#1F1D1A;">+ 新建</span>
+          </div>
+          <div class="member-group-title">更早 31</div>
+          <div class="member-item">
+            <div class="member-avatar" style="background:#4F46E5;">吴</div>
+            <div class="member-info">
+              <div class="member-name">吴蓝艳</div>
+              <div class="member-meta">15 节累计 · 普拉提私教</div>
+            </div>
+            <div class="member-right">
+              <div class="member-date">4月30日</div>
+              <div class="member-sessions">剩余 8 节</div>
+            </div>
+          </div>
+          <div class="member-item">
+            <div class="member-avatar" style="background:#DC2626;">周</div>
+            <div class="member-info">
+              <div class="member-name">周文娟</div>
+              <div class="member-meta">11 节累计 · 瑜伽私教</div>
+            </div>
+            <div class="member-right">
+              <div class="member-date">4月30日</div>
+              <div class="member-sessions">剩余 3 节</div>
+            </div>
+          </div>
+          <div class="member-item">
+            <div class="member-avatar" style="background:#059669;">孙</div>
+            <div class="member-info">
+              <div class="member-name">孙佳美</div>
+              <div class="member-meta">5 节累计 · 体能训练</div>
+            </div>
+            <div class="member-right">
+              <div class="member-date">4月30日</div>
+              <div class="member-sessions">剩余 12 节</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<h2>5. 设置页分组 <span class="badge">P1</span></h2>
+<div class="section-note">问题：当前所有设置项平铺在一个超长页面中（4698px），需要反复滚动。<br>方案：分为独立的 section card，每组有标题和圆角卡片容器。</div>
+
+<div class="compare">
+  <div class="compare-item">
+    <div class="label">当前 · 全部平铺</div>
+    <div class="phone" style="width:300px;">
+      <div class="phone-inner">
+        <div class="settings-page" style="padding:16px;">
+          <div style="font-size:22px;font-weight:300;margin-bottom:4px;">设置</div>
+          <div style="font-size:11px;color:#8A8478;margin-bottom:16px;">预设、外观与数据</div>
+          <div style="font-size:12px;font-weight:500;color:#8A8478;margin-bottom:6px;">课程类型 :</div>
+          <div class="settings-tags"><span class="settings-tag">瑜伽</span><span class="settings-tag">普拉提</span><span class="settings-tag">体能训练</span></div>
+          <div style="font-size:12px;font-weight:500;color:#8A8478;margin:10px 0 6px;">常用地点 :</div>
+          <div class="settings-tags"><span class="settings-tag">旺君</span><span class="settings-tag">良渚</span></div>
+          <div style="font-size:12px;font-weight:500;color:#8A8478;margin:10px 0 6px;">训练重点 :</div>
+          <div class="settings-tags"><span class="settings-tag">核心</span><span class="settings-tag">髋关节</span><span class="settings-tag">肩颈</span><span class="settings-tag">下肢</span></div>
+          <div style="font-size:12px;font-weight:500;color:#8A8478;margin:10px 0 6px;">默认 :</div>
+          <div style="font-size:12px;color:#4A4640;padding:6px 0;border-bottom:1px solid #F0ECE6;">课程时长 → 60 分钟</div>
+          <div style="font-size:12px;color:#4A4640;padding:6px 0;border-bottom:1px solid #F0ECE6;">工作开始 → 08:00</div>
+          <div style="font-size:12px;color:#4A4640;padding:6px 0;border-bottom:1px solid #F0ECE6;">工作结束 → 21:00</div>
+          <div style="font-size:12px;font-weight:500;color:#8A8478;margin:10px 0 6px;">周视图主题 :</div>
+          <div style="display:flex;gap:8px;margin-bottom:10px;">
+            <div style="width:40px;height:40px;background:#FAF8F5;border:2px solid #ccc;border-radius:6px;"></div>
+            <div style="width:40px;height:40px;background:#1E2352;border:2px solid #1E2352;border-radius:6px;"></div>
+          </div>
+          <div style="font-size:10px;color:#B0A99C;text-align:center;padding:20px;">↓ 还有云备份、数据、反馈...需要继续滚动 ↓</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="compare-item">
+    <div class="label">改进 · 分组 Section Card</div>
+    <div class="phone" style="width:300px;">
+      <div class="phone-inner">
+        <div style="background:#F0ECE6;padding:16px;">
+          <div style="font-size:22px;font-weight:300;color:#1F1D1A;margin-bottom:12px;">设置</div>
+
+          <div class="settings-section">
+            <div class="settings-section-title">外观</div>
+            <div style="font-size:12px;margin-bottom:6px;">周视图主题</div>
+            <div class="theme-preview">
+              <div class="theme-card active">
+                <div class="theme-card-header" style="background:#704F5A;"></div>
+                <div class="theme-card-body" style="background:#FAF8F5;">
+                  <div class="theme-mini-card" style="background:#C7D2FE;"></div>
+                  <div class="theme-mini-card" style="background:#FECACA;"></div>
+                  <div class="theme-mini-card" style="background:#A7F3D0;"></div>
+                </div>
+                <div class="theme-card-label">柔彩</div>
+              </div>
+              <div class="theme-card">
+                <div class="theme-card-header" style="background:#1E2352;"></div>
+                <div class="theme-card-body" style="background:#fff;">
+                  <div class="theme-mini-card" style="background:#FF4081;"></div>
+                  <div class="theme-mini-card" style="background:#F0C040;"></div>
+                  <div class="theme-mini-card" style="background:#26C6DA;"></div>
+                </div>
+                <div class="theme-card-label">课表</div>
+              </div>
+            </div>
+            <div class="settings-row"><span class="settings-row-label" style="font-size:12px;">课表密度</span><span class="settings-row-value" style="font-size:12px;">标准 ›</span></div>
+          </div>
+
+          <div class="settings-section">
+            <div class="settings-section-title">字典管理</div>
+            <div class="settings-row"><span class="settings-row-label" style="font-size:12px;">课程类型</span><span class="settings-row-value" style="font-size:12px;">3 个 ›</span></div>
+            <div class="settings-row"><span class="settings-row-label" style="font-size:12px;">常用地点</span><span class="settings-row-value" style="font-size:12px;">2 个 ›</span></div>
+            <div class="settings-row"><span class="settings-row-label" style="font-size:12px;">训练重点</span><span class="settings-row-value" style="font-size:12px;">7 个 ›</span></div>
+          </div>
+
+          <div class="settings-section">
+            <div class="settings-section-title">数据与备份</div>
+            <div class="settings-row"><span class="settings-row-label" style="font-size:12px;">云端备份</span><span class="settings-row-value" style="font-size:12px;color:#2ecc71;">已备份 ›</span></div>
+            <div class="settings-row"><span class="settings-row-label" style="font-size:12px;">导出 / 导入</span><span class="settings-row-value" style="font-size:12px;">›</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<h2>6. 卡片字号与信息层级 <span class="badge">P2</span></h2>
+<div class="section-note">问题：当前卡片时间 17rpx、类型 17rpx 太小；会员名/时间/类型权重接近，扫读无锚点。<br>方案：会员名加粗放大为视觉锚点，最小字号 ≥ 20rpx。</div>
+
+<div class="compare">
+  <div class="compare-item">
+    <div class="label">当前 · 权重平均</div>
+    <div style="display:flex;gap:8px;justify-content:center;">
+      <div class="card" style="background:#C7D2FE;color:#312E81;width:90px;padding:8px;">
+        <span class="card-time" style="font-size:8px;">10:00</span>
+        <span class="card-name" style="display:block;font-size:10px;font-weight:600;">王小菲</span>
+        <span class="card-line2" style="font-size:8px;">私·旺</span>
+      </div>
+      <div class="card" style="background:#FECACA;color:#7F1D1D;width:90px;padding:8px;">
+        <span class="card-time" style="font-size:8px;">11:00</span>
+        <span class="card-name" style="display:block;font-size:10px;font-weight:600;">周文娟</span>
+        <span class="card-line2" style="font-size:8px;">私</span>
+      </div>
+    </div>
+    <p style="font-size:11px;color:#888;margin-top:6px;">时间 8.5px / 名字 10px / 类型 8.5px<br>三行权重接近</p>
+  </div>
+  <div class="compare-item">
+    <div class="label">改进 · 名字为锚点</div>
+    <div style="display:flex;gap:8px;justify-content:center;">
+      <div class="card card-new" style="background:#C7D2FE;color:#312E81;width:90px;padding:8px;">
+        <span class="card-name" style="display:block;font-size:12px;font-weight:700;">王小菲</span>
+        <span class="card-time" style="font-size:9px;opacity:0.7;">10:00 私·旺</span>
+      </div>
+      <div class="card card-new" style="background:#FECACA;color:#7F1D1D;width:90px;padding:8px;">
+        <span class="card-name" style="display:block;font-size:12px;font-weight:700;">周文娟</span>
+        <span class="card-time" style="font-size:9px;opacity:0.7;">11:00 私</span>
+      </div>
+    </div>
+    <p style="font-size:11px;color:#888;margin-top:6px;">名字 12px 加粗 → 视觉锚点<br>时间+类型合并为副行</p>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<div class="divider"></div>
+<h2>改进优先级总表</h2>
+<div style="max-width:700px;margin:0 auto;font-size:13px;line-height:2;">
+  <table style="width:100%;border-collapse:collapse;">
+    <tr style="border-bottom:1px solid #333;">
+      <td style="padding:6px;color:#e74c3c;font-weight:600;">P0</td>
+      <td style="padding:6px;">课表主题卡片对比度修复（黄/橙/绿改深色字）</td>
+      <td style="padding:6px;color:#666;">影响可用性</td>
+    </tr>
+    <tr style="border-bottom:1px solid #333;">
+      <td style="padding:6px;color:#F59E0B;font-weight:600;">P1</td>
+      <td style="padding:6px;">头部减重（日期缩小，周范围为标题）</td>
+      <td style="padding:6px;color:#666;">信息层级</td>
+    </tr>
+    <tr style="border-bottom:1px solid #333;">
+      <td style="padding:6px;color:#F59E0B;font-weight:600;">P1</td>
+      <td style="padding:6px;">空状态隐藏底部工具栏</td>
+      <td style="padding:6px;color:#666;">界面冗余</td>
+    </tr>
+    <tr style="border-bottom:1px solid #333;">
+      <td style="padding:6px;color:#F59E0B;font-weight:600;">P1</td>
+      <td style="padding:6px;">会员列表加首字母头像 + 补充信息</td>
+      <td style="padding:6px;color:#666;">专业感</td>
+    </tr>
+    <tr style="border-bottom:1px solid #333;">
+      <td style="padding:6px;color:#F59E0B;font-weight:600;">P1</td>
+      <td style="padding:6px;">设置页分组为 Section Card</td>
+      <td style="padding:6px;color:#666;">可用性</td>
+    </tr>
+    <tr style="border-bottom:1px solid #333;">
+      <td style="padding:6px;color:#3B82F6;font-weight:600;">P2</td>
+      <td style="padding:6px;">卡片字号提升 + 信息层级调整</td>
+      <td style="padding:6px;color:#666;">扫读效率</td>
+    </tr>
+  </table>
+</div>
+
+<p style="text-align:center;font-size:12px;color:#666;margin:30px 0;">以上为静态 HTML 示意，请在浏览器中查看</p>
+</body>
+</html>

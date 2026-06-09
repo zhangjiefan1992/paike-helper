@@ -1,4 +1,4 @@
-<view class="page">
+<view class="page theme-{{currentTheme}}">
   <view class="hdr">
     <text class="hdr__title serif">设置</text>
     <text class="hdr__sub serif">预设、外观与数据</text>
@@ -136,6 +136,28 @@
 
   <view class="rule"></view>
 
+  <!-- 课表密度 -->
+  <view class="block">
+    <view class="block__head"><text class="block__label">课表密度</text></view>
+    <view class="density-options">
+      <view
+        wx:for="{{densityOptions}}"
+        wx:key="value"
+        class="density {{currentDensity === item.value ? 'density--active' : ''}}"
+        data-value="{{item.value}}"
+        bindtap="onDensitySelect"
+      >
+        <view class="density__radio {{currentDensity === item.value ? 'density__radio--on' : ''}}"></view>
+        <view class="density__text">
+          <text class="density__name">{{item.name}}</text>
+          <text class="density__desc">{{item.desc}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view class="rule"></view>
+
   <!-- 工具 -->
   <view class="block">
     <view class="block__head"><text class="block__label">工具</text></view>
@@ -199,6 +221,27 @@
         <text class="row__label">导入 · 文本课表</text>
         <text class="row__chev">›</text>
       </view>
+    </view>
+  </view>
+
+  <!-- 意见反馈 -->
+  <view class="rule"></view>
+  <view class="block">
+    <view class="block__head">
+      <text class="block__label">意见反馈</text>
+    </view>
+    <textarea
+      class="feedback__input"
+      placeholder="使用中遇到问题或有建议，欢迎告诉我们 ☺"
+      placeholder-class="feedback__placeholder"
+      value="{{feedbackText}}"
+      bindinput="onFeedbackInput"
+      maxlength="500"
+      auto-height
+    />
+    <view class="feedback__footer">
+      <text class="feedback__count">{{feedbackText.length || 0}}/500</text>
+      <view class="feedback__btn {{feedbackText && !feedbackSubmitting ? '' : 'feedback__btn--disabled'}}" bindtap="onSubmitFeedback">{{feedbackSubmitting ? '提交中...' : '提交'}}</view>
     </view>
   </view>
 
