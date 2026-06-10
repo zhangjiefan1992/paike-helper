@@ -121,11 +121,62 @@ async function testWeekStats() {
   assert.strictEqual(res.structuredContent.summary.totalMinutes, 120)
 }
 
+function reloadSkillIndex() {
+  const path = require.resolve('../../miniprogram/agent-packages/schedule-skill/index')
+  delete require.cache[path]
+  return require(path)
+}
+
+async function testIndexRegistrationFallback() {
+  resetStorage()
+  const registered = {}
+  wx.modelContext = {
+    registerAPI(name, handler) {
+      registered[name] = handler
+    }
+  }
+  reloadSkillIndex()
+  assert.strictEqual(typeof registered.getWeekSchedule, 'function')
+  assert.strictEqual(typeof registered.previewImportSchedule, 'function')
+  assert.strictEqual(typeof registered.commitImportSchedule, 'function')
+  assert.strictEqual(typeof registered.updateSessionStatus, 'function')
+  assert.strictEqual(typeof registered.getWeekStats, 'function')
+
+  const res = await registered.getWeekSchedule({ weekStart: '2026-06-08' })
+  assert.strictEqual(res.isError, false)
+  assert.strictEqual(res.structuredContent.total, 2)
+}
+
+async function testIndexRegistrationWithCreateSkill() {
+  resetStorage()
+  const registered = {}
+  let middleware = null
+  wx.modelContext = {
+    createSkill(skillPath) {
+      assert.strictEqual(skillPath, 'agent-packages/schedule-skill')
+      return {
+        use(fn) {
+          middleware = fn
+        },
+        registerAPI(name, handler) {
+          registered[name] = handler
+        }
+      }
+    }
+  }
+  reloadSkillIndex()
+  assert.strictEqual(typeof middleware, 'function')
+  assert.strictEqual(typeof registered.getWeekSchedule, 'function')
+  assert.strictEqual(typeof registered.updateSessionStatus, 'function')
+}
+
 async function main() {
   await testWeekSchedule()
   await testPreviewAndCommitImport()
   await testUpdateStatus()
   await testWeekStats()
+  await testIndexRegistrationFallback()
+  await testIndexRegistrationWithCreateSkill()
   console.log('agent schedule skill tests passed')
 }
 
