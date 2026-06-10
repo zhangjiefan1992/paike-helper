@@ -3,14 +3,15 @@ const dateUtil = require('../lib/date')
 const presenters = require('../lib/presenters')
 
 async function getWeekSchedule(args = {}) {
-  const baseDate = args.date || args.weekStart || dateUtil.toDateStr(new Date())
+  const isDayQuery = !!args.date && !args.weekStart
+  const baseDate = args.weekStart || args.date || dateUtil.toDateStr(new Date())
   const week = dateUtil.getWeekRange(baseDate)
-  const rangeStart = args.date || week.start
-  const rangeEnd = args.date || week.end
+  const rangeStart = isDayQuery ? args.date : week.start
+  const rangeEnd = isDayQuery ? args.date : week.end
   const sessions = storage.getSessionsByDateRange(rangeStart, rangeEnd)
   const members = storage.getMembers()
   const days = presenters.groupWeekSessions(week, sessions, members)
-  const filteredDays = args.date ? days.filter(day => day.date === args.date) : days
+  const filteredDays = isDayQuery ? days.filter(day => day.date === args.date) : days
   const rangeLabel = dateUtil.formatMonthDay(week.start) + ' - ' + dateUtil.formatMonthDay(week.end)
   const total = filteredDays.reduce((sum, day) => sum + day.count, 0)
 

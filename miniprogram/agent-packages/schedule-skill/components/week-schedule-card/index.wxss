@@ -63,18 +63,23 @@
 }
 
 .mini-grid {
-  display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
+  display: flex;
   border: 1rpx solid var(--rule, #e2e7f2);
   border-radius: 12rpx;
   overflow: hidden;
   background: var(--rule, #e2e7f2);
-  gap: 1rpx;
 }
 
 .mini-day {
+  flex: 1;
+  width: 0;
   min-width: 0;
+  margin-left: 1rpx;
   background: linear-gradient(180deg, #ffffff 0%, #fbfcff 100%);
+}
+
+.mini-day:first-child {
+  margin-left: 0;
 }
 
 .mini-day--empty {

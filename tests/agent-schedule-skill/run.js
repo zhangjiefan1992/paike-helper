@@ -71,8 +71,19 @@ async function testWeekSchedule() {
   const res = await getWeekSchedule({ weekStart: '2026-06-08' })
   assert.strictEqual(res.isError, false)
   assert.strictEqual(res.structuredContent.total, 2)
+  assert.strictEqual(res.structuredContent.days.length, 7)
   assert.strictEqual(res.structuredContent.days[0].sessions[0].memberName, '张三')
   assert.match(res.content[0].text, /已找到/)
+
+  const both = await getWeekSchedule({ weekStart: '2026-06-08', date: '2026-06-08' })
+  assert.strictEqual(both.isError, false)
+  assert.strictEqual(both.structuredContent.total, 2)
+  assert.strictEqual(both.structuredContent.days.length, 7)
+
+  const day = await getWeekSchedule({ date: '2026-06-08' })
+  assert.strictEqual(day.isError, false)
+  assert.strictEqual(day.structuredContent.total, 1)
+  assert.strictEqual(day.structuredContent.days.length, 1)
 }
 
 async function testPreviewAndCommitImport() {
