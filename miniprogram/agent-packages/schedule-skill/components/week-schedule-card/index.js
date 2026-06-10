@@ -14,6 +14,8 @@ const CARD_COLORS = [
   { bg: '#6078EA', border: '#3D55C6', text: '#FFFFFF' }
 ]
 
+const MAX_CARDS_PER_DAY = 7
+
 function simpleHash(str) {
   let h = 0
   const value = String(str || '')
@@ -33,7 +35,7 @@ function shapeDays(days) {
   const list = (days || []).slice(0, 7)
   return list.map(day => {
     const count = day.count || 0
-    const cards = (day.sessions || []).slice(0, 2).map(session => Object.assign({}, session, {
+    const cards = (day.sessions || []).slice(0, MAX_CARDS_PER_DAY).map(session => Object.assign({}, session, {
       cardStyle: getCardStyle(session),
       isDone: session.status === 'completed'
     }))

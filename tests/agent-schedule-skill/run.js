@@ -139,6 +139,86 @@ async function testWeekStats() {
   assert.strictEqual(res.structuredContent.summary.totalMinutes, 120)
 }
 
+function makeSessions(count, date, weekday) {
+  return Array.from({ length: count }, (_, index) => ({
+    id: date + '_' + index,
+    date,
+    weekday,
+    dayNum: Number(date.slice(-2)),
+    startTime: String(8 + index).padStart(2, '0') + ':00',
+    memberId: 'm_' + index,
+    memberName: '会员' + index,
+    courseType: '私教',
+    status: 'scheduled',
+    statusLabel: '已约'
+  }))
+}
+
+function reloadWeekScheduleCard() {
+  const path = require.resolve('../../miniprogram/agent-packages/schedule-skill/components/week-schedule-card/index')
+  delete require.cache[path]
+  let componentDef = null
+  global.Component = def => {
+    componentDef = def
+  }
+  require(path)
+  delete global.Component
+  return componentDef
+}
+
+async function testWeekScheduleCardShowsDenseWeek() {
+  let resultHandler = null
+  wx.modelContext = {
+    NotificationType: { Result: 'result' },
+    getContext() {
+      return {
+        on(type, handler) {
+          assert.strictEqual(type, 'result')
+          resultHandler = handler
+        }
+      }
+    },
+    getViewContext() {
+      return { setRelatedPage() {} }
+    }
+  }
+  const componentDef = reloadWeekScheduleCard()
+  assert.ok(componentDef)
+  const instance = {
+    data: componentDef.data,
+    setData(data) {
+      this.data = Object.assign({}, this.data, data)
+    }
+  }
+  componentDef.lifetimes.attached.call(instance)
+  assert.strictEqual(typeof resultHandler, 'function')
+
+  const days = [
+    { date: '2026-04-20', weekday: '周一', dayNum: 20, count: 8, sessions: makeSessions(8, '2026-04-20', '周一') },
+    { date: '2026-04-21', weekday: '周二', dayNum: 21, count: 6, sessions: makeSessions(6, '2026-04-21', '周二') },
+    { date: '2026-04-22', weekday: '周三', dayNum: 22, count: 0, sessions: [] },
+    { date: '2026-04-23', weekday: '周四', dayNum: 23, count: 4, sessions: makeSessions(4, '2026-04-23', '周四') },
+    { date: '2026-04-24', weekday: '周五', dayNum: 24, count: 3, sessions: makeSessions(3, '2026-04-24', '周五') },
+    { date: '2026-04-25', weekday: '周六', dayNum: 25, count: 5, sessions: makeSessions(5, '2026-04-25', '周六') },
+    { date: '2026-04-26', weekday: '周日', dayNum: 26, count: 0, sessions: [] }
+  ]
+  resultHandler({
+    result: {
+      structuredContent: {
+        rangeLabel: '4月20日 - 4月26日',
+        total: 26,
+        days
+      }
+    }
+  })
+
+  assert.strictEqual(instance.data.days.length, 7)
+  assert.strictEqual(instance.data.days[0].cards.length, 7)
+  assert.strictEqual(instance.data.days[0].moreCount, 1)
+  assert.strictEqual(instance.data.days[1].cards.length, 6)
+  assert.strictEqual(instance.data.hiddenCount, 1)
+}
+
 function reloadSkillIndex() {
   const path = require.resolve('../../miniprogram/agent-packages/schedule-skill/index')
   delete require.cache[path]
@@ -193,6 +273,7 @@ async function main() {
   await testPreviewAndCommitImport()
   await testUpdateStatus()
   await testWeekStats()
+  await testWeekScheduleCardShowsDenseWeek()
   await testIndexRegistrationFallback()
   await testIndexRegistrationWithCreateSkill()
   console.log('agent schedule skill tests passed')

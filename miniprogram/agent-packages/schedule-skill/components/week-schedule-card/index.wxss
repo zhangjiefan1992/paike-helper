@@ -1,5 +1,5 @@
 .ai-card {
-  padding: 20rpx;
+  padding: 18rpx;
   background: var(--bg-card, #ffffff);
   border: 1rpx solid var(--rule, #e8e2d8);
   border-radius: var(--radius-md, 16rpx);
@@ -59,7 +59,7 @@
 }
 
 .overview {
-  margin-top: 16rpx;
+  margin-top: 14rpx;
 }
 
 .mini-grid {
@@ -87,7 +87,7 @@
 }
 
 .mini-day__head {
-  padding: 8rpx 2rpx 6rpx;
+  padding: 7rpx 2rpx 5rpx;
   text-align: center;
   background: #f1f4fa;
 }
@@ -98,7 +98,7 @@
 }
 
 .mini-day__weekday {
-  font-size: 18rpx;
+  font-size: 17rpx;
   color: #8088a8;
   font-weight: 600;
   line-height: 1;
@@ -106,25 +106,25 @@
 
 .mini-day__num {
   margin-top: 2rpx;
-  font-size: 17rpx;
+  font-size: 16rpx;
   color: #b0b6cc;
   line-height: 1;
 }
 
 .mini-day__body {
-  min-height: 150rpx;
-  padding: 7rpx 4rpx;
+  min-height: 314rpx;
+  padding: 6rpx 3rpx;
   box-sizing: border-box;
 }
 
 .mini-card {
   position: relative;
-  min-height: 48rpx;
-  margin-bottom: 6rpx;
-  padding: 5rpx 5rpx 4rpx 8rpx;
-  border-radius: 7rpx;
+  height: 34rpx;
+  margin-bottom: 4rpx;
+  padding: 3rpx 3rpx 3rpx 7rpx;
+  border-radius: 6rpx;
   box-sizing: border-box;
-  box-shadow: 0 4rpx 9rpx rgba(24, 32, 68, 0.12);
+  box-shadow: 0 3rpx 7rpx rgba(24, 32, 68, 0.12);
   overflow: hidden;
 }
 
@@ -134,7 +134,7 @@
   left: 0;
   top: 0;
   bottom: 0;
-  width: 5rpx;
+  width: 4rpx;
   background: var(--card-accent, rgba(255,255,255,0.5));
 }
 
@@ -157,25 +157,25 @@
 }
 
 .mini-card__time {
-  font-size: 17rpx;
+  font-size: 13rpx;
   line-height: 1;
   font-weight: 700;
 }
 
 .mini-card__name {
-  margin-top: 2rpx;
-  font-size: 18rpx;
-  line-height: 1.05;
+  margin-top: 1rpx;
+  font-size: 14rpx;
+  line-height: 1;
   font-weight: 700;
 }
 
 .mini-more {
-  height: 30rpx;
+  height: 25rpx;
   border-radius: 999rpx;
   background: rgba(24, 32, 68, 0.06);
   color: #4a5070;
-  font-size: 18rpx;
-  line-height: 30rpx;
+  font-size: 15rpx;
+  line-height: 25rpx;
   text-align: center;
   font-weight: 600;
 }
@@ -183,7 +183,7 @@
 .mini-empty {
   height: 1rpx;
   width: 24rpx;
-  margin: 62rpx auto 0;
+  margin: 148rpx auto 0;
   background: #d8deeb;
 }
 
@@ -191,8 +191,8 @@
   display: flex;
   justify-content: space-between;
   gap: 14rpx;
-  margin-top: 12rpx;
-  font-size: 21rpx;
+  margin-top: 10rpx;
+  font-size: 20rpx;
   color: var(--ink-3, #7a7470);
 }
 
