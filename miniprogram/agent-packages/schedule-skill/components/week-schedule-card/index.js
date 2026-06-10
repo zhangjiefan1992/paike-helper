@@ -3,32 +3,49 @@ function getStructuredContent(data) {
   return (result && result.structuredContent) || {}
 }
 
-function shapeDays(days) {
-  const list = (days || []).slice(0, 7)
-  const maxCount = Math.max(1, list.reduce((max, day) => Math.max(max, day.count || 0), 0))
-  return list.map(day => {
-    const count = day.count || 0
-    return Object.assign({}, day, {
-      count,
-      isBusy: count > 0,
-      barStyle: 'height:' + Math.max(8, Math.round(count / maxCount * 48)) + 'rpx'
-    })
-  })
+const CARD_COLORS = [
+  { bg: '#2F9AF5', border: '#1478D4', text: '#FFFFFF' },
+  { bg: '#39A65A', border: '#1F7D3B', text: '#FFFFFF' },
+  { bg: '#F5C037', border: '#D29413', text: '#1B2544' },
+  { bg: '#15B5C6', border: '#07899A', text: '#FFFFFF' },
+  { bg: '#8D48DD', border: '#6E2DBB', text: '#FFFFFF' },
+  { bg: '#FF8A1F', border: '#D96500', text: '#27180A' },
+  { bg: '#F05A7A', border: '#C83B5A', text: '#FFFFFF' },
+  { bg: '#6078EA', border: '#3D55C6', text: '#FFFFFF' }
+]
+
+function simpleHash(str) {
+  let h = 0
+  const value = String(str || '')
+  for (let i = 0; i < value.length; i++) {
+    h = ((h << 5) - h + value.charCodeAt(i)) | 0
+  }
+  return Math.abs(h)
 }
 
-function shapeHighlights(days) {
-  const sessions = []
-  ;(days || []).forEach(day => {
-    ;(day.sessions || []).forEach(session => {
-      sessions.push(Object.assign({}, session, {
-        weekday: day.weekday,
-        dayNum: day.dayNum
-      }))
+function getCardStyle(session) {
+  const seed = session.memberId || session.memberName || session.id
+  const color = CARD_COLORS[simpleHash(seed) % CARD_COLORS.length]
+  return 'background-color:' + color.bg + ';color:' + color.text + ';--card-accent:' + color.border
+}
+
+function shapeDays(days) {
+  const list = (days || []).slice(0, 7)
+  return list.map(day => {
+    const count = day.count || 0
+    const cards = (day.sessions || []).slice(0, 2).map(session => Object.assign({}, session, {
+      cardStyle: getCardStyle(session),
+      isDone: session.status === 'completed'
+    }))
+    return Object.assign({}, day, {
+      count,
+      weekdayLabel: String(day.weekday || '').replace('周', ''),
+      isBusy: count > 0,
+      hasCards: cards.length > 0,
+      cards,
+      moreCount: Math.max(0, count - cards.length)
     })
   })
-  return sessions
-    .sort((a, b) => a.date === b.date ? a.startTime.localeCompare(b.startTime) : a.date.localeCompare(b.date))
-    .slice(0, 4)
 }
 
 Component({
@@ -36,11 +53,9 @@ Component({
     rangeLabel: '',
     total: 0,
     days: [],
-    highlights: [],
     busyDayCount: 0,
     hiddenCount: 0,
-    hasDays: false,
-    hasHighlights: false
+    hasDays: false
   },
 
   lifetimes: {
@@ -52,17 +67,15 @@ Component({
       this._resultHandler = data => {
         const content = getStructuredContent(data)
         const days = shapeDays(content.days)
-        const highlights = shapeHighlights(content.days)
         const total = content.total || 0
+        const shownCount = days.reduce((sum, day) => sum + day.cards.length, 0)
         this.setData({
           rangeLabel: content.rangeLabel || '',
           total,
           days,
-          highlights,
           busyDayCount: days.filter(day => day.isBusy).length,
-          hiddenCount: Math.max(0, total - highlights.length),
-          hasDays: days.some(day => day.isBusy),
-          hasHighlights: highlights.length > 0
+          hiddenCount: Math.max(0, total - shownCount),
+          hasDays: days.some(day => day.isBusy)
         })
         if (this._viewCtx && this._viewCtx.setRelatedPage) {
           this._viewCtx.setRelatedPage({ query: '' })

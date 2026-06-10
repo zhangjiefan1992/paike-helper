@@ -62,55 +62,124 @@
   margin-top: 16rpx;
 }
 
-.week-strip {
-  display: flex;
-  gap: 8rpx;
+.mini-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  border: 1rpx solid var(--rule, #e2e7f2);
+  border-radius: 12rpx;
+  overflow: hidden;
+  background: var(--rule, #e2e7f2);
+  gap: 1rpx;
 }
 
-.day {
-  flex: 1;
+.mini-day {
   min-width: 0;
-  padding: 10rpx 4rpx 8rpx;
-  border-radius: var(--radius-sm, 8rpx);
-  background: var(--rule-soft, #f0ebe2);
+  background: linear-gradient(180deg, #ffffff 0%, #fbfcff 100%);
+}
+
+.mini-day--empty {
+  background: #f7f9fd;
+}
+
+.mini-day__head {
+  padding: 8rpx 2rpx 6rpx;
   text-align: center;
+  background: #f1f4fa;
 }
 
-.day--busy {
-  background: var(--color-primary-light, rgba(74, 124, 89, 0.08));
-}
-
-.day__name,
-.day__count {
+.mini-day__weekday,
+.mini-day__num {
   display: block;
 }
 
-.day__name {
+.mini-day__weekday {
   font-size: 18rpx;
-  color: var(--ink-3, #7a7470);
-  line-height: 1;
-}
-
-.day__bar-wrap {
-  height: 52rpx;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  margin: 6rpx 0;
-}
-
-.day__bar {
-  width: 18rpx;
-  min-height: 8rpx;
-  border-radius: 999rpx;
-  background: var(--color-primary, #4a7c59);
-}
-
-.day__count {
-  font-size: 20rpx;
+  color: #8088a8;
   font-weight: 600;
   line-height: 1;
-  color: var(--ink, #1f1d1a);
+}
+
+.mini-day__num {
+  margin-top: 2rpx;
+  font-size: 17rpx;
+  color: #b0b6cc;
+  line-height: 1;
+}
+
+.mini-day__body {
+  min-height: 150rpx;
+  padding: 7rpx 4rpx;
+  box-sizing: border-box;
+}
+
+.mini-card {
+  position: relative;
+  min-height: 48rpx;
+  margin-bottom: 6rpx;
+  padding: 5rpx 5rpx 4rpx 8rpx;
+  border-radius: 7rpx;
+  box-sizing: border-box;
+  box-shadow: 0 4rpx 9rpx rgba(24, 32, 68, 0.12);
+  overflow: hidden;
+}
+
+.mini-card::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 5rpx;
+  background: var(--card-accent, rgba(255,255,255,0.5));
+}
+
+.mini-card--completed {
+  opacity: 0.72;
+}
+
+.mini-card--cancelled {
+  opacity: 0.58;
+}
+
+.mini-card__time,
+.mini-card__name {
+  display: block;
+  position: relative;
+  z-index: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mini-card__time {
+  font-size: 17rpx;
+  line-height: 1;
+  font-weight: 700;
+}
+
+.mini-card__name {
+  margin-top: 2rpx;
+  font-size: 18rpx;
+  line-height: 1.05;
+  font-weight: 700;
+}
+
+.mini-more {
+  height: 30rpx;
+  border-radius: 999rpx;
+  background: rgba(24, 32, 68, 0.06);
+  color: #4a5070;
+  font-size: 18rpx;
+  line-height: 30rpx;
+  text-align: center;
+  font-weight: 600;
+}
+
+.mini-empty {
+  height: 1rpx;
+  width: 24rpx;
+  margin: 62rpx auto 0;
+  background: #d8deeb;
 }
 
 .summary {
@@ -126,77 +195,4 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.highlights {
-  margin-top: 10rpx;
-}
-
-.highlight {
-  display: flex;
-  align-items: center;
-  gap: 10rpx;
-  min-height: 44rpx;
-  border-top: 1rpx solid var(--rule-soft, #f0ebe2);
-  font-size: 21rpx;
-}
-
-.highlight:first-child {
-  border-top: 0;
-}
-
-.highlight__date {
-  width: 58rpx;
-  flex-shrink: 0;
-  color: var(--ink-3, #7a7470);
-}
-
-.highlight__time {
-  width: 58rpx;
-  flex-shrink: 0;
-  color: var(--ink-2, #4a4642);
-}
-
-.highlight__main {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  align-items: baseline;
-  gap: 8rpx;
-}
-
-.highlight__name,
-.highlight__meta {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.highlight__name {
-  color: var(--ink, #1f1d1a);
-}
-
-.highlight__meta {
-  flex-shrink: 0;
-  max-width: 90rpx;
-  font-size: 19rpx;
-  color: var(--ink-3, #7a7470);
-}
-
-.highlight__status {
-  flex-shrink: 0;
-  color: var(--ink-3, #7a7470);
-}
-
-.highlight--completed .highlight__status {
-  color: var(--color-primary, #4a7c59);
-}
-
-.highlight--cancelled .highlight__name {
-  color: var(--ink-4, #a8a29b);
-  text-decoration: line-through;
-}
-
-.highlight--noshow .highlight__status {
-  color: var(--warm, #b5573d);
 }

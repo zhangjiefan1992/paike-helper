@@ -15,31 +15,32 @@
   </view>
 
   <view wx:else class="overview">
-    <view class="week-strip">
-      <view wx:for="{{days}}" wx:key="date" class="day {{item.isBusy ? 'day--busy' : ''}}">
-        <text class="day__name">{{item.weekday}}</text>
-        <view class="day__bar-wrap">
-          <view wx:if="{{item.isBusy}}" class="day__bar" style="{{item.barStyle}}"></view>
+    <view class="mini-grid">
+      <view wx:for="{{days}}" wx:key="date" class="mini-day {{item.hasCards ? '' : 'mini-day--empty'}}">
+        <view class="mini-day__head">
+          <text class="mini-day__weekday">周{{item.weekdayLabel}}</text>
+          <text class="mini-day__num">{{item.dayNum}}</text>
         </view>
-        <text class="day__count">{{item.count}}</text>
+        <view class="mini-day__body">
+          <view
+            wx:for="{{item.cards}}"
+            wx:for-item="card"
+            wx:key="id"
+            class="mini-card mini-card--{{card.status}}"
+            style="{{card.cardStyle}}"
+          >
+            <text class="mini-card__time">{{card.startTime}}</text>
+            <text class="mini-card__name">{{card.memberName}}</text>
+          </view>
+          <view wx:if="{{item.moreCount > 0}}" class="mini-more">+{{item.moreCount}}</view>
+          <view wx:if="{{!item.hasCards}}" class="mini-empty"></view>
+        </view>
       </view>
     </view>
 
     <view class="summary">
       <text>本周 {{busyDayCount}} 天有课</text>
       <text wx:if="{{hiddenCount > 0}}">还有 {{hiddenCount}} 节在完整课表中查看</text>
-    </view>
-
-    <view class="highlights" wx:if="{{hasHighlights}}">
-      <view wx:for="{{highlights}}" wx:key="id" class="highlight highlight--{{item.status}}">
-        <text class="highlight__date">{{item.weekday}} {{item.dayNum}}</text>
-        <text class="highlight__time">{{item.startTime}}</text>
-        <view class="highlight__main">
-          <text class="highlight__name">{{item.memberName}}</text>
-          <text class="highlight__meta">{{item.courseType}}</text>
-        </view>
-        <text class="highlight__status">{{item.statusLabel}}</text>
-      </view>
     </view>
   </view>
 </view>
