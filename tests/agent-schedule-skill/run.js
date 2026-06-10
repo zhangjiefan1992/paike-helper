@@ -82,8 +82,15 @@ async function testWeekSchedule() {
 
   const day = await getWeekSchedule({ date: '2026-06-08' })
   assert.strictEqual(day.isError, false)
-  assert.strictEqual(day.structuredContent.total, 1)
-  assert.strictEqual(day.structuredContent.days.length, 1)
+  assert.strictEqual(day.structuredContent.total, 2)
+  assert.strictEqual(day.structuredContent.days.length, 7)
+  assert.strictEqual(day.structuredContent.weekStart, '2026-06-08')
+
+  const midweek = await getWeekSchedule({ date: '2026-06-10' })
+  assert.strictEqual(midweek.isError, false)
+  assert.strictEqual(midweek.structuredContent.total, 2)
+  assert.strictEqual(midweek.structuredContent.days.length, 7)
+  assert.strictEqual(midweek.structuredContent.weekStart, '2026-06-08')
 }
 
 async function testPreviewAndCommitImport() {

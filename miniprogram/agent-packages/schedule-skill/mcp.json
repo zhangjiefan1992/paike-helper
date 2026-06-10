@@ -2,7 +2,7 @@
   "apis": [
     {
       "name": "getWeekSchedule",
-      "description": "查询排课助手中的周课表或某一天课表。适用于用户想查看本周、下周、某周或某天课程安排。不用于写入或修改课程。",
+      "description": "查询排课助手中的周课表。适用于用户想查看本周、下周、某周或某个日期所在周的课程安排。不用于写入或修改课程。",
       "_meta": {
         "ui": {
           "componentPath": "components/week-schedule-card/index"
@@ -13,11 +13,11 @@
         "properties": {
           "weekStart": {
             "type": "string",
-            "description": "周起始日期，格式 YYYY-MM-DD。用户未指定日期时不要填写，本接口会默认当前周。"
+            "description": "周起始日期，格式 YYYY-MM-DD。只有已明确知道该周周一日期时填写；用户说某个具体日期时优先填写 date。"
           },
           "date": {
             "type": "string",
-            "description": "指定查询某一天，格式 YYYY-MM-DD。仅当用户明确问某一天课程时填写。"
+            "description": "查询锚点日期，格式 YYYY-MM-DD。用户说 4月20号、今天、明天、周三等具体日期时填写；接口会返回该日期所在周的 7 天课表，不返回单日。"
           }
         }
       },
